@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "multiscribe-agent"
+version = "0.1.0"
+description = "A declarative multi-agent workflow platform for automated content curation and publishing."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0-only"
+dependencies = [
+    "click>=8.1",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "structlog>=24.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.10",
+    "pre-commit",
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+    "ruff>=0.5",
+    "types-click",
+]
+
+[project.scripts]
+multiscribe-agent = "multiscribe_agent.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/multiscribe_agent"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "S", "PT", "RUF"]
+per-file-ignores = { "tests/**/*.py" = ["ANN", "S"] }
+
+[tool.ruff.format]
+
+[tool.mypy]
+strict = true
+packages = ["multiscribe_agent"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = ["e2e: real external dependency tests (skipped by default)"]
+addopts = "-m 'not e2e'"

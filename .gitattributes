@@ -1,0 +1,16 @@
+# 统一换行符：仓库内一律 LF，Windows 本地 checkout 也保持 LF。
+# 避免 CRLF/LF 反复抖动导致 pre-commit trailing-whitespace 误报。
+
+* text=auto eol=lf
+
+# 二进制文件不转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.sqlite binary
+*.db binary
