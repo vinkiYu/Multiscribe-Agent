@@ -143,6 +143,7 @@ api → agents/services → domain（模型/端口）
 | Phase | 名称 | 状态 | 通过日期 | 备注 |
 | :--- | :--- | :--- | :--- | :--- |
 | P0 | 工程基线与规范 | 🟢 已通过 | 2026-07-15 | 质量门全绿且经规划独立复核;新增全局授权(Git 仓库+uv.lock 提交);pre-commit 原地 8/8 通过 |
+| P1 | 配置 + 领域模型 | 🟢 已通过 | 2026-07-15 | 18 领域模型+5 仓储 Protocol+ConfigService;domain 零外部依赖(复核 clean);21 测试全绿;基线修复:pre-commit mypy 补 pydantic-settings |
 
 （其余见 `docs/phases/README.md` 看板）
 

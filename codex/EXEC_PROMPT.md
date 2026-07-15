@@ -89,6 +89,7 @@ uv run pytest -q
 - 任务包没要求的"顺手优化"：**不做**。
 - 发现别处的 bug：在 review 的「风险/建议」里报告，**不擅自改**（那是另一个包或决策者的决定）。
 - 想引入新依赖：先报告，获批准再加（改 pyproject 属于白名单时除外）。
+- **新增 runtime 依赖时的基线同步（重要）**：若某包的白名单允许改 `pyproject.toml` 且你新增了 runtime 依赖，**必须同时**把该依赖加到 `.pre-commit-config.yaml` 的 mypy hook `additional_dependencies` 列表（否则隔离 mypy 环境找不到库，pre-commit 会红）。此时 `.pre-commit-config.yaml` 自动视为该包白名单的一部分，无需额外申请。
 
 ## 完成的定义
 
