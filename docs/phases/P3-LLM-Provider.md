@@ -39,19 +39,31 @@ P1（AIMessage/AIResponse/ToolCall/ProviderConfig/ToolDefinition）。
   - `async def generate(self, messages: list[AIMessage], tools: list[ToolDefinition] | None = None, system_instruction: str | None = None) -> AIResponse`
   - `def stream(self, messages, tools=None, system_instruction=None) -> AsyncIterator[AIResponse]`（async generator）
   - `async def list_models(self) -> list[str]`
-- 工厂 `def create_provider(config: ProviderConfig, proxy: str | None = None) -> AIProvider`：按 `config.type` 分发；未知类型抛 `ProviderError`。
 - 消息归一化（模块级纯函数，可单测）：
   - `to_lc_messages(messages: list[AIMessage], system_instruction: str | None) -> list[BaseMessage]`：转 LangChain HumanMessage/AIMessage/SystemMessage/ToolMessage；tool_calls.arguments 映射。
   - `from_lc_message(msg: BaseMessage) -> AIResponse`：提取 content（含 list content 如 image_url）、tool_calls、usage（从 usage_metadata/response_metadata 归一化）。
 - `normalize_tools(tools: list[ToolDefinition]) -> list[dict]`：转 LC bindTools 格式 `{name, description, schema=parameters}`。
+- 工厂签名（**决策者 2026-07-16 钉定，消除模型来源歧义**）：
+  ```python
+  def create_provider(
+      config: ProviderConfig,
+      *,
+      model: str | None = None,        # 来自 AgentDefinition.model
+      temperature: float | None = None, # 来自 AgentDefinition.temperature
+      proxy: str | None = None,
+  ) -> AIProvider
+  ```
+  - 模型解析顺序：`model` 参数 → 兜底 `config.models[0]`（端点首个可用模型）→ 仍无则抛 `ProviderError("no model configured for provider {id}")`。
+  - `temperature` 参数 → 兜底 `0.7`。
+  - `AIProvider` Protocol 的 `generate/stream` **不**接收 model 参数（model 在构造时固定），保持接口简洁。
 
 ### T2. `llm/providers/openai.py` — OpenAIProvider
 
-- 构造接收 `config: ProviderConfig, proxy`。
-- 内部建 `ChatOpenAI(model=..., api_key=..., temperature=..., base_url=..., http_client=httpx.AsyncClient(proxy=...) )`（如 use_proxy）。
+- 构造接收 `config: ProviderConfig, model: str, temperature: float, proxy: str | None`（由工厂解析后传入，**永远是确定值**）。
+- 内部建 `ChatOpenAI(model=model, api_key=config.api_key, temperature=temperature, base_url=config.base_url, http_client=httpx.AsyncClient(proxy=proxy) if proxy else None)`。
 - `generate`：`llm.bind_tools(normalize_tools(tools))` → `await ainvoke(to_lc_messages(...))` → `from_lc_message`。
 - `stream`：`astream` → 逐 chunk `from_lc_message` yield；合并流式 tool_calls（按 id/name 去重，arguments 字符串拼接）。
-- `list_models`：`await client.models.list()`，返回 id 列表。
+- `list_models`：直接返回 `config.models`（不再打网络 `client.models.list()`，因为端点已声明支持清单；若需动态拉取留 e2e）。
 - 超时与重试：用 LangChain 自带 + 包一层 `asyncio.wait_for`。
 
 ### T3. `llm/providers/anthropic.py` — AnthropicProvider

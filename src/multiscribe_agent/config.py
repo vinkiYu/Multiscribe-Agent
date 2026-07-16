@@ -12,7 +12,13 @@ from multiscribe_agent.domain.ports import KvRepository as KvRepositoryPort
 
 
 class ProviderConfig(BaseModel):
-    """Configuration for one AI provider endpoint."""
+    """Configuration for one AI provider endpoint.
+
+    A single endpoint (one api_key + base_url) may serve multiple models; ``models``
+    is the list of model ids this endpoint exposes (for validation / UI selection).
+    The concrete model used per call is supplied by ``AgentDefinition.model`` and
+    injected into the provider at construction time.
+    """
 
     model_config = ConfigDict(frozen=False)
 
@@ -22,6 +28,7 @@ class ProviderConfig(BaseModel):
     api_key: str = ""
     base_url: str = ""
     use_proxy: bool = False
+    models: list[str] = Field(default_factory=list)
 
 
 class AdapterConfig(BaseModel):
@@ -59,14 +66,30 @@ class StorageConfig(BaseModel):
 
 def _default_ai_providers() -> list[ProviderConfig]:
     return [
-        ProviderConfig(id="default-google", name="Google Gemini", type="google"),
-        ProviderConfig(id="default-anthropic", name="Anthropic", type="anthropic"),
-        ProviderConfig(id="default-openai", name="OpenAI", type="openai"),
+        ProviderConfig(
+            id="default-google",
+            name="Google Gemini",
+            type="google",
+            models=["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-pro"],
+        ),
+        ProviderConfig(
+            id="default-anthropic",
+            name="Anthropic",
+            type="anthropic",
+            models=["claude-sonnet-4-5", "claude-opus-4-1", "claude-3-5-haiku-latest"],
+        ),
+        ProviderConfig(
+            id="default-openai",
+            name="OpenAI",
+            type="openai",
+            models=["gpt-4o", "gpt-4o-mini", "gpt-4.1", "o3-mini"],
+        ),
         ProviderConfig(
             id="default-ollama",
             name="Ollama",
             type="ollama",
             base_url="http://localhost:11434",
+            models=["llama3.1", "qwen2.5", "deepseek-r1"],
         ),
     ]
 
