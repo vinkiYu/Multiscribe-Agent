@@ -11,7 +11,7 @@
 | [P1](./P1-配置与领域模型.md) | 配置 + 领域模型 | 🟢 已通过 | 2026-07-15 | 18 模型+5 Protocol+ConfigService;domain 零外部依赖(独立复核 clean);21 测试全绿 |
 | [P2](./P2-DB与仓储.md) | DB + 仓储 + FTS5 | 🟢 已通过 | 2026-07-16 | 5 仓储实现 ports;SQL 全参数化+表名/字段白名单防注入;FTS5 三情况触发器(独立验证 update/delete 同步);KV TTL+覆盖往返验证;31 测试全绿 |
 | [P3](./P3-LLM-Provider.md) | LLM Provider 抽象 | 🟢 已通过 | 2026-07-16 | OpenAI+Anthropic Provider;归一化/流式合并/模型解析(arg→models[0]→ProviderError)均独立验证;零真实网络(全 mock);langchain<1+follow_imports skip(仅第三方,自身仍 strict);46 测试全绿 |
-| [P4](./P4-Agent-Harness.md) | Agent Harness（ReAct+事件流） | ⚪ 未开始 | — | 依赖 P1,P3 |
+| [P4](./P4-Agent-Harness.md) | Agent Harness（ReAct+事件流） | 🟢 已通过 | 2026-07-16 | HarnessContext 窗口截断(32→5条/1589→181 token,首组+原子组保留)+工具压缩+token 单调,均独立验证;ReAct 事件流序列正确+trace_id 一致;工具异常隔离继续;反思器 retry 上限防无限循环;59 测试全绿 |
 | [P5](./P5-插件骨架.md) | 插件骨架（基类+注册+发现） | ⚪ 未开始 | — | 依赖 P1 |
 | [P6](./P6-RSS适配器.md) | RSS 适配器 | ⚪ 未开始 | — | 依赖 P1,P2,P5 |
 | [P7](./P7-飞书机器人.md) | 飞书机器人推送 | ⚪ 未开始 | — | 依赖 P1,P5 |
