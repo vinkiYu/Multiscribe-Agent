@@ -14,7 +14,7 @@ P1（AgentDefinition/AIMessage/ToolCall），P3（AIProvider）。
 
 - `src/multiscribe_agent/agents/__init__.py`
 - `src/multiscribe_agent/agents/context.py`（HarnessContext — Harness 核心）
-- `src/multiscribe_agent/executor.py`（AgentExecutor，ReAct 循环）
+- `src/multiscribe_agent/agents/executor.py`（AgentExecutor，ReAct 循环）
 - `src/multiscribe_agent/agents/events.py`（事件类型定义）
 - `src/multiscribe_agent/agents/planner.py`（规划器 — Harness，MVP 基础版）
 - `src/multiscribe_agent/agents/reflector.py`（反思器 — Harness/Loop 第一环，MVP 基础版）
