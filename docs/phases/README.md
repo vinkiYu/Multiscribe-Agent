@@ -14,7 +14,7 @@
 | [P4](./P4-Agent-Harness.md) | Agent Harness（ReAct+事件流） | 🟢 已通过 | 2026-07-16 | HarnessContext 窗口截断(32→5条/1589→181 token,首组+原子组保留)+工具压缩+token 单调,均独立验证;ReAct 事件流序列正确+trace_id 一致;工具异常隔离继续;反思器 retry 上限防无限循环;59 测试全绿 |
 | [P5](./P5-插件骨架.md) | 插件骨架（基类+注册+发现） | 🟢 已通过 | 2026-07-16 | 四基类 ABC+四 Registry+自动发现;ExecuteCommandTool 安全边界(白黑名单+7种注入向量拦截+超时+截断,均独立攻击测试);ToolRegistry 双注册;72 测试全绿 |
 | [P6](./P6-RSS适配器.md) | RSS 适配器 | 🟢 已通过 | 2026-07-16 | RSS→UnifiedData 字段映射(guid>link>id 优先级,published_date UTC ISO 规范化,summary 300 截断,均独立验证);网络失败容错返回 [];IngestionService run_single/run_all task_log 完整+失败隔离;78 测试全绿(1 e2e 跳过) |
-| [P7](./P7-飞书机器人.md) | 飞书机器人推送 | ⚪ 未开始 | — | 依赖 P1,P5 |
+| [P7](./P7-飞书机器人.md) | 飞书机器人推送 | 🟢 已通过 | 2026-07-16 | 签名算法(HMAC-SHA256+base64,与独立计算值一致验证)+卡片渲染(header+markdown elements+footer note)+指数退避重试(1/2/4s)+业务错误码触发重试,均独立验证;86 测试(2 e2e 跳过) |
 | [P8](./P8-企业微信机器人.md) | 企业微信机器人推送 | ⚪ 未开始 | — | 依赖 P1,P5,P7 |
 | [P9](./P9-调度器.md) | 调度器（APScheduler） | ⚪ 未开始 | — | 依赖 P1,P2 |
 | [P10](./P10-DAG工作流引擎.md) | DAG 工作流引擎 + Loop 节点 | ⚪ 未开始 | — | 依赖 P1,P4 |
