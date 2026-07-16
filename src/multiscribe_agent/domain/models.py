@@ -272,3 +272,49 @@ class KBChunk(_DomainModel):
     content: str
     index: int
     metadata: JsonObject = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Plugin contracts (shared by plugins/base.py, registries, and discovery).
+# Defined here in the domain layer so plugin code depends on domain, not the
+# reverse. See docs/conventions/plugin-contract.md.
+# ---------------------------------------------------------------------------
+
+PluginType = Literal["adapter", "publisher", "storage", "tool"]
+
+
+class ConfigField(_DomainModel):
+    """Declarative description of one configuration value exposed by a plugin.
+
+    Drives both runtime validation and the future settings UI. ``scope``
+    distinguishes adapter/publisher-level shared config from per-item config.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    key: str
+    label: str
+    type: Literal["text", "password", "textarea", "select", "boolean", "number", "url"]
+    required: bool = False
+    default: Any = None
+    options: list[str] | None = None
+    placeholder: str = ""
+    help_text: str = ""
+    scope: Literal["adapter", "item"] = "adapter"
+
+
+class PluginMetadata(_DomainModel):
+    """Self-describing metadata carried by every plugin class.
+
+    Discovery registers any class exposing a ``metadata`` ClassVar of this type.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    type: PluginType
+    name: str
+    description: str
+    icon: str = ""
+    config_fields: list[ConfigField] = Field(default_factory=list)
+    is_builtin: bool = True
