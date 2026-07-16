@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hacker News</title>
+    <link>https://news.ycombinator.com/</link>
+    <description>Minimal local fixture.</description>
+    <item>
+      <guid>hn-1001</guid>
+      <title>Example engineering story</title>
+      <link>https://example.test/story-1001</link>
+      <description>A short local fixture description.</description>
+      <pubDate>Wed, 16 Jul 2026 08:30:00 +0000</pubDate>
+      <author>fixture-author</author>
+      <category>engineering</category>
+      <category>python</category>
+    </item>
+  </channel>
+</rss>
