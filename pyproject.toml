@@ -12,6 +12,9 @@ license = "GPL-3.0-only"
 dependencies = [
     "aiosqlite>=0.20",
     "click>=8.1",
+    "langchain>=0.3,<1",
+    "langchain-anthropic>=0.2,<1",
+    "langchain-openai>=0.2,<1",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "structlog>=24.1",
@@ -48,6 +51,10 @@ per-file-ignores = { "tests/**/*.py" = ["ANN", "S"] }
 strict = true
 packages = ["multiscribe_agent"]
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["anthropic.*", "langchain.*", "langchain_anthropic.*", "langchain_openai.*"]
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
