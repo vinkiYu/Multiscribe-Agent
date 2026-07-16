@@ -5,5 +5,6 @@ from multiscribe_agent.renderers.feishu_card import (
     render_digest_card,
     render_digest_text,
 )
+from multiscribe_agent.renderers.models import CuratedDigest
 
-__all__ = ["DigestItem", "render_digest_card", "render_digest_text"]
+__all__ = ["CuratedDigest", "DigestItem", "render_digest_card", "render_digest_text"]
