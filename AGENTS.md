@@ -145,6 +145,7 @@ api → agents/services → domain（模型/端口）
 | P0 | 工程基线与规范 | 🟢 已通过 | 2026-07-15 | 质量门全绿且经规划独立复核;新增全局授权(Git 仓库+uv.lock 提交);pre-commit 原地 8/8 通过 |
 | P1 | 配置 + 领域模型 | 🟢 已通过 | 2026-07-15 | 18 领域模型+5 仓储 Protocol+ConfigService;domain 零外部依赖(复核 clean);21 测试全绿;基线修复:pre-commit mypy 补 pydantic-settings |
 | P2 | DB + 仓储 + FTS5 | 🟢 已通过 | 2026-07-16 | 5 仓储实现 ports;SQL 全参数化+白名单防注入;FTS5 三情况触发器(独立验证 update/delete 同步);KV TTL/覆盖往返;31 测试全绿 |
+| P3 | LLM Provider 抽象 | 🟢 已通过 | 2026-07-16 | OpenAI+Anthropic Provider;归一化/流式合并/模型解析顺序(arg→models[0]→ProviderError)均独立验证;零真实网络(全 mock);langchain<1 + follow_imports skip 仅限第三方;46 测试全绿 |
 
 （其余见 `docs/phases/README.md` 看板）
 

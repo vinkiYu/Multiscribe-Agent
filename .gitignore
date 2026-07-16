@@ -9,3 +9,5 @@ __pycache__/
 dist/
 *.egg-info/
 node_modules/
+# 临时文件/锁文件(测试或运行时产物;注意 uv.lock 必须提交,故不忽略 *.lock)
+.commit-tmp/
