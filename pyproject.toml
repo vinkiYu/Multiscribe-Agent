@@ -15,6 +15,7 @@ dependencies = [
     "langchain>=0.3,<1",
     "langchain-anthropic>=0.2,<1",
     "langchain-openai>=0.2,<1",
+    "jinja2>=3.1",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "structlog>=24.1",
