@@ -16,7 +16,7 @@
 | [P6](./P6-RSS适配器.md) | RSS 适配器 | 🟢 已通过 | 2026-07-16 | RSS→UnifiedData 字段映射(guid>link>id 优先级,published_date UTC ISO 规范化,summary 300 截断,均独立验证);网络失败容错返回 [];IngestionService run_single/run_all task_log 完整+失败隔离;78 测试全绿(1 e2e 跳过) |
 | [P7](./P7-飞书机器人.md) | 飞书机器人推送 | 🟢 已通过 | 2026-07-16 | 签名算法(HMAC-SHA256+base64,与独立计算值一致验证)+卡片渲染(header+markdown elements+footer note)+指数退避重试(1/2/4s)+业务错误码触发重试,均独立验证;86 测试(2 e2e 跳过) |
 | [P8](./P8-企业微信机器人.md) | 企业微信机器人推送 | 🟢 已通过 | 2026-07-16 | URL 拼接(完整/key-only/http)+errcode 处理(0 成功/非零带 errmsg)+Markdown 受限语法(##/**/>/[text](url),无表格/base64)+DigestItem 复用 P7+重试 500→200;93 测试(3 e2e 跳过) |
-| [P9](./P9-调度器.md) | 调度器（APScheduler） | ⚪ 未开始 | — | 依赖 P1,P2 |
+| [P9](./P9-调度器.md) | 调度器（APScheduler） | 🟢 已通过 | 2026-07-17 | TaskExecutorRegistry(task_type→callback)+AsyncIOScheduler+CronTrigger.from_crontab;task_log 完整生命周期(running→success/error);cron 校验(非法不注册);回调异常隔离;reload 热重载;95 测试全绿 |
 | [P10](./P10-DAG工作流引擎.md) | DAG 工作流引擎 + Loop 节点 | ⚪ 未开始 | — | 依赖 P1,P4 |
 | [P11](./P11-每日推送流水线.md) | 每日推送流水线（Loop自评） | ⚪ 未开始 | — | 依赖 P6,P7,P8,P9,P10 |
 | [P12](./P12-API与可观测.md) | FastAPI + JWT + structlog | ⚪ 未开始 | — | 依赖 P1-P11 |
