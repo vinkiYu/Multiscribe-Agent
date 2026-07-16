@@ -19,7 +19,7 @@
 | [P9](./P9-调度器.md) | 调度器（APScheduler） | 🟢 已通过 | 2026-07-17 | TaskExecutorRegistry(task_type→callback)+AsyncIOScheduler+CronTrigger.from_crontab;task_log 完整生命周期(running→success/error);cron 校验(非法不注册);回调异常隔离;reload 热重载;95 测试全绿 |
 | [P10](./P10-DAG工作流引擎.md) | DAG 工作流引擎 + Loop 节点 | 🟢 已通过 | 2026-07-17 | Kahn 拓扑排序+循环检测(DFS 返回具体路径)+同层 asyncio.gather 并行;input_map 隐式依赖+0/1/N 前驱输入推导;disabled 节点透传;子工作流递归;Loop(max_iterations+llm/regex/'DONE' 三种退出)+反馈注入+历史记录;WorkflowEvent 生命周期;AgentStepExecutor Protocol 注入;106 测试全绿 |
 | [P11](./P11-每日推送流水线.md) | 每日推送流水线（Loop自评） | 🟢 已通过 | 2026-07-17 | 5 节点 DAG(ingest→dedupe→curate Loop→overview→fanout)+input_map 依赖;URL/SHA-256 去重;评分 top-N 精选;Loop 自评(retry→converge)+反馈注入;并发 fan-out(飞书+企微);Per-target 失败隔离(asyncio.gather return_exceptions)+CuratedDigest 聚合;DailyDigestConfig.from_mapping 调度器适配;register_daily_digest_executor 注册 P9;JSON 容错(嵌入 markdown fence 恢复);111 测试全绿 |
-| [P12](./P12-API与可观测.md) | FastAPI + JWT + structlog | ⚪ 未开始 | — | 依赖 P1-P11 |
+| [P12](./P12-API与可观测.md) | FastAPI + JWT + structlog | 🟢 已通过 | 2026-07-17 | FastAPI 应用工厂(create_app)+生命周期(lifespan)+访问日志 trace_id 中间件;JWT 登录+受保护端点(dev 密码 admin123+生产 jwt_secret 强校验);structlog 递归脱敏(7 个敏感键前缀+嵌套 dict/list);领域异常→HTTP 映射(AuthError 401/ValidationError 400/ProviderError 502);6 路由(auth/dashboard/digest/agents/workflows/schedules);SSE 流(P4 harness+P10 workflow EventSourceResponse);ServiceContext 组合根装配 P0-P11(数据库+仓储+插件+服务+调度+daily_digest 注册)+close/reload;_ProviderLoopReflector(P4→P10 LoopReflector 适配);117 测试全绿 |
 | [P13](./P13-MVP收尾.md) | MVP 收尾（e2e+打包+文档） | ⚪ 未开始 | — | 依赖 P0-P12 |
 
 **MVP 交付里程碑**：P0–P13 全 🟢 = MVP 完成。
