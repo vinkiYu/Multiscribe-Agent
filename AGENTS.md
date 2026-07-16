@@ -148,6 +148,7 @@ api → agents/services → domain（模型/端口）
 | P3 | LLM Provider 抽象 | 🟢 已通过 | 2026-07-16 | OpenAI+Anthropic Provider;归一化/流式合并/模型解析顺序(arg→models[0]→ProviderError)均独立验证;零真实网络(全 mock);langchain<1 + follow_imports skip 仅限第三方;46 测试全绿 |
 | P4 | Agent Harness | 🟢 已通过 | 2026-07-16 | HarnessContext 窗口截断(独立验证 32→5条)+工具压缩+token 单调;ReAct 事件流序列正确+trace_id 一致;工具异常隔离;反思器 retry 上限防无限循环(Loop 收敛);59 测试全绿 |
 | P5 | 插件骨架 | 🟢 已通过 | 2026-07-16 | 四基类 ABC+四 Registry+自动发现;ExecuteCommandTool 安全边界(7 种注入向量拦截+超时+截断,独立攻击测试);ToolRegistry 双注册;72 测试全绿 |
+| P6 | RSS 适配器 | 🟢 已通过 | 2026-07-16 | RSS→UnifiedData 字段映射(guid>link>id,published_date UTC ISO,summary 300 截断,独立验证);网络失败容错 [];IngestionService task_log 完整+失败隔离;78 测试(1 e2e 跳过) |
 
 （其余见 `docs/phases/README.md` 看板）
 
