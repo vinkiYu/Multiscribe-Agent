@@ -150,6 +150,7 @@ api → agents/services → domain（模型/端口）
 | P5 | 插件骨架 | 🟢 已通过 | 2026-07-16 | 四基类 ABC+四 Registry+自动发现;ExecuteCommandTool 安全边界(7 种注入向量拦截+超时+截断,独立攻击测试);ToolRegistry 双注册;72 测试全绿 |
 | P6 | RSS 适配器 | 🟢 已通过 | 2026-07-16 | RSS→UnifiedData 字段映射(guid>link>id,published_date UTC ISO,summary 300 截断,独立验证);网络失败容错 [];IngestionService task_log 完整+失败隔离;78 测试(1 e2e 跳过) |
 | P7 | 飞书机器人 | 🟢 已通过 | 2026-07-16 | 签名算法(HMAC-SHA256+base64,独立计算对比一致)+卡片(header+markdown elements+footer)+指数退避重试(1/2/4s)+业务码触发重试;86 测试(2 e2e 跳过) |
+| P8 | 企业微信机器人 | 🟢 已通过 | 2026-07-16 | URL 拼接(完整/key-only/http)+errcode 处理(0 成功/非零带 errmsg)+Markdown 受限语法(##/**/>/[text](url),无表格/base64)+DigestItem 复用 P7+重试 500→200;93 测试(3 e2e 跳过) |
 
 （其余见 `docs/phases/README.md` 看板）
 
