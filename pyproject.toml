@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "GPL-3.0-only"
 dependencies = [
+    "apscheduler>=3.10,<4",
     "aiosqlite>=0.20",
     "click>=8.1",
     "feedparser>=6.0",
