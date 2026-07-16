@@ -13,6 +13,7 @@ repos:
         args: [src]
         pass_filenames: false
         additional_dependencies:
+          - aiosqlite>=0.20
           - pydantic>=2.7
           - pydantic-settings>=2.3
           - types-click

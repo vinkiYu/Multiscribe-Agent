@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from multiscribe_agent.core.errors import ConfigError
+from multiscribe_agent.domain.ports import KvRepository as KvRepositoryPort
 
 
 class ProviderConfig(BaseModel):
@@ -124,13 +127,30 @@ DEFAULT_SETTINGS = SystemSettings.model_construct()
 class ConfigService:
     """Compose default, environment, and persistent configuration layers."""
 
+    def __init__(self, kv_repository: KvRepositoryPort | None = None) -> None:
+        """Create a service with an optional persistent settings repository."""
+        self._kv_repository = kv_repository
+
     def get_settings(self) -> SystemSettings:
         """Load defaults and apply dotenv or process-environment values."""
         return SystemSettings()
 
     async def load_overrides(self) -> dict[str, Any]:
-        """Return persistent overrides; P2 replaces this empty implementation."""
-        return {}
+        """Load persisted system settings overrides when a KV repository is configured."""
+        if self._kv_repository is None:
+            return {}
+        value = await self._kv_repository.get("system_settings")
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ConfigError("system_settings override must be a JSON object")
+        return cast(dict[str, Any], value)
+
+    async def save_settings(self, settings_dict: dict[str, Any]) -> None:
+        """Persist system settings overrides through the configured KV repository."""
+        if self._kv_repository is None:
+            raise ConfigError("persistent settings require a KV repository")
+        await self._kv_repository.set("system_settings", settings_dict)
 
     async def get_settings_with_overrides(self) -> SystemSettings:
         """Load settings and apply the current persistent override mapping."""
