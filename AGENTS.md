@@ -155,6 +155,7 @@ api → agents/services → domain（模型/端口）
 | P10 | DAG 工作流引擎 + Loop 节点 | 🟢 已通过 | 2026-07-17 | Kahn 拓扑排序+循环检测(DFS 具体路径)+同层 asyncio.gather 并行;input_map 隐式依赖+0/1/N 前驱推导;disabled 透传;子工作流递归;Loop(max_iterations+llm/regex/'DONE' 三种退出)+反馈注入+历史;WorkflowEvent 生命周期;AgentStepExecutor Protocol 注入;106 测试全绿 |
 | P11 | 每日推送流水线（Loop自评） | 🟢 已通过 | 2026-07-17 | 5 节点 DAG(ingest→dedupe→curate Loop→overview→fanout)+input_map 依赖;URL/SHA-256 去重;评分 top-N 精选;Loop 自评(retry→converge)+反馈注入;并发 fan-out(飞书+企微);Per-target 失败隔离+CuratedDigest 聚合;DailyDigestConfig.from_mapping 调度器适配;register_daily_digest_executor 注册 P9;JSON 容错(嵌入 markdown fence 恢复);111 测试全绿 |
 | P12 | FastAPI + JWT + structlog | 🟢 已通过 | 2026-07-17 | FastAPI 应用工厂(lifespan)+访问日志 trace_id 中间件;JWT 登录+受保护端点(dev 密码+生产 jwt_secret 强校验);structlog 递归脱敏(7 个敏感键前缀+嵌套);领域异常→HTTP 映射;6 路由(auth/dashboard/digest/agents/workflows/schedules);SSE 流(P4+P10 EventSourceResponse);ServiceContext 组合根装配 P0-P11+close/reload;_ProviderLoopReflector 适配 P4→P10 LoopReflector;117 测试全绿 |
+| P0.5 | MVP 默认配置绑定 | 🟢 已通过 | 2026-07-17 | .env→ProviderConfig.api_key(OPENAI/ANTHROPIC/GOOGLE model_validator 单向绑定);publisher enabled+config(飞书 webhook+secret/企微 webhook);default_curation_provider_id/model/temperature + default_digest_targets/top_n/fetch_days/adapter_ids(NoDecode CSV);bootstrap 启动幂等创建 default-curation-agent(若不存在);空 api_key 不覆盖显式配置;122 测试全绿 |
 
 （其余见 `docs/phases/README.md` 看板）
 
