@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Annotated, Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from multiscribe_agent.core.errors import ConfigError
 from multiscribe_agent.domain.ports import KvRepository as KvRepositoryPort
@@ -131,10 +131,74 @@ class SystemSettings(BaseSettings):
 
     system_password: str = ""
     jwt_secret: str = ""
+    openai_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("OPENAI_API_KEY", "MULTISCRIBE_OPENAI_API_KEY"),
+    )
+    anthropic_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("ANTHROPIC_API_KEY", "MULTISCRIBE_ANTHROPIC_API_KEY"),
+    )
+    google_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("GOOGLE_API_KEY", "MULTISCRIBE_GOOGLE_API_KEY"),
+    )
+    feishu_webhook: str = Field(
+        default="",
+        validation_alias=AliasChoices("FEISHU_WEBHOOK", "MULTISCRIBE_FEISHU_WEBHOOK"),
+    )
+    feishu_secret: str = Field(
+        default="",
+        validation_alias=AliasChoices("FEISHU_SECRET", "MULTISCRIBE_FEISHU_SECRET"),
+    )
+    wecom_webhook: str = Field(
+        default="",
+        validation_alias=AliasChoices("WECOM_WEBHOOK", "MULTISCRIBE_WECOM_WEBHOOK"),
+    )
     db_path: str = "data/database.sqlite"
     log_level: str = "INFO"
     active_ai_provider_id: str = ""
     http_proxy: str = ""
+    default_curation_provider_id: str = Field(
+        default="default-openai",
+        validation_alias=AliasChoices(
+            "DEFAULT_CURATION_PROVIDER_ID", "MULTISCRIBE_DEFAULT_CURATION_PROVIDER_ID"
+        ),
+    )
+    default_curation_model: str = Field(
+        default="gpt-4o-mini",
+        validation_alias=AliasChoices(
+            "DEFAULT_CURATION_MODEL", "MULTISCRIBE_DEFAULT_CURATION_MODEL"
+        ),
+    )
+    default_curation_temperature: float = Field(
+        default=0.3,
+        validation_alias=AliasChoices(
+            "DEFAULT_CURATION_TEMPERATURE", "MULTISCRIBE_DEFAULT_CURATION_TEMPERATURE"
+        ),
+    )
+    default_digest_targets: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["feishu_bot", "wecom_bot"],
+        validation_alias=AliasChoices(
+            "DEFAULT_DIGEST_TARGETS", "MULTISCRIBE_DEFAULT_DIGEST_TARGETS"
+        ),
+    )
+    default_digest_top_n: int = Field(
+        default=5,
+        validation_alias=AliasChoices("DEFAULT_DIGEST_TOP_N", "MULTISCRIBE_DEFAULT_DIGEST_TOP_N"),
+    )
+    default_digest_fetch_days: int = Field(
+        default=2,
+        validation_alias=AliasChoices(
+            "DEFAULT_DIGEST_FETCH_DAYS", "MULTISCRIBE_DEFAULT_DIGEST_FETCH_DAYS"
+        ),
+    )
+    default_digest_adapter_ids: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["rss-adapter"],
+        validation_alias=AliasChoices(
+            "DEFAULT_DIGEST_ADAPTER_IDS", "MULTISCRIBE_DEFAULT_DIGEST_ADAPTER_IDS"
+        ),
+    )
     ai_providers: list[ProviderConfig] = Field(default_factory=_default_ai_providers)
     adapters: list[AdapterConfig] = Field(default_factory=_default_adapters)
     publishers: list[PublisherConfig] = Field(default_factory=_default_publishers)
@@ -142,6 +206,39 @@ class SystemSettings(BaseSettings):
     closed_plugins: list[str] = Field(default_factory=list)
     selection_fetch_days: int = 2
     selection_query_field: str = "ingestion_date"
+
+    @field_validator("default_digest_targets", "default_digest_adapter_ids", mode="before")
+    @classmethod
+    def _parse_csv_settings(cls, value: object) -> object:
+        """Accept comma-separated dotenv values for the two list-based MVP defaults."""
+        if not isinstance(value, str):
+            return value
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+    @model_validator(mode="after")
+    def _bind_mvp_environment_values(self) -> SystemSettings:
+        """Copy flat dotenv credentials into the existing structured runtime settings."""
+        api_keys = {
+            "openai": self.openai_api_key,
+            "anthropic": self.anthropic_api_key,
+            "google": self.google_api_key,
+        }
+        for provider in self.ai_providers:
+            api_key = api_keys.get(provider.type, "")
+            if api_key:
+                provider.api_key = api_key
+
+        for publisher in self.publishers:
+            if publisher.id == "feishu_bot":
+                if self.feishu_webhook:
+                    publisher.config["webhook"] = self.feishu_webhook
+                    publisher.enabled = True
+                if self.feishu_secret:
+                    publisher.config["secret"] = self.feishu_secret
+            elif publisher.id == "wecom_bot" and self.wecom_webhook:
+                publisher.config["webhook"] = self.wecom_webhook
+                publisher.enabled = True
+        return self
 
 
 DEFAULT_SETTINGS = SystemSettings.model_construct()

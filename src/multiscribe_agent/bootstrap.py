@@ -27,6 +27,12 @@ from multiscribe_agent.services.ingestion import IngestionService
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
 
+DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
+DEFAULT_CURATION_AGENT_PROMPT = (
+    "You are a news curation assistant. Select the five most useful items from the input "
+    "and return a JSON array whose entries contain id, title, summary, and score from 0 to 10."
+)
+
 
 @dataclass(slots=True)
 class _ProviderLoopReflector:
@@ -124,6 +130,7 @@ class ServiceContext:
         self.entities = entities
         self.task_logs = task_logs
         self.source_data = source_data
+        await self._bootstrap_default_curation_agent(entities)
         await self.scheduler.start()
         self._initialized = True
 
@@ -171,6 +178,21 @@ class ServiceContext:
         if provider is None:
             raise ProviderError(f"provider not found: {definition.provider_id}")
         return create_provider(provider, model=definition.model, temperature=definition.temperature)
+
+    async def _bootstrap_default_curation_agent(self, entities: EntityJsonRepository) -> None:
+        """Persist the MVP curator declaration once without overwriting user configuration."""
+        if await entities.get("agents", DEFAULT_CURATION_AGENT_ID) is not None:
+            return
+        definition = AgentDefinition(
+            id=DEFAULT_CURATION_AGENT_ID,
+            name="Default Curation Agent",
+            description="MVP default curation agent created by bootstrap.",
+            system_prompt=DEFAULT_CURATION_AGENT_PROMPT,
+            provider_id=self.settings.default_curation_provider_id,
+            model=self.settings.default_curation_model,
+            temperature=self.settings.default_curation_temperature,
+        )
+        await entities.save("agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json"))
 
     def _require_initialized(self) -> None:
         """Raise an explicit runtime error when context users skipped initialization."""
