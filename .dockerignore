@@ -1,0 +1,15 @@
+.git
+.env
+.venv
+.uv-cache
+.mypy_cache
+.pytest_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+data
+tests
+docs
+codex
+DESIGN.md
+docs/BRAND.md
