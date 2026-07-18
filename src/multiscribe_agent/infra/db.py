@@ -76,6 +76,36 @@ class Database:
         finally:
             await cursor.close()
 
+    async def migrate_publish_history(self) -> None:
+        """Create the publisher outcome table and its bounded-query indexes."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS publish_history (
+                id TEXT PRIMARY KEY,
+                publisher_id TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
+                title TEXT NOT NULL,
+                content_preview TEXT NOT NULL,
+                result_data TEXT NOT NULL DEFAULT '{}',
+                error_message TEXT,
+                published_at TEXT NOT NULL,
+                adapter_name TEXT
+            )
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_publish_history_publisher_published
+            ON publish_history(publisher_id, published_at DESC)
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_publish_history_published
+            ON publish_history(published_at DESC)
+            """,
+        )
+
     async def _configure(self) -> None:
         """Apply connection-level SQLite settings required by the application."""
         for statement in (
@@ -313,6 +343,7 @@ async def init_db(path: str) -> Database:
     """Open, initialize, repair, and return a ready SQLite database."""
     database = await Database.open(path)
     await init_schema(database)
+    await database.migrate_publish_history()
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)
     return database

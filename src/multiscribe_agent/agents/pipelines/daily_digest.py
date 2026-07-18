@@ -9,13 +9,14 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as Date
-from typing import Protocol
+from typing import Literal, Protocol
 
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.events import WorkflowEvent
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
 from multiscribe_agent.core.errors import WorkflowError
+from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.domain.models import (
     ScheduleTask,
     UnifiedData,
@@ -23,6 +24,7 @@ from multiscribe_agent.domain.models import (
     WorkflowStep,
 )
 from multiscribe_agent.domain.ports import SourceDataRepository
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
@@ -158,6 +160,8 @@ class DailyDigestPipeline:
         publishing_service: PublishingService,
         config: DailyDigestConfig,
         reflector: LoopReflector,
+        db: Database | None = None,
+        publish_history: PublishHistory | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -166,6 +170,8 @@ class DailyDigestPipeline:
         self._publishing_service = publishing_service
         self._config = config
         self._reflector = reflector
+        self._db = db
+        self._publish_history = publish_history
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
@@ -201,6 +207,8 @@ class DailyDigestPipeline:
             self._publishing_service,
             config,
             self._reflector,
+            self._db,
+            self._publish_history,
         )
         return await pipeline.run()
 
@@ -215,6 +223,8 @@ class DailyDigestPipeline:
             self._publishing_service,
             self._config,
             date_value,
+            self._db,
+            self._publish_history,
         )
         return WorkflowEngine(step_executor, _WorkflowStore(workflow), self._reflector)
 
@@ -250,6 +260,8 @@ class _DailyDigestStepExecutor:
         publishing_service: PublishingService,
         config: DailyDigestConfig,
         run_date: str,
+        db: Database | None,
+        publish_history: PublishHistory | None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -257,6 +269,8 @@ class _DailyDigestStepExecutor:
         self._publishing_service = publishing_service
         self._config = config
         self._run_date = run_date
+        self._db = db
+        self._publish_history = publish_history
         self._total_scanned = 0
 
     async def execute(self, agent_id: str, user_input: str) -> str:
@@ -360,6 +374,21 @@ class _DailyDigestStepExecutor:
             total_scanned=self._total_scanned,
         )
         targets = await self._publishing_service.fanout(digest, self._config.targets)
+        if self._db is not None and self._publish_history is not None:
+            for publisher_id, result in targets.items():
+                status: Literal["success", "error"] = (
+                    "success" if result.get("status") == "success" else "error"
+                )
+                error = result.get("error")
+                await self._publish_history.add(
+                    self._db,
+                    publisher_id=publisher_id,
+                    status=status,
+                    title=digest.title,
+                    content=digest.summary,
+                    result_data=result,
+                    error_message=str(error) if status == "error" and error is not None else None,
+                )
         return _dump_json({"result_count": len(items), "targets": targets})
 
 

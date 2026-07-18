@@ -11,7 +11,15 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from multiscribe_agent.api.routes import agents, auth, dashboard, digest, schedules, workflows
+from multiscribe_agent.api.routes import (
+    agents,
+    auth,
+    dashboard,
+    digest,
+    publish_history,
+    schedules,
+    workflows,
+)
 from multiscribe_agent.bootstrap import ServiceContext, get_context
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.errors import (
@@ -81,6 +89,7 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         auth.router,
         dashboard.router,
         digest.router,
+        publish_history.router,
         agents.router,
         workflows.router,
         schedules.router,

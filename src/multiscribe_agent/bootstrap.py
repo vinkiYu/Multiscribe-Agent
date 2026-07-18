@@ -12,6 +12,7 @@ from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
@@ -85,6 +86,7 @@ class ServiceContext:
         self.workflow_engine: WorkflowEngine | None = None
         self.scheduler: SchedulerService | None = None
         self.config_service: ConfigService | None = None
+        self.publish_history: PublishHistory | None = None
         self._initialized = False
 
     async def init(self) -> None:
@@ -92,6 +94,7 @@ class ServiceContext:
         if self._initialized:
             return
         self.db = await init_db(self.settings.db_path)
+        self.publish_history = get_publish_history()
         entities = EntityJsonRepository(self.db)
         task_logs = TaskLogRepository(self.db)
         source_data = SourceDataRepository(self.db)
@@ -167,6 +170,8 @@ class ServiceContext:
             self.publishing,  # type: ignore[arg-type]
             config,
             _ProviderLoopReflector(Reflector(), self._provider_for_agent(definition)),
+            self.db,
+            self.publish_history,
         )
         return await pipeline.run()
 
