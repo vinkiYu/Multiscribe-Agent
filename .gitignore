@@ -17,3 +17,4 @@ node_modules/
 codex/
 # 所有规划/设计/阶段文档(保留本地开发用,GitHub 只推 src/ tests/ scripts/ README/)
 docs/
+DESIGN.md
