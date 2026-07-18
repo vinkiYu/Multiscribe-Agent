@@ -158,7 +158,10 @@ class SystemSettings(BaseSettings):
     db_path: str = "data/database.sqlite"
     log_level: str = "INFO"
     active_ai_provider_id: str = ""
-    http_proxy: str = ""
+    http_proxy: str = Field(
+        default="",
+        validation_alias=AliasChoices("HTTP_PROXY", "MULTISCRIBE_HTTP_PROXY"),
+    )
     default_curation_provider_id: str = Field(
         default="default-openai",
         validation_alias=AliasChoices(

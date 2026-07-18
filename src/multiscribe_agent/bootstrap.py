@@ -177,7 +177,12 @@ class ServiceContext:
         )
         if provider is None:
             raise ProviderError(f"provider not found: {definition.provider_id}")
-        return create_provider(provider, model=definition.model, temperature=definition.temperature)
+        return create_provider(
+            provider,
+            model=definition.model,
+            temperature=definition.temperature,
+            proxy=self.settings.http_proxy or None,
+        )
 
     async def _bootstrap_default_curation_agent(self, entities: EntityJsonRepository) -> None:
         """Persist the MVP curator declaration once without overwriting user configuration."""
