@@ -76,6 +76,27 @@ def test_transform_decodes_xml_attribute_entities() -> None:
     assert result[0].title == "AI & ML"
 
 
+def test_transform_falls_back_to_title_when_text_is_missing() -> None:
+    """Feed titles use the OPML title attribute when text is unavailable."""
+    raw = '<opml><outline title="Fallback title" xmlUrl="https://example.test/rss"/></opml>'
+
+    result = FollowAdapter().transform(raw, {})
+
+    assert result[0].title == "Fallback title"
+
+
+def test_transform_accepts_namespaced_outline_elements() -> None:
+    """Namespaced OPML outlines remain discoverable after XML parsing."""
+    raw = (
+        '<opml xmlns="https://example.test/opml"><outline text="Namespaced" '
+        'xmlUrl="https://example.test/rss"/></opml>'
+    )
+
+    result = FollowAdapter().transform(raw, {})
+
+    assert [item.url for item in result] == ["https://example.test/rss"]
+
+
 def test_transform_rejects_doctype_payloads() -> None:
     """Unsafe XML declarations are rejected rather than expanding external entities."""
     raw = """<!DOCTYPE opml [<!ENTITY value "unsafe">]>
