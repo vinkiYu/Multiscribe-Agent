@@ -15,9 +15,10 @@ class ProviderConfig(BaseModel):
     """Configuration for one AI provider endpoint.
 
     A single endpoint (one api_key + base_url) may serve multiple models; ``models``
-    is the list of model ids this endpoint exposes (for validation / UI selection).
-    The concrete model used per call is supplied by ``AgentDefinition.model`` and
-    injected into the provider at construction time.
+    is a documented/UI-selectable model catalog, not a runtime allowlist. The
+    concrete model used per call is supplied by ``AgentDefinition.model`` and
+    injected into the provider at construction time, where the remote endpoint
+    determines whether it is available.
     """
 
     model_config = ConfigDict(frozen=False)
