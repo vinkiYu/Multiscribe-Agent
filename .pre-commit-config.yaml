@@ -15,6 +15,7 @@ repos:
         additional_dependencies:
           - apscheduler>=3.10,<4
           - aiosqlite>=0.20
+          - defusedxml>=0.7.1
           - feedparser>=6.0
           - fastapi>=0.115
           - httpx>=0.27
@@ -31,6 +32,7 @@ repos:
           - sse-starlette>=2.1
           - selectolax>=0.3.0
           - structlog>=24.1
+          - types-defusedxml>=0.7.0.20260504
           - types-click
           - uvicorn[standard]>=0.30
 

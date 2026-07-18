@@ -8,6 +8,7 @@ import Selection from './pages/Selection'
 import Generation from './pages/Generation'
 import Agents from './pages/Agents'
 import KnowledgeBase from './pages/KnowledgeBase'
+import Memory from './pages/Memory'
 import History from './pages/History'
 import PluginManagement from './pages/PluginManagement'
 import TaskManagement from './pages/TaskManagement'
@@ -37,6 +38,7 @@ export default function App() {
                       <Route path='/generation' element={<Generation />} />
                       <Route path='/agents' element={<Agents />} />
                       <Route path='/knowledge' element={<KnowledgeBase />} />
+                      <Route path='/memory' element={<Memory />} />
                       <Route path='/history' element={<History />} />
                       <Route path='/plugins' element={<PluginManagement />} />
                       <Route path='/tasks' element={<TaskManagement />} />

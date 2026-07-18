@@ -1,132 +1,118 @@
 import { useState } from 'react'
 
+type SettingsTab = 'basic' | 'providers' | 'publishers'
+
 export default function Settings() {
-  const [tab, setTab] = useState<'basic' | 'providers' | 'publishers'>('basic')
+  const [tab, setTab] = useState<SettingsTab>('basic')
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>配置说明</h1>
-          <p>
-            以下是 Multiscribe 的关键配置项说明。修改请编辑部署目录下的 <code>.env</code> 文件，保存后重启服务生效。
-          </p>
+          <h1>系统设置</h1>
+          <p>此页说明环境配置并提供静态表单预览。凭据不会从浏览器写入服务器，请在 .env 中配置。</p>
         </div>
       </div>
 
       <div className="tabs" style={{ marginBottom: 16 }}>
-        <button
-          className={'tab ' + (tab === 'basic' ? 'active' : '')}
-          onClick={() => setTab('basic')}
-          type="button"
-        >
-          基础配置
-        </button>
-        <button
-          className={'tab ' + (tab === 'providers' ? 'active' : '')}
-          onClick={() => setTab('providers')}
-          type="button"
-        >
-          AI 模型服务
-        </button>
-        <button
-          className={'tab ' + (tab === 'publishers' ? 'active' : '')}
-          onClick={() => setTab('publishers')}
-          type="button"
-        >
-          发布渠道
-        </button>
+        {([
+          ['basic', '基础配置'],
+          ['providers', 'AI 模型服务'],
+          ['publishers', '发布渠道'],
+        ] as const).map(([value, label]) => (
+          <button
+            className={`tab ${tab === value ? 'active' : ''}`}
+            key={value}
+            onClick={() => setTab(value)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {tab === 'basic' && (
-        <article className="card">
-          <div className="card-head"><span>基础配置</span></div>
-          <div className="card-body">
-            <table>
-              <tbody>
-                {[
-                  { key: 'DB_PATH', label: '数据库文件路径', default: 'data/database.sqlite' },
-                  { key: 'LOG_LEVEL', label: '日志级别', default: 'INFO' },
-                  { key: 'PORT', label: 'API 服务端口', default: '8000' },
-                  { key: 'SYSTEM_PASSWORD', label: '登录访问密码', default: 'admin123（请务必修改）' },
-                ].map(row => (
-                  <tr key={row.key}>
-                    <td style={{ width: 200, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                      {row.key}
-                    </td>
-                    <td style={{ color: 'var(--color-muted)' }}>{row.label}</td>
-                    <td className="text-mono text-muted" style={{ fontSize: 12 }}>
-                      默认：{row.default}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </article>
-      )}
+      {tab === 'basic' && <BasicSettings />}
+      {tab === 'providers' && <ProviderSettings />}
+      {tab === 'publishers' && <PublisherSettings />}
 
-      {tab === 'providers' && (
+      <section style={{ marginTop: 16 }}>
         <article className="card">
-          <div className="card-head"><span>AI 模型服务</span></div>
+          <div className="card-head"><span>采集源配置</span><span className="badge">静态表单</span></div>
           <div className="card-body">
-            <table>
-              <thead>
-                <tr>
-                  <th>服务</th>
-                  <th>环境变量</th>
-                  <th>说明</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { id: 'default-openai', name: 'OpenAI', env: 'OPENAI_API_KEY', note: '也支持兼容中转端点（OPENAI_API_BASE_URL）' },
-                  { id: 'default-anthropic', name: 'Anthropic', env: 'ANTHROPIC_API_KEY', note: '可选，配置后即可在 Agent 中选择' },
-                  { id: 'default-google', name: 'Google', env: 'GOOGLE_API_KEY', note: '可选' },
-                  { id: 'default-ollama', name: 'Ollama（本地）', env: '（无需 key）', note: '需本机运行 Ollama 服务' },
-                ].map(p => (
-                  <tr key={p.id}>
-                    <td><strong>{p.name}</strong></td>
-                    <td className="text-mono">{p.env}</td>
-                    <td className="text-muted">{p.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-muted text-sm" style={{ marginTop: 16 }}>
-              状态以实际 <code>.env</code> 配置为准。是否可用取决于密钥有效性和网络连通性。
-            </p>
+            <p className="text-muted text-sm">参数展示用于部署核对。保存配置请编辑 .env 并重启服务。</p>
+            <details>
+              <summary>GitHub Trending</summary>
+              <div className="grid cols-2" style={{ marginTop: 16 }}>
+                <Field label="编程语言" placeholder="例如 python、typescript" />
+                <Field label="最低 Stars" placeholder="例如 100" type="number" />
+              </div>
+            </details>
+            <details style={{ marginTop: 12 }}>
+              <summary>AI 搜索</summary>
+              <div className="field" style={{ marginTop: 16 }}>
+                <label htmlFor="ai-search-provider">AI 搜索提供商</label>
+                <select id="ai-search-provider" defaultValue="">
+                  <option value="">未配置</option><option value="perplexity">Perplexity</option><option value="phind">Phind</option>
+                </select>
+              </div>
+            </details>
           </div>
         </article>
-      )}
+      </section>
 
-      {tab === 'publishers' && (
+      <section style={{ marginTop: 16 }}>
         <article className="card">
-          <div className="card-head"><span>发布渠道</span></div>
+          <div className="card-head"><span>发布端配置</span><span className="badge">仅供参考</span></div>
           <div className="card-body">
-            <table>
-              <thead>
-                <tr><th>渠道</th><th>环境变量</th><th>说明</th></tr>
-              </thead>
-              <tbody>
-                {[
-                  { name: '飞书机器人', env: 'FEISHU_WEBHOOK', note: '飞书群自定义机器人 Webhook 地址' },
-                  { name: '企业微信机器人', env: 'WECOM_WEBHOOK', note: '企业微信群机器人 Webhook 地址' },
-                ].map(pub => (
-                  <tr key={pub.env}>
-                    <td><strong>{pub.name}</strong></td>
-                    <td className="text-mono">{pub.env}</td>
-                    <td className="text-muted">{pub.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-muted text-sm" style={{ marginTop: 16 }}>
-              渠道密钥仅配置在 <code>.env</code> 中，界面不展示具体值。是否已配置以文件内容为准。
-            </p>
+            <p className="text-muted text-sm">敏感凭据不会在此页保存或回显。请将实际值保留在 .env。</p>
+            <details><summary>微信公众号</summary><div className="grid cols-2" style={{ marginTop: 16 }}><Field label="App ID" placeholder="wx…" /><Field label="App Secret" placeholder="在 .env 中配置" type="password" /></div></details>
+            <details style={{ marginTop: 12 }}><summary>小红书</summary><div style={{ marginTop: 16 }}><Field label="App Key" placeholder="在 .env 中配置" /></div></details>
+            <details style={{ marginTop: 12 }}><summary>钉钉</summary><div style={{ marginTop: 16 }}><Field label="Webhook URL" placeholder="https://oapi.dingtalk.com/robot/send?access_token=…" /></div></details>
           </div>
         </article>
-      )}
+      </section>
     </>
   )
+}
+
+function BasicSettings() {
+  const rows = [
+    ['DB_PATH', '数据库文件路径', 'data/database.sqlite'],
+    ['LOG_LEVEL', '日志级别', 'INFO'],
+    ['PORT', 'API 服务端口', '8000'],
+    ['SYSTEM_PASSWORD', '登录访问密码', 'admin123（请务必修改）'],
+  ]
+  return <SettingsTable title="基础配置" rows={rows} />
+}
+
+function ProviderSettings() {
+  return <SettingsTable title="AI 模型服务" rows={[
+    ['OpenAI', 'OPENAI_API_KEY', '支持 OPENAI_API_BASE_URL 中转端点'],
+    ['Anthropic', 'ANTHROPIC_API_KEY', '配置后可在 Agent 中选择'],
+    ['Google', 'GOOGLE_API_KEY', '可选'],
+    ['Ollama（本地）', '无需 key', '需要本机运行 Ollama 服务'],
+  ]} />
+}
+
+function PublisherSettings() {
+  return <SettingsTable title="发布渠道" rows={[
+    ['飞书机器人', 'FEISHU_WEBHOOK', '飞书群自定义机器人 Webhook 地址'],
+    ['企业微信机器人', 'WECOM_WEBHOOK', '企业微信群机器人 Webhook 地址'],
+  ]} />
+}
+
+function SettingsTable({ title, rows }: { title: string; rows: string[][] }) {
+  return (
+    <article className="card">
+      <div className="card-head"><span>{title}</span></div>
+      <div className="table-wrap"><table><thead><tr><th>项目</th><th>环境变量</th><th>说明</th></tr></thead><tbody>
+        {rows.map(([name, environment, note]) => <tr key={name}><td><strong>{name}</strong></td><td className="text-mono">{environment}</td><td className="text-muted">{note}</td></tr>)}
+      </tbody></table></div>
+    </article>
+  )
+}
+
+function Field({ label, placeholder, type = 'text' }: { label: string; placeholder: string; type?: string }) {
+  const id = label.toLowerCase().replace(/ /g, '-')
+  return <div className="field"><label htmlFor={id}>{label}</label><input id={id} className="input" type={type} placeholder={placeholder} /></div>
 }

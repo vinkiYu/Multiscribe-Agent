@@ -7,6 +7,7 @@ import {
   Sparkles,
   Bot,
   BookOpen,
+  Brain,
   History,
   Puzzle,
   CalendarClock,
@@ -17,6 +18,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 
 const NAV_ITEMS = [
+  { label: '记忆与偏好', icon: Brain, path: '/memory' },
   { label: '工作台', icon: LayoutDashboard, path: '/' },
   { label: '采集与筛选', icon: Filter, path: '/selection' },
   { label: '摘要预览', icon: Sparkles, path: '/generation' },
