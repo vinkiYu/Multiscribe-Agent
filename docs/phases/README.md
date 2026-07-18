@@ -22,7 +22,7 @@
 | [P12](./P12-API与可观测.md) | FastAPI + JWT + structlog | 🟢 已通过 | 2026-07-17 | FastAPI 应用工厂(create_app)+生命周期(lifespan)+访问日志 trace_id 中间件;JWT 登录+受保护端点(dev 密码 admin123+生产 jwt_secret 强校验);structlog 递归脱敏(7 个敏感键前缀+嵌套 dict/list);领域异常→HTTP 映射(AuthError 401/ValidationError 400/ProviderError 502);6 路由(auth/dashboard/digest/agents/workflows/schedules);SSE 流(P4 harness+P10 workflow EventSourceResponse);ServiceContext 组合根装配 P0-P11(数据库+仓储+插件+服务+调度+daily_digest 注册)+close/reload;_ProviderLoopReflector(P4→P10 LoopReflector 适配);117 测试全绿 |
 | [P13](./P13-MVP收尾.md) | MVP 收尾（e2e+打包+文档） | ⏸️ 阻塞 | — | P13 BLOCKED;等待 P0.5 解锁 |
 | P0.5 | MVP 默认配置绑定 | 🟢 已通过 | 2026-07-17 | .env→ProviderConfig.api_key(OPENAI/ANTHROPIC/GOOGLE model_validator 单向绑定);publisher enabled+config(飞书 webhook+secret/企微 webhook);default_curation_provider_id/model/temperature + default_digest_targets/top_n/fetch_days/adapter_ids(NoDecode CSV);bootstrap 启动幂等创建 default-curation-agent AgentDefinition(若不存在);空 api_key 不覆盖显式配置;122 测试全绿 |
-| P0.6 | API 代理转发支持 | ⚪ 未开始 | — | 根因:bootstrap._provider_for_agent() 未读取 http_proxy;修复:proxy=settings.http_proxy or None 透传到 create_provider();httpx AsyncClient 支持 proxy;ChatAnthropic 支持 anthropic_proxy;空 http_proxy 传入 None; |
+| P0.6 | API 代理转发支持 | ⚪ 未开始 | — | 白名单已扩展:config.py 追加 http_proxy AliasChoices("HTTP_PROXY","MULTISCRIBE_HTTP_PROXY") + bootstrap proxy 透传;根因:Settings env_prefix 导致无前缀 HTTP_PROXY 不读取;修复:AliasChoices 双向兼容;|
 | [P14](./P14-后置大纲.md) | 其余采集适配器（Follow/GitHub/AI搜索） | ⚪ 未开始 | — | 大纲已定 |
 
 **MVP 交付里程碑**：P0–P13 全 🟢 = MVP 完成。
