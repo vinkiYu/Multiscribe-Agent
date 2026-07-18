@@ -185,9 +185,8 @@ class ServiceContext:
         )
 
     async def _bootstrap_default_curation_agent(self, entities: EntityJsonRepository) -> None:
-        """Persist the MVP curator declaration once without overwriting user configuration."""
-        if await entities.get("agents", DEFAULT_CURATION_AGENT_ID) is not None:
-            return
+        """Persist the MVP curator declaration once; update it if settings have drifted."""
+        raw = await entities.get("agents", DEFAULT_CURATION_AGENT_ID)
         definition = AgentDefinition(
             id=DEFAULT_CURATION_AGENT_ID,
             name="Default Curation Agent",
@@ -197,7 +196,20 @@ class ServiceContext:
             model=self.settings.default_curation_model,
             temperature=self.settings.default_curation_temperature,
         )
-        await entities.save("agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json"))
+        if raw is None:
+            await entities.save(
+                "agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json")
+            )
+            return
+        existing = AgentDefinition.model_validate(raw)
+        if (
+            existing.model != definition.model
+            or existing.temperature != definition.temperature
+            or existing.provider_id != definition.provider_id
+        ):
+            await entities.save(
+                "agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json")
+            )
 
     def _require_initialized(self) -> None:
         """Raise an explicit runtime error when context users skipped initialization."""
