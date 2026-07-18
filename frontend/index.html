@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Multiscribe 是本地优先、可编排、可追踪的 AI 信息生产工作台。">
+  <title>Multiscribe · 让重要信息按你的规则，稳定抵达</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Bodoni+Moda:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f8f6;
+      --surface: #ffffff;
+      --fg: #20231f;
+      --muted: #5f665d;
+      --border: #d9ddd7;
+      --accent: #62d84e;
+      --subtle: #f0f2ef;
+      --glass: color-mix(in srgb, var(--surface) 76%, transparent);
+      --glass-strong: color-mix(in srgb, var(--surface) 88%, transparent);
+      --glass-line: color-mix(in srgb, var(--border) 72%, var(--surface));
+      --display: "Albert Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      --body: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: SFMono, ui-monospace, SFMono-Regular, Menlo, monospace;
+      --radius: 6px;
+      --control-radius: 6px;
+      --page: min(1440px, calc(100% - 48px));
+      --z-sticky: 20;
+      --z-drawer: 50;
+      --ease-out-quart: cubic-bezier(.25, 1, .5, 1);
+      --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.55;
+      letter-spacing: 0;
+      font-kerning: normal;
+      font-optical-sizing: auto;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; }
+    img, svg { display: block; max-width: 100%; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    [hidden] { display: none !important; }
+
+    .skip-link {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: var(--z-drawer);
+      padding: 10px 14px;
+      border: 1px solid var(--fg);
+      border-radius: var(--control-radius);
+      background: var(--surface);
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background: var(--glass);
+      border-bottom: 1px solid var(--glass-line);
+      box-shadow: inset 0 -1px color-mix(in srgb, var(--surface) 68%, transparent);
+      -webkit-backdrop-filter: blur(22px) saturate(1.14);
+      backdrop-filter: blur(22px) saturate(1.14);
+      transition: background 180ms ease, box-shadow 180ms ease, backdrop-filter 180ms ease, -webkit-backdrop-filter 180ms ease;
+    }
+
+    .site-header.is-scrolled {
+      background: color-mix(in srgb, var(--surface) 70%, transparent);
+      box-shadow: 0 3px 8px color-mix(in srgb, var(--fg) 8%, transparent), inset 0 -1px color-mix(in srgb, var(--surface) 78%, transparent);
+      -webkit-backdrop-filter: blur(28px) saturate(1.18);
+      backdrop-filter: blur(28px) saturate(1.18);
+    }
+
+    .nav {
+      width: var(--page);
+      min-height: 64px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: max-content;
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 720;
+      text-decoration: none;
+    }
+
+    .brand-logo { width: 32px; height: 32px; border-radius: 28%; object-fit: cover; flex: 0 0 32px; }
+
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: var(--fg); }
+
+    .nav-actions { justify-self: end; display: flex; align-items: center; gap: 8px; }
+    .btn {
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--control-radius);
+      background: var(--surface);
+      color: var(--fg);
+      box-shadow: inset 0 1px var(--surface), 0 1px 2px color-mix(in srgb, var(--fg) 7%, transparent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 120ms ease;
+    }
+    .btn:hover { border-color: var(--fg); box-shadow: inset 0 1px var(--surface), 0 2px 4px color-mix(in srgb, var(--fg) 9%, transparent); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled {
+      border-color: var(--border);
+      background: var(--subtle);
+      color: var(--muted);
+      cursor: wait;
+      transform: none;
+    }
+    .btn-primary { background: var(--accent); border-color: color-mix(in srgb, var(--accent) 72%, var(--fg)); box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 42%, transparent), 0 2px 4px color-mix(in srgb, var(--fg) 12%, transparent); }
+    .btn-primary:hover { background: var(--accent); border-color: var(--fg); }
+    .btn-ghost { background: transparent; }
+    .menu-button { display: none; width: 44px; padding: 0; }
+
+    .hero {
+      min-height: calc(100svh - 64px);
+      display: grid;
+      align-content: space-between;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle 600px at 85% 12%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+        radial-gradient(circle 500px at 12% 88%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+        linear-gradient(to right, color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px);
+      background-size: auto, auto, 64px 64px, 64px 64px;
+      background-position: center top;
+      background-attachment: fixed;
+    }
+
+    /* Accent decorations */
+    .accent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+      animation: node-pulse 2.4s ease-in-out infinite alternate;
+    }
+    .accent-bar {
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+    }
+    .accent-underline {
+      background-image: linear-gradient(transparent 88%, color-mix(in srgb, var(--accent) 60%, transparent) 0);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+    }
+    .btn-primary::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+      animation: status-breathe 2.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .btn-primary { position: relative; }
+
+    .hero-copy {
+      width: var(--page);
+      margin: 0 auto;
+      padding: clamp(48px, 7vw, 104px) 0 48px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, .55fr);
+      gap: clamp(40px, 8vw, 140px);
+      align-items: end;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(52px, 8vw, 96px);
+      line-height: .92;
+      letter-spacing: 0;
+      font-weight: 820;
+      text-wrap: balance;
+    }
+
+    .hero h1 span { display: block; animation: hero-line-in 680ms var(--ease-out-expo) both; }
+    .hero h1 > span:first-child {
+      font-family: "Bodoni Moda", "Times New Roman", serif;
+      font-size: 1.04em;
+      font-style: italic;
+      font-weight: 500;
+      line-height: .88;
+      letter-spacing: -.03em;
+    }
+    .hero h1 .promise {
+      margin-top: 16px;
+      max-width: 15ch;
+      font-size: .42em;
+      line-height: 1.12;
+      font-weight: 650;
+      color: var(--muted);
+      animation-delay: 90ms;
+    }
+
+    .hero-side { padding-bottom: 8px; animation: hero-side-in 620ms 140ms var(--ease-out-quart) both; }
+    .hero-side p { margin: 0 0 24px; max-width: 48ch; color: var(--muted); line-height: 1.72; text-wrap: pretty; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .hero-meta {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .product-stage {
+      width: var(--page);
+      height: clamp(340px, 47vh, 540px);
+      margin: 0 auto 24px;
+      border: 1px solid var(--glass-line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 64%, transparent);
+      box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 92%, transparent), 0 4px 8px color-mix(in srgb, var(--fg) 9%, transparent);
+      -webkit-backdrop-filter: blur(26px) saturate(1.16);
+      backdrop-filter: blur(26px) saturate(1.16);
+      display: grid;
+      grid-template-columns: 208px minmax(0, 1fr) 300px;
+      overflow: hidden;
+      animation: stage-in 760ms 180ms var(--ease-out-expo) both;
+    }
+
+    .app-rail { border-right: 1px solid var(--glass-line); background: color-mix(in srgb, var(--subtle) 62%, transparent); -webkit-backdrop-filter: blur(20px) saturate(1.12); backdrop-filter: blur(20px) saturate(1.12); }
+    .app-rail-head, .inspector-head, .canvas-head {
+      height: 48px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 66%, transparent);
+      -webkit-backdrop-filter: blur(18px) saturate(1.12);
+      backdrop-filter: blur(18px) saturate(1.12);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rail-nav { padding: 8px; display: grid; gap: 4px; }
+    .rail-item {
+      min-height: 40px;
+      padding: 0 10px;
+      border-radius: var(--control-radius);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .rail-item.active { background: var(--glass-strong); color: var(--fg); box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 90%, transparent), 0 1px 3px color-mix(in srgb, var(--fg) 6%, transparent); }
+    .rail-count { font-family: var(--mono); font-size: 10px; font-variant-numeric: tabular-nums; }
+
+    .app-canvas { min-width: 0; display: grid; grid-template-rows: 48px 1fr; }
+    .canvas-actions { display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+    .canvas-actions > .status-dot { animation: status-breathe 2.8s ease-in-out infinite; }
+    .run-button { min-height: 32px; padding: 0 10px; }
+    .workflow {
+      min-width: 0;
+      padding: clamp(22px, 3vw, 44px);
+      display: grid;
+      align-content: center;
+      background: color-mix(in srgb, var(--bg) 54%, transparent);
+      position: relative;
+    }
+    .workflow::before {
+      content: "";
+      position: absolute;
+      left: 9%; right: 9%; top: 50%;
+      height: 1px;
+      background: var(--border);
+    }
+    .workflow::after {
+      content: "";
+      position: absolute;
+      left: 9%;
+      top: calc(50% - 1px);
+      width: 44px;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0;
+      transform: translateX(0) scaleX(.35);
+      transform-origin: center;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .workflow.is-running::after { animation: track-signal 1.55s linear infinite; }
+    .workflow-track {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      gap: 12px;
+      z-index: 1;
+    }
+    .node {
+      position: relative;
+      min-width: 0;
+      min-height: 120px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 1px 2px color-mix(in srgb, var(--fg) 6%, transparent);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+    .node:hover { border-color: var(--muted); transform: translateY(-1px); }
+    .node-label { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+    .node strong { font-family: var(--body); font-size: 13px; font-weight: 650; }
+    .node-state { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+    .node-state > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .node-state .status-dot { background: var(--border); }
+    .node[data-state="active"] { border-color: var(--accent); box-shadow: 0 2px 5px color-mix(in srgb, var(--fg) 9%, transparent); transform: translateY(-2px); }
+    .node[data-state="active"] .status-dot,
+    .node[data-state="complete"] .status-dot { background: var(--accent); }
+    .node[data-state="active"] .status-dot { animation: node-pulse 720ms ease-in-out infinite alternate; }
+    .node[data-state="complete"] { animation: node-confirm 260ms var(--ease-out-quart); }
+    .node[data-state="error"], .node[data-state="partial"] { border-color: var(--fg); }
+    .node[data-state="error"] .node-state, .node[data-state="partial"] .node-state { color: var(--fg); }
+    .node[data-state="error"] .status-dot { background: var(--fg); }
+    .node[data-state="partial"] .status-dot { background: var(--accent); box-shadow: 0 0 0 2px var(--fg); }
+    .node-badge { position: absolute; top: 10px; right: 10px; max-width: calc(100% - 20px); min-height: 22px; padding: 0 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--fg); font-family: var(--mono); font-size: 9px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .inspector { border-left: 1px solid var(--glass-line); min-width: 0; background: color-mix(in srgb, var(--surface) 58%, transparent); -webkit-backdrop-filter: blur(22px) saturate(1.14); backdrop-filter: blur(22px) saturate(1.14); }
+    .inspector-body { padding: 16px; display: grid; gap: 18px; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: var(--muted); font-size: 10px; font-family: var(--mono); }
+    .field-value {
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--control-radius);
+      background: var(--bg);
+      font-size: 11px;
+    }
+    .trace { border-top: 1px solid var(--border); padding-top: 14px; }
+    .trace-line { display: grid; grid-template-columns: 52px 1fr; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .trace-line + .trace-line { margin-top: 8px; }
+
+    @keyframes hero-line-in {
+      from { opacity: 0; transform: translateY(22px); filter: blur(5px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    @keyframes hero-side-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes stage-in {
+      from { opacity: 0; transform: translateY(24px) scale(.992); box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 92%, transparent), 0 1px 2px color-mix(in srgb, var(--fg) 5%, transparent); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes status-breathe {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+      50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+    }
+    @keyframes track-signal {
+      0% { opacity: 0; transform: translateX(0) scaleX(.35); }
+      12% { opacity: .9; }
+      82% { opacity: .9; }
+      100% { opacity: 0; transform: translateX(calc(72vw - 120px)) scaleX(1); }
+    }
+    @keyframes node-pulse {
+      from { transform: scale(.8); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+      to { transform: scale(1); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+    }
+    @keyframes node-confirm {
+      0% { transform: translateY(-3px); }
+      55% { transform: translateY(-1px) scale(1.008); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    .section {
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(to right, color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px);
+      background-size: 64px 64px;
+      background-position: center top;
+      background-attachment: fixed;
+    }
+    .section-inner { width: var(--page); margin: 0 auto; padding: clamp(72px, 9vw, 136px) 0; }
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(300px, 1.2fr);
+      gap: clamp(40px, 9vw, 160px);
+      align-items: start;
+      margin-bottom: 64px;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: .98;
+      letter-spacing: 0;
+      font-weight: 780;
+      text-wrap: balance;
+    }
+    .section-head p { margin: 0; max-width: 58ch; color: var(--muted); font-size: clamp(16px, 1.4vw, 20px); line-height: 1.7; text-wrap: pretty; }
+
+    .proof-band { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 1px var(--surface), 0 2px 5px color-mix(in srgb, var(--fg) 7%, transparent); overflow: hidden; }
+    .proof-item { min-height: 168px; padding: 20px; background: var(--surface); border-right: 1px solid var(--border); }
+    .proof-item:last-child { border-right: 0; }
+    .proof-item .step { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+    .proof-item h3 { margin: 44px 0 8px; font-family: var(--display); font-size: 16px; font-weight: 700; }
+    .proof-item p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+
+    .evidence-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 24px; }
+    .evidence-main, .evidence-side { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: inset 0 1px var(--surface), 0 2px 5px color-mix(in srgb, var(--fg) 7%, transparent); overflow: hidden; }
+    .panel-head { min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; }
+    .feed-row { min-height: 76px; padding: 12px 16px; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; border-bottom: 1px solid var(--border); }
+    .feed-row:last-child { border-bottom: 0; }
+    .source-mark { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 5px; display: grid; place-items: center; color: var(--muted); font-size: 10px; }
+    .feed-copy { min-width: 0; }
+    .feed-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+    .feed-copy span { color: var(--muted); font-size: 10px; }
+    .badge { min-height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .badge.live { color: var(--fg); border-color: var(--accent); }
+    .connection-status, .schedule-status { min-height: 26px; padding: 0 8px; border: 1px solid var(--border); border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .connection-status .status-dot { background: var(--border); }
+    .connection-status[data-state="connected"], .schedule-status[data-state="running"] { border-color: var(--accent); color: var(--fg); }
+    .connection-status[data-state="connected"] .status-dot, .schedule-status[data-state="running"] .status-dot { background: var(--accent); }
+    .connection-status[data-state="reconnecting"] .status-dot { animation: node-pulse 720ms ease-in-out infinite alternate; }
+    .connection-status[data-state="offline"] { border-color: var(--fg); color: var(--fg); }
+    .cron-visual { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+    .cron-part { min-width: 0; padding: 7px 4px; border: 1px solid var(--border); border-radius: var(--control-radius); background: var(--bg); text-align: center; }
+    .cron-part strong, .cron-part span { display: block; overflow: hidden; text-overflow: ellipsis; }
+    .cron-part strong { font-family: var(--mono); font-size: 11px; }
+    .cron-part span { margin-top: 2px; color: var(--muted); font-size: 9px; }
+
+    .delivery-list { padding: 8px 16px 16px; }
+    .delivery-row { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .delivery-row:last-child { border-bottom: 0; }
+    .delivery-target { display: flex; align-items: center; gap: 10px; }
+
+    .principles { display: grid; grid-template-columns: .7fr 1.3fr; gap: clamp(40px, 9vw, 160px); }
+    .principles-intro { min-width: 0; display: flex; flex-direction: column; }
+    .principles h2 { margin: 0; font-family: var(--display); font-size: clamp(38px, 5vw, 68px); line-height: .98; font-weight: 780; }
+    .principles-coordinates { position: relative; width: min(100%, 250px); margin-top: clamp(48px, 7vw, 104px); padding-left: 22px; display: grid; gap: 20px; }
+    .principles-coordinates::before { content: ""; position: absolute; left: 4px; top: 5px; bottom: 5px; width: 1px; background: var(--border); }
+    .coordinate { position: relative; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 10px; align-items: baseline; font-family: var(--mono); font-size: 9px; color: var(--muted); }
+    .coordinate::before { content: ""; position: absolute; left: -21px; top: 4px; width: 7px; height: 7px; border: 1px solid var(--muted); border-radius: 50%; background: var(--bg); }
+    .coordinate.is-current::before { border-color: var(--accent); background: var(--accent); }
+    .coordinate strong { color: var(--fg); font-size: 9px; font-weight: 700; letter-spacing: .04em; }
+    .coordinate span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .principle-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-content: start; }
+    .principle { min-width: 0; min-height: 176px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: 0 2px 5px color-mix(in srgb, var(--fg) 6%, transparent); overflow: hidden; }
+    .principle-window-bar { min-height: 36px; padding: 0 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-family: var(--mono); font-size: 9px; }
+    .principle-window-bar i { width: 7px; height: 7px; border: 1px solid var(--muted); border-radius: 50%; background: var(--surface); }
+    .principle.is-live .principle-window-bar i { border-color: var(--accent); background: var(--accent); }
+    .principle-window-body { padding: 20px; }
+    .principle strong { display: block; font-size: 14px; }
+    .principle p { margin: 36px 0 0; color: var(--muted); max-width: 38ch; font-size: 12px; line-height: 1.7; }
+
+    .node,
+    .proof-band,
+    .evidence-main,
+    .evidence-side,
+    .principle,
+    .field-value,
+    .cron-part,
+    .node-badge {
+      border-color: var(--glass-line);
+      background: var(--glass-strong);
+      box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 88%, transparent), 0 3px 8px color-mix(in srgb, var(--fg) 8%, transparent);
+      -webkit-backdrop-filter: blur(18px) saturate(1.14);
+      backdrop-filter: blur(18px) saturate(1.14);
+    }
+    .proof-item { background: color-mix(in srgb, var(--surface) 34%, transparent); }
+    .panel-head, .principle-window-bar { background: color-mix(in srgb, var(--surface) 46%, transparent); }
+    .principle-window-bar i { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+    .liquid-window { --liquid-x: 50%; --liquid-y: 50%; position: relative; isolation: isolate; overflow: hidden; }
+    .liquid-window::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(circle 150px at var(--liquid-x) var(--liquid-y), color-mix(in srgb, var(--surface) 62%, transparent) 0, color-mix(in srgb, var(--surface) 18%, transparent) 38%, transparent 66%),
+        radial-gradient(circle 176px at var(--liquid-x) var(--liquid-y), transparent 54%, color-mix(in srgb, var(--fg) 5%, transparent) 64%, transparent 76%);
+      filter: blur(5px) saturate(1.08);
+      transition: opacity 260ms ease;
+    }
+    .liquid-window:hover { border-color: color-mix(in srgb, var(--surface) 76%, var(--border)); }
+    .liquid-window:hover::after { opacity: .58; }
+
+    .cta-band { position: relative; isolation: isolate; overflow: hidden; background: var(--fg); color: var(--surface); }
+    .cta-backdrop { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+    .cta-wordmark { position: absolute; left: -1.5vw; bottom: -3.5vw; color: color-mix(in srgb, var(--surface) 4%, transparent); font-family: "Albert Sans", sans-serif; font-size: clamp(96px, 18vw, 280px); font-weight: 850; line-height: .72; white-space: nowrap; }
+    .cta-rail { position: absolute; height: 1px; background: color-mix(in srgb, var(--surface) 15%, transparent); }
+    .cta-rail::before, .cta-rail::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; border: 1px solid color-mix(in srgb, var(--surface) 30%, transparent); border-radius: 50%; background: var(--fg); transform: translateY(-50%); }
+    .cta-rail::before { left: 0; }
+    .cta-rail::after { right: 0; }
+    .cta-rail-a { top: 24%; left: 54%; width: 38%; }
+    .cta-rail-b { top: 48%; left: 64%; width: 28%; }
+    .cta-marker { position: absolute; color: color-mix(in srgb, var(--surface) 34%, transparent); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; white-space: nowrap; }
+    .cta-marker-a { top: calc(24% - 24px); left: 54%; }
+    .cta-marker-b { top: calc(48% + 12px); left: 64%; }
+    .cta-crop { position: absolute; width: 18px; height: 18px; border-color: color-mix(in srgb, var(--surface) 18%, transparent); }
+    .cta-crop-a { top: 32px; left: 32px; border-top: 1px solid; border-left: 1px solid; }
+    .cta-crop-b { right: 32px; bottom: 32px; border-right: 1px solid; border-bottom: 1px solid; }
+    .cta-inner { position: relative; z-index: 1; width: var(--page); min-height: 520px; margin: 0 auto; padding: 88px 0; display: grid; align-content: space-between; }
+    .cta-inner h2 { margin: 0; max-width: 16ch; font-family: var(--display); font-size: clamp(42px, 6.8vw, 88px); line-height: .95; letter-spacing: 0; font-weight: 780; }
+    .cta-bottom { display: flex; justify-content: space-between; align-items: end; gap: 40px; }
+    .cta-bottom p { margin: 0; max-width: 48ch; color: var(--border); }
+    .cta-band .btn-ghost { color: var(--surface); border-color: var(--muted); }
+
+    .site-footer { border-top: 1px solid var(--muted); background: var(--fg); color: var(--surface); }
+    .footer-inner { width: var(--page); min-height: 180px; margin: 0 auto; padding: 36px 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; }
+    .footer-meta { color: var(--border); font-size: 11px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
+    .footer-links a { color: var(--border); font-size: 11px; text-decoration: none; }
+
+    @media (max-width: 1100px) {
+      :root { --page: min(100% - 32px, 960px); }
+      .nav { grid-template-columns: 1fr auto; }
+      .nav-links { display: none; }
+      .menu-button { display: inline-flex; }
+      .nav-actions .btn-ghost { display: none; }
+      .nav-links.open {
+        display: grid;
+        position: fixed;
+        inset: 64px 0 auto;
+        padding: 12px 16px 20px;
+        background: color-mix(in srgb, var(--surface) 72%, transparent);
+        border-bottom: 1px solid var(--glass-line);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--fg) 8%, transparent), inset 0 1px color-mix(in srgb, var(--surface) 82%, transparent);
+        -webkit-backdrop-filter: blur(28px) saturate(1.18);
+        backdrop-filter: blur(28px) saturate(1.18);
+      }
+      .hero-copy { grid-template-columns: 1fr; gap: 32px; }
+      .product-stage { grid-template-columns: 160px minmax(0, 1fr); }
+      .inspector { display: none; }
+      .principle-list { grid-template-columns: 1fr; }
+      .workflow-track { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .node { grid-column: span 2; }
+      .node:nth-child(4) { grid-column: 2 / span 2; }
+      .node:nth-child(5) { grid-column: 4 / span 2; }
+      .workflow::before { display: none; }
+      .workflow::after { display: none; }
+      .proof-band { grid-template-columns: repeat(2, 1fr); }
+      .proof-item:nth-child(2) { border-right: 0; }
+      .proof-item:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+    }
+
+    @media (max-width: 760px) {
+      :root { --page: calc(100% - 24px); }
+      .hero { min-height: auto; }
+      .hero, .section { background-size: 40px 40px; }
+      .hero-copy { padding-top: 56px; }
+      .hero h1 { font-size: clamp(44px, 14.5vw, 66px); }
+      .product-stage { height: auto; min-height: 520px; grid-template-columns: 1fr; }
+      .app-rail { display: none; }
+      .workflow { padding: 20px; }
+      .workflow { margin-right: -20px; padding-right: 0; overflow: hidden; }
+      .workflow-track { display: flex; gap: 10px; overflow-x: auto; padding: 2px 32px 14px 0; scroll-snap-type: x mandatory; scrollbar-width: thin; overscroll-behavior-inline: contain; }
+      .workflow-track::after { content: ""; flex: 0 0 20px; }
+      .workflow::after { display: block; left: auto; top: 0; right: 0; bottom: 12px; width: 28px; height: auto; border-radius: 0; background: var(--surface); opacity: .82; transform: none; animation: none; z-index: 3; }
+      .node, .node:nth-child(4), .node:nth-child(5) { flex: 0 0 min(78vw, 260px); min-height: 112px; scroll-snap-align: start; }
+      .section-head, .evidence-grid, .principles { grid-template-columns: 1fr; gap: 32px; }
+      .section-head { margin-bottom: 40px; }
+      .proof-band { grid-template-columns: 1fr; }
+      .proof-item { border-right: 0; border-bottom: 1px solid var(--border); }
+      .proof-item:last-child { border-bottom: 0; }
+      .proof-item h3 { margin-top: 24px; }
+      .principle { min-height: 160px; }
+      .principle p { margin-top: 24px; }
+      .principles-coordinates { display: none; }
+      .cta-bottom { align-items: stretch; flex-direction: column; }
+      .cta-bottom .hero-actions { width: 100%; }
+      .cta-bottom .btn { flex: 1; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+      .cta-wordmark { left: -4vw; bottom: 1vw; font-size: clamp(76px, 26vw, 140px); }
+      .cta-rail-a { top: 28%; left: 56%; width: 34%; }
+      .cta-rail-b, .cta-marker-b { display: none; }
+      .cta-marker-a { top: calc(28% - 22px); left: 56%; }
+      .canvas-head { height: auto; min-height: 72px; align-items: flex-start; gap: 10px; flex-direction: column; padding-block: 10px; }
+      .canvas-actions { width: 100%; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+      .connection-status { order: 2; }
+      .canvas-actions .run-button { margin-left: auto; }
+      .cron-visual { grid-template-columns: repeat(3, 1fr); }
+      .product-stage { min-height: 600px; }
+      .feed-row { grid-template-columns: 28px minmax(0, 1fr); }
+      .feed-row > .badge { grid-column: 2; justify-self: start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+      .liquid-window::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="landing">
+  <a class="skip-link" href="#top">跳到主要内容</a>
+  <header class="site-header" data-od-id="site-header">
+    <nav class="nav" aria-label="主导航">
+      <a class="brand" href="#top" data-od-id="brand-link"><img class="brand-logo" src="/logo.png" alt="Multiscribe Logo">Multiscribe<span class="accent-dot" aria-hidden="true" style="margin-left: 6px;"></span></a>
+      <div class="nav-links" id="nav-links" data-od-id="nav-links">
+        <a href="#workflow">处理流程</a><a href="#evidence">运行效果</a><a href="#principles">为什么选择我们</a><a href="#start">开始使用</a>
+      </div>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="#evidence">查看运行界面</a>
+        <a class="btn btn-primary" href="/#/">打开工作台 </a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top" tabindex="-1">
+    <section class="hero" data-od-id="hero">
+      <div class="hero-copy">
+        <h1 data-od-id="hero-title"><span>Multiscribe</span><span class="promise">数据由你掌控 · 流程按需组合 · 每次运行都有记录</span></h1>
+        <div class="hero-side">
+          <p>添加你关注的信息来源，Multiscribe 会自动收集新内容、生成摘要，并按计划发送到飞书或企业微信。每次运行的输入、结果和错误都可以查询。</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#workflow" data-od-id="hero-primary-cta">查看处理流程 </a>
+            <a class="btn" href="#principles">了解 Multiscribe</a>
+          </div>
+          <div class="hero-meta"><span>LOCAL-FIRST</span><span>BYOK</span><span>TRACEABLE</span><span>COMPOSABLE</span><i class="accent-dot" aria-hidden="true"></i></div>
+        </div>
+      </div>
+
+      <div class="product-stage" data-od-id="hero-product-stage" aria-label="Multiscribe 工作流示例界面">
+        <aside class="app-rail">
+          <div class="app-rail-head"><span>MULTISCRIBE</span><span>●</span></div>
+          <div class="rail-nav">
+            <div class="rail-item active" data-od-id="nav-today"><span>今日</span><span class="rail-count">01</span></div>
+            <div class="rail-item" data-od-id="nav-content"><span>内容</span><span class="rail-count">02</span></div>
+            <div class="rail-item" data-od-id="nav-workflows"><span>流程</span><span class="rail-count">03</span></div>
+            <div class="rail-item" data-od-id="nav-channels"><span>渠道</span><span class="rail-count">04</span></div>
+            <div class="rail-item" data-od-id="nav-settings"><span>设置</span><span class="rail-count">05</span></div>
+          </div>
+        </aside>
+        <div class="app-canvas">
+          <div class="canvas-head"><span>今日内容生产 · 五步处理流程</span><div class="canvas-actions"><span id="run-status" role="status" aria-live="polite">等待运行</span><span class="connection-status" id="sse-status" data-state="idle"><i class="status-dot" aria-hidden="true"></i><span>实时进度未连接</span></span><button class="btn run-button" id="run-workflow" type="button" aria-describedby="run-status">立即运行</button></div></div>
+          <div class="workflow">
+            <div class="workflow-track" id="workflow-track" data-od-id="digest-workflow" aria-label="每日推送五节点工作流">
+              <article class="node" data-node="ingest" data-state="pending" data-od-id="workflow-node-ingest"><span class="node-label">01 / INGEST</span><strong>采集来源</strong><span class="node-state"><i class="status-dot"></i><span>等待运行</span></span><span class="node-badge" hidden=""></span></article>
+              <article class="node" data-node="dedupe" data-state="pending" data-od-id="workflow-node-dedupe"><span class="node-label">02 / DEDUPE</span><strong>合并去重</strong><span class="node-state"><i class="status-dot"></i><span>等待运行</span></span><span class="node-badge" hidden=""></span></article>
+              <article class="node" data-node="curate" data-state="pending" data-od-id="workflow-node-curate"><span class="node-label">03 / CURATE</span><strong>AI 多轮筛选</strong><span class="node-state"><i class="status-dot"></i><span>等待运行</span></span><span class="node-badge" hidden=""></span></article>
+              <article class="node" data-node="overview" data-state="pending" data-od-id="workflow-node-overview"><span class="node-label">04 / OVERVIEW</span><strong>生成总览</strong><span class="node-state"><i class="status-dot"></i><span>等待运行</span></span><span class="node-badge" hidden=""></span></article>
+              <article class="node" data-node="fanout" data-state="pending" data-od-id="workflow-node-fanout"><span class="node-label">05 / FANOUT</span><strong>分发渠道</strong><span class="node-state"><i class="status-dot"></i><span>等待运行</span></span><span class="node-badge" hidden=""></span></article>
+            </div>
+          </div>
+        </div>
+        <aside class="inspector">
+          <div class="inspector-head"><span>检查器</span><span>⌘</span></div>
+          <div class="inspector-body">
+            <div class="field"><label>调度状态</label><div class="field-value"><span class="schedule-status" data-state="running"><i class="status-dot"></i>APScheduler 已启用</span></div></div>
+            <div class="field"><label>CRON · ASIA/SHANGHAI</label><div class="cron-visual" aria-label="每天八点三十分执行"><span class="cron-part"><strong>30</strong><span>分钟</span></span><span class="cron-part"><strong>8</strong><span>小时</span></span><span class="cron-part"><strong>*</strong><span>日期</span></span><span class="cron-part"><strong>*</strong><span>月份</span></span><span class="cron-part"><strong>*</strong><span>星期</span></span></div></div>
+            <div class="field"><label>发布目标</label><div class="field-value">飞书机器人 / 企业微信机器人</div></div>
+            <div class="trace"><div class="trace-line"><span>追踪编号</span><span>等待新运行</span></div><div class="trace-line"><span>实时进度</span><span>未连接</span></div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="workflow" data-od-id="workflow-section">
+      <div class="section-inner">
+        <div class="section-head"><h2>从采集到分发，五个可追踪步骤</h2><p>来源进入系统后依次完成采集、去重、多轮筛选、总览生成和多渠道分发。每一步的状态实时更新，失败可以定位并恢复。</p></div>
+        <div class="accent-bar" style="width: 80px; margin-bottom: 32px;"></div>
+        <div class="proof-band">
+          <article class="proof-item" data-od-id="proof-ingest"><span class="step">INGEST</span><h3>采集来源</h3><p>采集 RSS 与微信公众号内容，保留来源与采集时间。</p></article>
+          <article class="proof-item" data-od-id="proof-dedupe"><span class="step">DEDUPE</span><h3>合并去重</h3><p>识别重复条目，避免同一信息重复进入后续生成。</p></article>
+          <article class="proof-item" data-od-id="proof-curate"><span class="step">CURATE</span><h3>多轮筛选</h3><p>AI 按规则反复评估候选内容，挑选最相关的条目。</p></article>
+          <article class="proof-item" data-od-id="proof-overview"><span class="step">OVERVIEW</span><h3>生成总览</h3><p>生成结构化每日总览，保留模型与工作流上下文。</p></article>
+          <article class="proof-item" data-od-id="proof-fanout"><span class="step">FANOUT</span><h3>并行分发</h3><p>推送到飞书和企业微信，分别记录各渠道结果。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evidence" data-od-id="evidence-section">
+      <div class="section-inner">
+        <div class="section-head"><h2>来源、筛选与分发状态，保持连续可见</h2><p>RSS 等内容来源进入同一队列，AI 多轮筛选保留判断过程，分发结果分别写入运行记录。</p></div>
+        <div class="evidence-grid">
+          <div class="evidence-main" data-od-id="content-evidence-panel">
+            <div class="panel-head"><span>今日候选内容</span><span class="badge live"><i class="status-dot"></i>已选择内容</span></div>
+            <div class="feed-row"><span class="source-mark">RSS</span><div class="feed-copy"><strong>模型运行时更新与兼容性说明</strong><span>开发者博客 · 未选择</span></div><span class="badge">待选择</span></div>
+            <div class="feed-row"><span class="source-mark">WX</span><div class="feed-copy"><strong>Agent 工具调用规范变更</strong><span>微信公众号 · 已进入精选</span></div><span class="badge live">精选中</span></div>
+            <div class="feed-row"><span class="source-mark">RSS</span><div class="feed-copy"><strong>本地模型部署实践记录</strong><span>研究团队 · 已生成预览</span></div><span class="badge">待发布</span></div>
+          </div>
+          <div class="evidence-side" data-od-id="delivery-evidence-panel">
+            <div class="panel-head"><span>发布目标</span><span>配置状态</span></div>
+            <div class="delivery-list">
+              <div class="delivery-row" data-od-id="channel-feishu"><span class="delivery-target"><i class="status-dot"></i>飞书机器人</span><span class="badge live">已连接</span></div>
+              <div class="delivery-row" data-od-id="channel-wecom"><span class="delivery-target"><i class="status-dot"></i>企业微信机器人</span><span class="badge live">已连接</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="principles" data-od-id="principles-section">
+      <div class="section-inner principles">
+        <div class="principles-intro">
+          <h2>为长期运行而设计</h2>
+          <div class="principles-coordinates" data-od-id="principles-coordinates" aria-hidden="true">
+            <div class="coordinate"><strong>01 / LOCAL</strong><span>用户环境</span></div>
+            <div class="coordinate is-current"><strong>02 / DAG</strong><span>编排节点</span></div>
+            <div class="coordinate"><strong>03 / RETRY</strong><span>恢复坐标</span></div>
+            <div class="coordinate"><strong>04 / TRACE</strong><span>运行记录</span></div>
+          </div>
+        </div>
+        <div class="principle-list">
+          <article class="principle" data-od-id="principle-window-local"><div class="principle-window-bar"><span>01 / LOCAL</span><i aria-hidden="true"></i></div><div class="principle-window-body"><strong>数据由你掌控</strong><p>处理流程、配置和产物保留在你掌控的环境中，模型与渠道可以替换。</p></div></article>
+          <article class="principle is-live" data-od-id="principle-window-compose"><div class="principle-window-bar"><span>02 / DAG</span><i aria-hidden="true"></i></div><div class="principle-window-body"><strong>可编排</strong><p>采集、去重、精选、生成与分发组成明确的 DAG，节点可以复用和扩展。</p></div></article>
+          <article class="principle" data-od-id="principle-window-recover"><div class="principle-window-bar"><span>03 / RETRY</span><i aria-hidden="true"></i></div><div class="principle-window-body"><strong>可恢复</strong><p>循环次数、失败节点和渠道结果分别记录，修复后可以从明确状态继续。</p></div></article>
+          <article class="principle" data-od-id="principle-window-trace"><div class="principle-window-bar"><span>04 / TRACE</span><i aria-hidden="true"></i></div><div class="principle-window-body"><strong>每次运行都有记录</strong><p>日志、追踪编号与实时进度连接每次运行的输入、状态、输出和错误。</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band" id="start" data-od-id="start-section">
+      <div class="cta-backdrop" aria-hidden="true">
+        <span class="cta-wordmark">MULTISCRIBE</span>
+        <span class="cta-rail cta-rail-a"></span>
+        <span class="cta-rail cta-rail-b"></span>
+        <span class="cta-marker cta-marker-a">SOURCE / RULE / DELIVERY</span>
+        <span class="cta-marker cta-marker-b">TRACE 05 · READY</span>
+        <span class="cta-crop cta-crop-a"></span>
+        <span class="cta-crop cta-crop-b"></span>
+      </div>
+      <div class="cta-inner">
+        <h2>先定义规则，再让信息稳定抵达。</h2>
+        <div class="cta-bottom"><p>从一个来源、一条工作流和一个交付渠道开始。保存更改后，配置将在下一次调度中生效。</p><div class="hero-actions"><a class="btn btn-primary" href="/#/">进入工作台 </a><a class="btn btn-ghost" href="open-design-clone-launcher.html">查看设计来源</a></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" data-od-id="site-footer"><div class="footer-inner"><div><a class="brand" href="#top"><img class="brand-logo" src="/logo.png" alt="Multiscribe Logo">Multiscribe</a><p class="footer-meta">数据由你掌控 · 流程按需组合 · 每次运行都有记录</p></div><div class="footer-links"><a href="#workflow">处理流程</a><a href="#evidence">运行效果</a><a href="#principles">为什么选择我们</a></div></div></footer>
+  </div>
+
+  <div id="root" style="display: none"></div>
+  <script>
+    // View switcher: hide landing when SPA route is active, show landing on bare hash
+    (function () {
+      const landing = document.getElementById('landing');
+      const root = document.getElementById('root');
+      function sync() {
+        const h = window.location.hash || '';
+        const isAppRoute = /^#\//.test(h);
+        if (landing) landing.style.display = isAppRoute ? 'none' : 'block';
+        if (root) root.style.display = isAppRoute ? 'block' : 'none';
+        document.body.style.overflow = '';
+        if (isAppRoute) window.scrollTo(0, 0);
+      }
+      sync();
+      window.addEventListener('hashchange', sync);
+    })();
+  </script>
+  <script type="module" src="/src/main.tsx"></script>
+
+  <script>
+    const siteHeader = document.querySelector('.site-header');
+    const updateHeaderDepth = () => siteHeader.classList.toggle('is-scrolled', window.scrollY > 12);
+    updateHeaderDepth();
+    window.addEventListener('scroll', updateHeaderDepth, { passive: true });
+
+    const runButton = document.querySelector('#run-workflow');
+    const runStatus = document.querySelector('#run-status');
+    const sseStatus = document.querySelector('#sse-status');
+    const workflow = document.querySelector('.workflow');
+    const nodes = new Map([...document.querySelectorAll('[data-node]')].map((node) => [node.dataset.node, node]));
+    let running = false;
+
+    function setConnectionState(state, label) {
+      sseStatus.dataset.state = state;
+      sseStatus.querySelector('span').textContent = label;
+    }
+
+    function resetNodes() {
+      nodes.forEach((node) => {
+        node.dataset.state = 'pending';
+        node.querySelector('.node-state span').textContent = '等待运行';
+        const badge = node.querySelector('.node-badge');
+        badge.hidden = true;
+        badge.textContent = '';
+      });
+    }
+
+    function updateNode(nodeName, state, label, badgeText = '') {
+      const node = nodes.get(nodeName);
+      if (!node) return;
+      node.dataset.state = state;
+      node.querySelector('.node-state span').textContent = label;
+      const badge = node.querySelector('.node-badge');
+      badge.textContent = badgeText;
+      badge.hidden = !badgeText;
+    }
+
+    function closeRealtimeConnections() {
+      // No-op in demo mode; retained for future SSE integration.
+    }
+
+    function finishRun(message) {
+      workflow.classList.remove('is-running');
+      runStatus.textContent = message;
+      runButton.disabled = false;
+      runButton.textContent = '再次运行';
+      runButton.removeAttribute('aria-busy');
+      setConnectionState('idle', '演示已结束');
+      running = false;
+    }
+
+    function failRun(message) {
+      workflow.classList.remove('is-running');
+      runStatus.textContent = message;
+      runButton.disabled = false;
+      runButton.textContent = '重新运行';
+      runButton.removeAttribute('aria-busy');
+      setConnectionState('offline', '运行已停止');
+      running = false;
+    }
+
+    function applyWorkflowEvent(event) {
+      const nodeName = event.node;
+      switch (event.status) {
+        case 'node_started':
+        case 'active':
+          updateNode(nodeName, 'active', '正在运行');
+          runStatus.textContent = `正在${nodes.get(nodeName)?.querySelector('strong').textContent || '处理'}`;
+          break;
+        case 'loop_iteration':
+          updateNode(nodeName, 'active', '多轮筛选中', `第 ${event.iteration ?? 1} 次评估`);
+          break;
+        case 'node_complete':
+        case 'complete':
+          updateNode(nodeName, 'complete', '已完成');
+          break;
+        case 'target_failed':
+          updateNode(nodeName || 'fanout', 'partial', '部分渠道失败', `${event.target || '渠道'} 失败`);
+          break;
+        case 'node_failed':
+        case 'error':
+          updateNode(nodeName, 'error', event.message || '运行失败');
+          break;
+        case 'workflow_complete':
+          finishRun('演示运行已完成');
+          break;
+        case 'workflow_failed':
+          failRun(event.message || '运行失败');
+          break;
+      }
+    }
+
+    function applyStatusSnapshot(snapshot) {
+      Object.entries(snapshot.nodes || {}).forEach(([nodeName, state]) => {
+        applyWorkflowEvent({ node: nodeName, ...state });
+      });
+      (snapshot.events || []).forEach(applyWorkflowEvent);
+      if (snapshot.status === 'complete') finishRun('演示运行已完成');
+      if (snapshot.status === 'failed') failRun(snapshot.message || '运行失败');
+    }
+
+    runButton.addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      resetNodes();
+      workflow.classList.add('is-running');
+      runButton.disabled = true;
+      runButton.textContent = '运行中';
+      runButton.setAttribute('aria-busy', 'true');
+      setConnectionState('connected', '演示模式 · 实时进度已连接');
+      runStatus.textContent = '演示运行已开始';
+
+      // Simulated five-step pipeline animation. Each node goes pending → active → complete.
+      const order = ['ingest', 'dedupe', 'curate', 'overview', 'fanout'];
+      const stepDelay = 750; // ms per step
+      const abort = () => !running;
+
+      for (const nodeName of order) {
+        if (abort()) return;
+        const node = nodes.get(nodeName);
+        const title = node?.querySelector('strong')?.textContent || '处理';
+        updateNode(nodeName, 'active', '正在运行');
+        runStatus.textContent = `正在${title}`;
+        await new Promise(r => setTimeout(r, stepDelay));
+        if (abort()) return;
+        updateNode(nodeName, 'complete', '已完成');
+      }
+
+      finishRun('演示运行已完成（五步全部成功）');
+    });
+
+    const liquidWindows = document.querySelectorAll('.product-stage, .node, .proof-band, .evidence-main, .evidence-side, .principle');
+    liquidWindows.forEach((windowElement) => {
+      windowElement.classList.add('liquid-window');
+      windowElement.addEventListener('pointermove', (event) => {
+        const bounds = windowElement.getBoundingClientRect();
+        const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+        const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+        windowElement.style.setProperty('--liquid-x', `${x}%`);
+        windowElement.style.setProperty('--liquid-y', `${y}%`);
+      });
+      windowElement.addEventListener('pointerleave', () => {
+        windowElement.style.setProperty('--liquid-x', '50%');
+        windowElement.style.setProperty('--liquid-y', '50%');
+      });
+    });
+    window.addEventListener('beforeunload', closeRealtimeConnections);
+  </script>
+
+
+
+</body></html>

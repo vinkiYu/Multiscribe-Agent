@@ -18,3 +18,14 @@ codex/
 # 所有规划/设计/阶段文档(保留本地开发用,GitHub 只推 src/ tests/ scripts/ README/)
 docs/
 DESIGN.md
+
+# === 本地开发产物 (不上传) ===
+# SQLite 数据库文件
+database.sqlite
+*.db
+*.sqlite3
+# Agent 设计快照 / 产品评审文档
+.impeccable/
+FRONTEND_PRODUCT_UX_REVIEW.md
+PRODUCT.md
+logo.png
