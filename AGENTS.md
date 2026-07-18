@@ -157,6 +157,7 @@ api → agents/services → domain（模型/端口）
 | P12 | FastAPI + JWT + structlog | 🟢 已通过 | 2026-07-17 | FastAPI 应用工厂(lifespan)+访问日志 trace_id 中间件;JWT 登录+受保护端点(dev 密码+生产 jwt_secret 强校验);structlog 递归脱敏(7 个敏感键前缀+嵌套);领域异常→HTTP 映射;6 路由(auth/dashboard/digest/agents/workflows/schedules);SSE 流(P4+P10 EventSourceResponse);ServiceContext 组合根装配 P0-P11+close/reload;_ProviderLoopReflector 适配 P4→P10 LoopReflector;117 测试全绿 |
 | P0.5 | MVP 默认配置绑定 | 🟢 已通过 | 2026-07-17 | .env→ProviderConfig.api_key(OPENAI/ANTHROPIC/GOOGLE model_validator 单向绑定);publisher enabled+config(飞书 webhook+secret/企微 webhook);default_curation_provider_id/model/temperature + default_digest_targets/top_n/fetch_days/adapter_ids(NoDecode CSV);bootstrap 启动幂等创建 default-curation-agent(若不存在);空 api_key 不覆盖显式配置;122 测试全绿 |
 | P0.6 | API 代理转发支持 | 🟢 已通过 | 2026-07-18 | config.py http_proxy 追加 AliasChoices("HTTP_PROXY","MULTISCRIBE_HTTP_PROXY")双向兼容;bootstrap._provider_for_agent()透传 proxy=settings.http_proxy or None;httpx/ChatAnthropic 接受 proxy 参数;空 http_proxy→None;test_proxy_routing.py 覆盖别名+透传+空值;126 测试全绿 |
+| P0.8 | 自定义模型名称支持 | 🟢 已通过 | 2026-07-18 | ProviderConfig.models 文档定位清晰(非运行时白名单);create_provider() 不校验 model 名直接透传 ChatOpenAI/Anthropic;test_custom_model_name_is_forwarded_outside_provider_catalog 锁定 gpt-5.2 透传回归;131 测试全绿 |
 
 （其余见 `docs/phases/README.md` 看板）
 
