@@ -156,6 +156,7 @@ api → agents/services → domain（模型/端口）
 | P11 | 每日推送流水线（Loop自评） | 🟢 已通过 | 2026-07-17 | 5 节点 DAG(ingest→dedupe→curate Loop→overview→fanout)+input_map 依赖;URL/SHA-256 去重;评分 top-N 精选;Loop 自评(retry→converge)+反馈注入;并发 fan-out(飞书+企微);Per-target 失败隔离+CuratedDigest 聚合;DailyDigestConfig.from_mapping 调度器适配;register_daily_digest_executor 注册 P9;JSON 容错(嵌入 markdown fence 恢复);111 测试全绿 |
 | P12 | FastAPI + JWT + structlog | 🟢 已通过 | 2026-07-17 | FastAPI 应用工厂(lifespan)+访问日志 trace_id 中间件;JWT 登录+受保护端点(dev 密码+生产 jwt_secret 强校验);structlog 递归脱敏(7 个敏感键前缀+嵌套);领域异常→HTTP 映射;6 路由(auth/dashboard/digest/agents/workflows/schedules);SSE 流(P4+P10 EventSourceResponse);ServiceContext 组合根装配 P0-P11+close/reload;_ProviderLoopReflector 适配 P4→P10 LoopReflector;117 测试全绿 |
 | P0.5 | MVP 默认配置绑定 | 🟢 已通过 | 2026-07-17 | .env→ProviderConfig.api_key(OPENAI/ANTHROPIC/GOOGLE model_validator 单向绑定);publisher enabled+config(飞书 webhook+secret/企微 webhook);default_curation_provider_id/model/temperature + default_digest_targets/top_n/fetch_days/adapter_ids(NoDecode CSV);bootstrap 启动幂等创建 default-curation-agent(若不存在);空 api_key 不覆盖显式配置;122 测试全绿 |
+| P0.6 | API 代理转发支持 | 🟢 已通过 | 2026-07-18 | config.py http_proxy 追加 AliasChoices("HTTP_PROXY","MULTISCRIBE_HTTP_PROXY")双向兼容;bootstrap._provider_for_agent()透传 proxy=settings.http_proxy or None;httpx/ChatAnthropic 接受 proxy 参数;空 http_proxy→None;test_proxy_routing.py 覆盖别名+透传+空值;126 测试全绿 |
 
 （其余见 `docs/phases/README.md` 看板）
 
