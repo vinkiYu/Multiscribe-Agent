@@ -23,6 +23,7 @@
 | [P13](./P13-MVP收尾.md) | MVP 收尾（e2e+打包+文档） | ⏸️ 阻塞 | — | P13 BLOCKED;等待 P0.5 解锁 |
 | P0.5 | MVP 默认配置绑定 | 🟢 已通过 | 2026-07-17 | .env→ProviderConfig.api_key(OPENAI/ANTHROPIC/GOOGLE model_validator 单向绑定);publisher enabled+config(飞书 webhook+secret/企微 webhook);default_curation_provider_id/model/temperature + default_digest_targets/top_n/fetch_days/adapter_ids(NoDecode CSV);bootstrap 启动幂等创建 default-curation-agent AgentDefinition(若不存在);空 api_key 不覆盖显式配置;122 测试全绿 |
 | P0.6 | API 代理转发支持 | 🟢 已通过 | 2026-07-18 | config.py http_proxy 追加 AliasChoices("HTTP_PROXY","MULTISCRIBE_HTTP_PROXY")双向兼容;bootstrap._provider_for_agent()透传 proxy=settings.http_proxy or None;httpx/ChatAnthropic 接受 proxy 参数;空 http_proxy→None;test_proxy_routing.py 覆盖别名+透传+空值;126 测试全绿 |
+| P0.7 | API 中转端点支持 | ⚪ 未开始 | — | 根因:.env 中转端点(OPENAI_API_BASE_URL/ANTHROPIC_API_BASE_URL)未映射→ProviderConfig.base_url;修复:config.py 追加 2 字段+model_validator 绑定;ChatOpenAI(base_url=...) 已支持;与 HTTP_PROXY 叠加(代理+中转)使用;|
 | [P14](./P14-后置大纲.md) | 其余采集适配器（Follow/GitHub/AI搜索） | ⚪ 未开始 | — | 大纲已定 |
 
 **MVP 交付里程碑**：P0–P13 全 🟢 = MVP 完成。
