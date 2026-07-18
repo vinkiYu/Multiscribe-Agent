@@ -25,6 +25,7 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
     "passlib>=1.7",
     "sse-starlette>=2.1",
+    "selectolax>=0.3.0",
     "structlog>=24.1",
     "uvicorn[standard]>=0.30",
 ]
