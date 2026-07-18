@@ -9,7 +9,7 @@ from multiscribe_agent.cli import _resolve_adapter_ids, _resolve_targets
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.domain.models import ScheduleTask
 
-RSS_URL = "https://hnews.dev/rss"
+RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
 
 def test_cli_defaults_resolve_p0_5_alias_and_configured_target(
@@ -72,7 +72,13 @@ async def test_real_daily_digest_delivers_to_configured_targets(tmp_path) -> Non
         assert context.scheduler is not None
         assert context.db is not None
         await context.scheduler.execute_task(task, execute)
-        assert result is not None
+        if result is None:
+            failed_task_log = await context.db.fetchone(
+                "SELECT message FROM task_logs WHERE task_id = ? ORDER BY id DESC LIMIT 1",
+                (task.id,),
+            )
+            assert failed_task_log is not None
+            pytest.fail(f"daily digest task failed: {failed_task_log['message']}")
         outcomes = result["targets"]
         assert isinstance(outcomes, dict)
         assert any(

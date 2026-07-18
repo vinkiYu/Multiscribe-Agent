@@ -15,7 +15,7 @@ from multiscribe_agent.bootstrap import DEFAULT_CURATION_AGENT_ID, ServiceContex
 from multiscribe_agent.config import SystemSettings, get_settings
 from multiscribe_agent.domain.models import ScheduleTask
 
-DEFAULT_RSS_URL = "https://hnews.dev/rss"
+DEFAULT_RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
 
 @click.group()

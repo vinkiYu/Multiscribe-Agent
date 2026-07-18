@@ -31,11 +31,11 @@ the default curation agent automatically. Run a digest without starting the HTTP
 uv run python -m multiscribe_agent digest
 ```
 
-The default source is the public Hacker News RSS feed. Choose another feed or a subset of targets
+The default source is the public BBC News RSS feed. Choose another feed or a subset of targets
 when needed:
 
 ```bash
-uv run python -m multiscribe_agent digest --adapter rss --rss-url https://feeds.bbci.co.uk/news/rss.xml --top-n 5 --target feishu_bot,wecom_bot
+uv run python -m multiscribe_agent digest --adapter rss --rss-url https://hnews.dev/rss --top-n 5 --target feishu_bot,wecom_bot
 ```
 
 The command records a `task_logs` lifecycle and prints a delivery summary. The equivalent
