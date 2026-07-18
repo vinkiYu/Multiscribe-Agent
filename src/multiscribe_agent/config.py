@@ -135,9 +135,19 @@ class SystemSettings(BaseSettings):
         default="",
         validation_alias=AliasChoices("OPENAI_API_KEY", "MULTISCRIBE_OPENAI_API_KEY"),
     )
+    openai_api_base_url: str = Field(
+        default="",
+        validation_alias=AliasChoices("OPENAI_API_BASE_URL", "MULTISCRIBE_OPENAI_API_BASE_URL"),
+    )
     anthropic_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("ANTHROPIC_API_KEY", "MULTISCRIBE_ANTHROPIC_API_KEY"),
+    )
+    anthropic_api_base_url: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "ANTHROPIC_API_BASE_URL", "MULTISCRIBE_ANTHROPIC_API_BASE_URL"
+        ),
     )
     google_api_key: str = Field(
         default="",
@@ -226,10 +236,17 @@ class SystemSettings(BaseSettings):
             "anthropic": self.anthropic_api_key,
             "google": self.google_api_key,
         }
+        api_base_urls = {
+            "openai": self.openai_api_base_url,
+            "anthropic": self.anthropic_api_base_url,
+        }
         for provider in self.ai_providers:
             api_key = api_keys.get(provider.type, "")
             if api_key:
                 provider.api_key = api_key
+            api_base_url = api_base_urls.get(provider.type, "")
+            if api_base_url:
+                provider.base_url = api_base_url
 
         for publisher in self.publishers:
             if publisher.id == "feishu_bot":
