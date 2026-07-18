@@ -7,7 +7,10 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/yourusername/MultiscribeAgent?style=social)](https://github.com/yourusername/MultiscribeAgent/stargazers)
-[![Discord](https://img.shields.io/badge/Community-Discord-5865F2?logo=discord)](https://discord.gg/yourlink)
+
+---
+
+**🌐 Languages**: [English](./README.md) · [简体中文](./README_zh.md)
 
 ---
 

@@ -118,6 +118,7 @@ class WeChatPublisher(BasePublisher):
                         error_type=type(exc).__name__,
                     )
                     await asyncio.sleep(RETRY_DELAYS[attempt])
+        raise PublisherError("WeChat draft creation exited unexpectedly")
 
     async def _create_draft(
         self,
