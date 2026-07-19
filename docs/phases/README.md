@@ -37,18 +37,20 @@
 | P15.2 | 小红书发布器 | 🟢 已通过 | 2026-07-19 | 无参构造;options 读取凭据;Token 单例+app_key 哈希隔离;Markdown→小红书富文本;166 测试全绿 |
 | P15.3 | 钉钉发布器 | 🟢 已通过 | 2026-07-19 | HMAC-SHA256→Base64→URLencode;Markdown+ActionCard;关键字校验;无参构造;166 测试全绿 |
 | P15.4 | 发布历史记录 | 🟢 已通过 | 2026-07-19 | PublishHistory 单例;ddl/索引迁移;sanitize 脱敏;pipeline 集成;8 fixture;REST;185 测试全绿 |
-| P16 | 知识库+混合检索(RRF) | 🟢 已通过 | 2026-07-19 | 8 模块(chunking/doc/embed/vec/retriever/kb_service/api/bootstrap);RRF 融合;sqlite-vec 可选降级;FTS5 bm25;降级标注 degraded;185 测试无回归;ruff/mypy 全绿 |
-| P17 | 记忆系统 | ⚪ 未开始 | — | |
-| P18 | MCP 客户端 | ⚪ 未开始 | — | |
-| P19 | Skill 系统 | ⚪ 未开始 | — | |
+| P16 | 知识库+混合检索(RRF) | 🟢 已通过 | 2026-07-19 | 8 模块(chunking/doc/embed/vec/retriever/kb_service/api/bootstrap);RRF 融合;sqlite-vec 可选降级;FTS5 bm25;降级标注 degraded;P16.1 修复可选依赖测试;235 测试无回归;ruff/mypy 全绿 |
+| P16.1 | 修复可选依赖测试 | 🟢 已通过 | 2026-07-19 | 4 文件(2 测试 + 2 源码):PDF 分支 except OSError;embedding _encode_sync 短路 is_available();monkeypatch 类方法;235 passed 4 deselected |
+| P17 | 记忆系统 | 🟢 已通过 | 2026-07-19 | 8 模块(repos/preference_store/extractor/retriever/service);sha256 去重;规则+LLM 双轨 tag;KB→memory 迁移;7 REST 端点;11 测试 |
+| P18 | MCP 客户端 | 🟢 已通过 | 2026-07-19 | 5 MCP 工具(feed_rss/kb_search/digest_history/list_sources/list_publishers);stdio/SSE 传输;MCP_API_KEY 强制;REST 镜像;CLI mcp 子命令;mcp 1.28.1;10 测试;stdio/SSE smoke 进程存活 |
+| P19 | Skill 系统 | 🟢 已通过 | 2026-07-19 | 6 模块(frontmatter/scanner/registry/service/loader);3 内置 Skill;覆盖策略;5 REST 端点;executor 注入 instructions[:1500];12 测试 |
 | P20.1 | 前端扩展(Knowledge+Memory+Settings) | 🟡 进行中 | — | 双轨口径:前端独立交付;P16+P17 后端 API 合并门禁 |
 | P21 | 评估框架(LLM-as-Judge) | ⚪ 未开始 | — | |
 | P22 | Interop 互操作层 | ⚪ 未开始 | — | |
 | P23 | 完整可观测性(OTel) | ⚪ 未开始 | — | |
 | P24 | Loop Engineering 深化 | ⚪ 未开始 | — | |
 
-**阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ P20.1 进行中 → 阶段一完成。
-**阶段二完成里程碑**：P16 ✅ → P18/P19 进行中。
+**阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
+**阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
+**阶段三进行中**：P20.1 进行中。
 
 ## 依赖图
 
@@ -62,6 +64,15 @@ P0 ──→ P1 ──→ P2 ──→ P6 ──→ P11
   │       └──→ P9 ──────────→ P11
   └──→ P12（依赖 P1-P11 全部）
          └──→ P13（依赖 P0-P12）
+
+阶段二（已全部完成）：
+P2 ──→ P16 知识库 ──→ P16.1 修复
+P4 ──→ P17 记忆 ──→ P18 MCP（P18 依赖 P16.P17 KB + publish_history）
+P4,P5 ──→ P19 Skill
+P16,P17 ──→ P20.1 前端合并门禁
+
+阶段三（进行中）：
+P16,P17 ──→ P20.1 前端深化
 ```
 
 ## 角色循环（固化）
