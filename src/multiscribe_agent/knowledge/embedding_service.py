@@ -57,6 +57,8 @@ class EmbeddingService:
     def _encode_sync(self, texts: list[str]) -> list[list[float]]:
         """Load the optional model and coerce its output to plain floats."""
         if self._encoder is None:
+            if not self.is_available():
+                raise EmbeddingUnavailableError("sentence-transformers is unavailable")
             try:
                 module = importlib.import_module("sentence_transformers")
                 encoder_factory = cast(

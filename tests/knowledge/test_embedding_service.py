@@ -36,8 +36,10 @@ async def test_embedding_service_caches_and_normalizes_injected_encoder() -> Non
 
 
 @pytest.mark.asyncio
-async def test_embedding_service_reports_missing_runtime() -> None:
-    """No real model is downloaded when its optional runtime is unavailable."""
+async def test_embedding_service_reports_missing_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unavailable optional runtime raises without loading a model."""
+    monkeypatch.setattr(EmbeddingService, "is_available", staticmethod(lambda: False))
+
     service = EmbeddingService()
     with pytest.raises(EmbeddingUnavailableError):
         await service.encode_one("alpha")

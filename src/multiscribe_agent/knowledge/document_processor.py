@@ -65,7 +65,14 @@ class DocumentProcessor:
                 reader_factory = cast(Callable[[Path], _PdfReader], module.__dict__["PdfReader"])
             except ImportError as exc:
                 raise UnsupportedDocumentError("PDF support is unavailable") from exc
-            return "\n".join(page.extract_text() or "" for page in reader_factory(file_path).pages)
+            try:
+                return "\n".join(
+                    page.extract_text() or "" for page in reader_factory(file_path).pages
+                )
+            except Exception as exc:
+                raise UnsupportedDocumentError(
+                    f"PDF support parsing failed: {type(exc).__name__}"
+                ) from exc
         try:
             module = importlib.import_module("docx")
             document_factory = cast(Callable[[Path], _DocxDocument], module.__dict__["Document"])
