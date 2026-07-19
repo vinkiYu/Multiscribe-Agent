@@ -42,15 +42,16 @@
 | P17 | 记忆系统 | 🟢 已通过 | 2026-07-19 | 8 模块(repos/preference_store/extractor/retriever/service);sha256 去重;规则+LLM 双轨 tag;KB→memory 迁移;7 REST 端点;11 测试 |
 | P18 | MCP 客户端 | 🟢 已通过 | 2026-07-19 | 5 MCP 工具(feed_rss/kb_search/digest_history/list_sources/list_publishers);stdio/SSE 传输;MCP_API_KEY 强制;REST 镜像;CLI mcp 子命令;mcp 1.28.1;10 测试;stdio/SSE smoke 进程存活 |
 | P19 | Skill 系统 | 🟢 已通过 | 2026-07-19 | 6 模块(frontmatter/scanner/registry/service/loader);3 内置 Skill;覆盖策略;5 REST 端点;executor 注入 instructions[:1500];12 测试 |
-| P20.1 | 前端扩展(Knowledge+Memory+Settings) | 🟡 进行中 | — | 双轨口径:前端独立交付;P16+P17 后端 API 合并门禁 |
-| P21 | 评估框架(LLM-as-Judge) | ⚪ 未开始 | — | |
-| P22 | Interop 互操作层 | ⚪ 未开始 | — | |
-| P23 | 完整可观测性(OTel) | ⚪ 未开始 | — | |
-| P24 | Loop Engineering 深化 | ⚪ 未开始 | — | |
+| P20.1 | 前端扩展(Knowledge+Memory+Settings) | 🟢 已通过 | 2026-07-19 | 4 TSX + 2 service 完整重构;knowledge.ts → /api/kb/* 实时联调;memory.ts → localStorage+API 双轨;Settings → 4 Tab 含采集源/发布端;npm build 全绿;0 TS 错误;ESLint 1 warning |
+| P21 | 评估框架(LLM-as-Judge) | ⚪ 未开始 | — | 任务包已生成(P21-评估框架.md):dataset/evaluator/benchmark/judge_prompts/CLI eval 子命令;8 预置样本;回归检测 |
+| P22 | Interop 互操作层 | ⚪ 未开始 | — | 任务包已生成(P22-Interop.md):InteropKey/sliding-window limiter/ToolRegistry;register/tools/execute 3端点;OpenAI Function格式 |
+| P23 | 完整可观测性(OTel) | ⚪ 未开始 | — | 任务包已生成(P23-OTel.md):OTel tracer+meter+Prometheus /metrics;trace_id 注入 structlog;可选依赖降级 |
+| P24 | Loop Engineering 深化 | ⚪ 未开始 | — | 任务包已生成(P24-Loop深化.md):LoopSpec 多轮;退出条件(score/convergence/max);评估驱动 feedback_loop;loop-engineering-patterns Skill |
 
 **阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
 **阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
-**阶段三进行中**：P20.1 进行中。
+**阶段三完成里程碑**：P20.1 ✅ → 阶段三完成。
+**阶段四待执行**：P21 / P22 / P23 / P24 任务包已就绪，等待执行。
 
 ## 依赖图
 
@@ -71,8 +72,18 @@ P4 ──→ P17 记忆 ──→ P18 MCP（P18 依赖 P16.P17 KB + publish_hist
 P4,P5 ──→ P19 Skill
 P16,P17 ──→ P20.1 前端合并门禁
 
-阶段三（进行中）：
-P16,P17 ──→ P20.1 前端深化
+阶段三（已完成）：
+P16,P17 ──→ P20.1 前端深化 ✅
+  └─ knowledge service → /api/kb/* 实时联调
+  └─ memory service → localStorage + /api/memory/* 双轨
+  └─ Settings → 4 Tab（basic/providers/sources/publishers）
+  └─ npm build 全绿; ESLint 1 warning; 0 TS 错误
+
+阶段四（任务包已生成，待执行）：
+P21 评估框架 → P24 Loop 深化（评估驱动多轮自评）
+P22 Interop 互操作层（外部 AI 自助注册 + 执行网关）
+P23 OTel 全链路可观测（tracer + meter + Prometheus /metrics）
+P24 Loop Engineering（多轮退出 + feedback_loop + loop-engineering-patterns Skill）
 ```
 
 ## 角色循环（固化）

@@ -1,6 +1,10 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Download, Plus, RotateCcw, Save, Upload, X } from 'lucide-react'
-import { memoryService, type MemoryPreferences } from '../services/memory'
+import {
+  memoryService,
+  type MemoryPreferences,
+  type MemoryEntry,
+} from '../services/memory'
 
 export default function Memory() {
   const [preferences, setPreferences] = useState<MemoryPreferences>(() =>
@@ -9,10 +13,34 @@ export default function Memory() {
   const [tagInput, setTagInput] = useState('')
   const [importValue, setImportValue] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [history, setHistory] = useState<MemoryEntry[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null)
 
-  const save = () => {
+  // Load history and check backend availability on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      const online = await memoryService.isBackendAvailable()
+      setBackendOnline(online)
+      if (online) {
+        const entries = await memoryService.getHistory(30)
+        setHistory(entries)
+      }
+      setHistoryLoading(false)
+    }
+    void checkBackend()
+  }, [])
+
+  const handleSave = async () => {
     memoryService.savePreferences(preferences)
     setNotice('偏好已保存到此浏览器')
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+    // Best-effort backend sync
+    if (backendOnline) {
+      await memoryService.syncPreferencesToBackend(preferences)
+    }
   }
 
   const reset = () => {
@@ -67,7 +95,7 @@ export default function Memory() {
       <div className="page-head">
         <div>
           <h1>记忆与偏好</h1>
-          <p>设置内容偏好。数据仅保存在当前浏览器，后端记忆服务将在 P17 接入。</p>
+          <p>设置内容偏好，数据保存在浏览器本地{backendOnline ? '，并同步至后端' : ''}。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={exportPreferences} type="button">
@@ -76,8 +104,9 @@ export default function Memory() {
           <button className="btn" onClick={reset} type="button">
             <RotateCcw size={16} aria-hidden="true" />重置
           </button>
-          <button className="btn primary" onClick={save} type="button">
-            <Save size={16} aria-hidden="true" />保存偏好
+          <button className="btn primary" onClick={handleSave} type="button">
+            <Save size={16} aria-hidden="true" />
+            {saved ? '已保存' : '保存偏好'}
           </button>
         </div>
       </div>
@@ -168,8 +197,15 @@ export default function Memory() {
               value={importValue}
               placeholder='{"preferred_tags": [], "blocked_sources": [], "push_time": "09:00", "max_items_per_digest": 5}'
               onChange={event => setImportValue(event.target.value)}
+              rows={4}
+              style={{ fontFamily: 'monospace', fontSize: '0.85rem', resize: 'vertical' }}
             />
-            <button className="btn" onClick={importPreferences} disabled={!importValue.trim()} type="button">
+            <button
+              className="btn"
+              onClick={importPreferences}
+              disabled={!importValue.trim()}
+              type="button"
+            >
               <Upload size={16} aria-hidden="true" />导入 JSON
             </button>
           </div>
@@ -178,11 +214,61 @@ export default function Memory() {
 
       <section style={{ marginTop: 16 }}>
         <article className="card">
-          <div className="card-head"><span>记忆历史</span><span className="badge">等待 P17</span></div>
-          <div className="empty" style={{ minHeight: 160 }}>
-            <strong>后端记忆 API 尚未上线</strong>
-            <p>保存的本地偏好仍会在刷新页面后恢复。Agent 记忆历史将在 P17 后显示。</p>
+          <div className="card-head">
+            <span>记忆历史</span>
+            {backendOnline === true && (
+              <span className="badge">{history.length} 条</span>
+            )}
+            {backendOnline === false && (
+              <span className="badge">仅本地</span>
+            )}
+            {backendOnline === null && (
+              <span className="badge">检查中</span>
+            )}
           </div>
+          {historyLoading ? (
+            <div className="empty" style={{ minHeight: 160 }}>
+              <strong>正在加载记忆历史…</strong>
+            </div>
+          ) : backendOnline === false ? (
+            <div className="empty" style={{ minHeight: 160 }}>
+              <strong>记忆后端 API 尚未上线</strong>
+              <p>保存的本地偏好仍会在刷新页面后恢复。Agent 记忆历史将在 P17 后端上线后显示。</p>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="empty" style={{ minHeight: 160 }}>
+              <strong>尚无记忆记录</strong>
+              <p>Agent 在运行过程中产生的关键决策和偏好将自动沉淀在这里。</p>
+            </div>
+          ) : (
+            <div className="card-body" style={{ padding: 0 }}>
+              {history.slice(0, 20).map(entry => (
+                <div
+                  key={entry.id}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="badge">{entry.category}</span>
+                    {entry.tags.map(tag => (
+                      <span key={tag} className="badge" style={{ opacity: 0.7 }}>{tag}</span>
+                    ))}
+                    <span className="text-sm text-muted" style={{ marginLeft: 'auto' }}>
+                      {new Date(entry.created_at).toLocaleDateString('zh-CN')}
+                    </span>
+                  </div>
+                  <p className="text-sm" style={{ margin: 0 }}>
+                    {entry.content.length > 200 ? entry.content.slice(0, 200) + '…' : entry.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </section>
     </>
