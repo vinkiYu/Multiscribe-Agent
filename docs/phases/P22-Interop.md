@@ -35,6 +35,9 @@
 | 7 | 速率限制：默认 60 req/min/key（Redis 缺失时退化为内存） | 单测 |
 | 8 | 全量 pytest + ruff + mypy 通过 | `pytest -q` |
 
+> **修订记录**：
+> - **rev1**（2026-07-19）：白名单补列 `app.py`，因 T7/文件清单要求挂载 `/api/ai/v1` router，不修改则验收 7 不可触发。
+
 ---
 
 ## 三、可改范围（白名单）
@@ -48,6 +51,7 @@
 | `src/multiscribe_agent/domain/models.py` | **修改**（追加 `InteropKey` frozen model） |
 | `src/multiscribe_agent/infra/db.py` | **修改**（追加 `interop_keys` 表 + 迁移） |
 | `src/multiscribe_agent/bootstrap.py` | **修改**（初始化 interop_service 单例） |
+| `src/multiscribe_agent/app.py` | **修改**（注册 `/api/ai/v1` router；缺此条路由无法挂载，验收无法触发） |
 | `tests/interop/__init__.py` | **新增** |
 | `tests/interop/test_api_v1_register.py` | **新增** |
 | `tests/interop/test_api_v1_tools.py` | **新增** |

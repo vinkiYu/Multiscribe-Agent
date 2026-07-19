@@ -27,11 +27,19 @@
 | # | 验收 | 证据 |
 |---|---|---|
 | 1 | `LoopSpec` dataclass：`max_rounds / score_threshold / convergence_delta` 可配 | `workflow/loop_node.py` |
-| 2 | 多轮退出：score > 阈值 → 退出；score_diff < delta → 退出；rounds >= max → 退出 | 单测 |
+| 2 | 多轮退出：score > 阈值 → 退出；`|score_diff| < delta` → 退出；rounds >= max → 退出 | 单测 |
 | 3 | 历史记录含每轮 score / feedback / delta；可在历史回放中识别「卡住」轮次 | 单测 |
 | 4 | 评估驱动：提供 `feedback_loop.trigger_refinement(score, dataset)` 入口 | 单测 |
 | 5 | `data/skills/loop-engineering-patterns.md` 文件存在；能被 scanner 发现 | 手动 + 单测 |
 | 6 | 全量 pytest + ruff + mypy 通过 | `pytest -q` |
+
+> **验收序列验证**：默认 `score_threshold=8.0`、`convergence_delta=0.5`、3 轮；mock reflector 返回 `6 → 7 → 8.5`：
+> - 轮 1：score=6，未达阈值，无前值，不退；
+> - 轮 2：|7−6|=1.0 ≥ 0.5，未饱和，未达阈值，不退；
+> - 轮 3：8.5 > 8.0 阈值命中 `threshold` 退出。✓
+>
+> **修订记录**：
+> - **rev1**（2026-07-19）：`score_diff = abs(score - prev_score)` 而非 `prev - score`，避免上升序列误触发收敛；同时 `_normalise_score` 改为透传原值，由 reflector 保证 0-10 范围。
 
 ---
 
@@ -148,7 +156,7 @@ async def execute_loop_step(
         )
         prev_score = iterations[-1].score if iterations else None
         score_diff = (
-            (prev_score - score) if (prev_score is not None and score is not None) else None
+            abs(prev_score - score) if (prev_score is not None and score is not None) else None
         )
         reason = _classify_exit(spec, score, score_diff, round_number, converged)
         iterations.append(
@@ -202,10 +210,8 @@ async def _evaluate(
     return match.group(1) in output, None, None
 
 
-def _normalise_score(raw: float, spec: LoopSpec) -> float:
-    """Rescale 0-1 raw scores to 0-10 if they look normalised."""
-    if raw <= 1.0 and spec.max_score > 1.0:
-        return raw * spec.max_score
+def _normalise_score(raw: float, _spec: LoopSpec) -> float:
+    """Pass through the score unchanged; caller guarantees 0-10 range."""
     return raw
 
 
