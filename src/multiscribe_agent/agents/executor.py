@@ -272,7 +272,21 @@ class AgentExecutor:
         return self._tool_registry.get_definitions(agent_def.tool_ids), self._tool_registry.execute
 
     def _build_system_prompt(self, agent_def: AgentDefinition) -> str:
-        skill_prompt = "\n".join(f"- {skill_id}" for skill_id in agent_def.skill_ids)
+        from multiscribe_agent.skills.registry import get_skill_registry
+
+        registry = get_skill_registry()
+        blocks: list[str] = []
+        for skill_id in agent_def.skill_ids:
+            try:
+                skill = registry.get(skill_id)
+            except KeyError:
+                blocks.append(f"- {skill_id} (not loaded)")
+                continue
+            blocks.append(
+                f"- **{skill.name}** (id={skill.id})\n{skill.description}\n\n"
+                f"{skill.instructions[:1500]}"
+            )
+        skill_prompt = "\n".join(blocks)
         return self._prompt_service.render(
             "common",
             "AgentSystem",

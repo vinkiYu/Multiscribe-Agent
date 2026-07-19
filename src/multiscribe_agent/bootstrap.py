@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from multiscribe_agent.agents.executor import AgentExecutor
 from multiscribe_agent.agents.pipelines.daily_digest import DailyDigestConfig, DailyDigestPipeline
@@ -25,6 +26,11 @@ from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
 from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
+from multiscribe_agent.memory.extractor import PreferenceExtractor
+from multiscribe_agent.memory.memory_service import MemoryService
+from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
+from multiscribe_agent.memory.repositories.memory_categories import MemoryCategoryRepository
+from multiscribe_agent.memory.repositories.memory_entries import MemoryEntryRepository
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
@@ -32,6 +38,11 @@ from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
 from multiscribe_agent.services.ingestion import IngestionService
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
+from multiscribe_agent.skills.builtin_loader import load_builtin_skills
+from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
+from multiscribe_agent.skills.registry import get_skill_registry
+from multiscribe_agent.skills.scanner import SkillScanner
+from multiscribe_agent.skills.service import SkillService
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
 DEFAULT_CURATION_AGENT_PROMPT = (
@@ -94,6 +105,8 @@ class ServiceContext:
         self.publish_history: PublishHistory | None = None
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
+        self.memory_service: MemoryService | None = None
+        self.skill_service: SkillService | None = None
         self._initialized = False
 
     async def init(self) -> None:
@@ -108,6 +121,8 @@ class ServiceContext:
         kv = KvRepository(self.db)
         self.config_service = ConfigService(kv)
         await self._init_kb()
+        await self._init_memory()
+        await self._init_skills()
         scan_and_register()
         adapters = AdapterRegistry.get_instance()
         publishers = PublisherRegistry.get_instance()
@@ -175,6 +190,63 @@ class ServiceContext:
             self.db, DocumentProcessor(), embeddings, vector_store, retriever
         )
         self.kb_capabilities = self.kb_service.capabilities
+
+    async def _init_memory(self) -> None:
+        """Initialize P17 repositories against the existing memory tables."""
+        if self.db is None or self.publish_history is None or self.kb_service is None:
+            raise RuntimeError(
+                "memory initialization requires database, history, and knowledge services"
+            )
+        categories = MemoryCategoryRepository(self.db)
+        preferences = PreferenceStore(
+            categories,
+            UserPreferences(
+                preferred_tags=[],
+                block_sources=[],
+                push_time=self.settings.memory_default_push_time,
+                importance_threshold=self.settings.memory_importance_threshold,
+            ),
+        )
+        self.memory_service = MemoryService(
+            MemoryEntryRepository(self.db),
+            preferences,
+            PreferenceExtractor(self.db, self.publish_history, self._provider_for_default()),
+            self.kb_service,
+        )
+
+    def _provider_for_default(self) -> AIProvider | None:
+        """Create the default curator provider only when a usable credential exists."""
+        provider = next(
+            (
+                item
+                for item in self.settings.ai_providers
+                if item.id == self.settings.default_curation_provider_id
+            ),
+            None,
+        )
+        if provider is None or not provider.api_key:
+            return None
+        try:
+            return create_provider(
+                provider,
+                model=self.settings.default_curation_model,
+                temperature=self.settings.default_curation_temperature,
+                proxy=self.settings.http_proxy or None,
+            )
+        except (NotImplementedError, ProviderError):
+            return None
+
+    async def _init_skills(self) -> None:
+        """Load bundled and runtime-created skill documents into the process registry."""
+        builtin_root = Path(__file__).parent / "resources" / "skills"
+        custom_root = Path("data") / "skills"
+        self.skill_service = SkillService(
+            get_skill_registry(),
+            SkillScanner(parse_frontmatter),
+            builtin_root,
+            custom_root,
+        )
+        await load_builtin_skills(self.skill_service)
 
     async def run_daily_digest_task(self, task: ScheduleTask) -> dict[str, object]:
         """Build and run P11 from the persisted schedule task configuration."""

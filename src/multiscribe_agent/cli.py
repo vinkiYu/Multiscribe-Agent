@@ -14,6 +14,7 @@ from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import DEFAULT_CURATION_AGENT_ID, ServiceContext
 from multiscribe_agent.config import SystemSettings, get_settings
 from multiscribe_agent.domain.models import ScheduleTask
+from multiscribe_agent.mcp.server import run_sse_server, run_stdio_server
 
 DEFAULT_RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
@@ -34,6 +35,24 @@ def main() -> None:
 def serve(host: str, port: int) -> None:
     """Start the FastAPI service."""
     uvicorn.run(create_app(get_settings()), host=host, port=port)
+
+
+@main.command(name="mcp")
+@click.option("--transport", default="stdio", type=click.Choice(["stdio", "sse"]))
+@click.option("--host", default=None)
+@click.option("--port", default=None, type=int)
+def mcp(transport: str, host: str | None, port: int | None) -> None:
+    """Run the authenticated MCP server for local or remote clients."""
+    settings = get_settings()
+    if transport == "stdio":
+        asyncio.run(run_stdio_server())
+        return
+    asyncio.run(
+        run_sse_server(
+            host=host or settings.mcp_default_host,
+            port=port if port is not None else settings.mcp_default_port,
+        )
+    )
 
 
 @main.command()

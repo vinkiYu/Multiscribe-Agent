@@ -17,8 +17,11 @@ from multiscribe_agent.api.routes import (
     dashboard,
     digest,
     knowledge,
+    mcp,
+    memory,
     publish_history,
     schedules,
+    skills,
     workflows,
 )
 from multiscribe_agent.bootstrap import ServiceContext, get_context
@@ -91,7 +94,10 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         dashboard.router,
         digest.router,
         knowledge.router,
+        memory.router,
+        mcp.router,
         publish_history.router,
+        skills.router,
         agents.router,
         workflows.router,
         schedules.router,

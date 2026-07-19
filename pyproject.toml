@@ -22,6 +22,7 @@ dependencies = [
     "langchain-openai>=0.2,<1",
     "jinja2>=3.1",
     "markdown>=3.7",
+    "mcp>=1,<2",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "pypdf>=4.0",

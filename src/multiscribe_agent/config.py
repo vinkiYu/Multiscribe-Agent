@@ -213,6 +213,15 @@ class SystemSettings(BaseSettings):
             "DEFAULT_DIGEST_ADAPTER_IDS", "MULTISCRIBE_DEFAULT_DIGEST_ADAPTER_IDS"
         ),
     )
+    memory_importance_threshold: int = Field(default=5, ge=0, le=10)
+    memory_default_push_time: str = "09:00"
+    mcp_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("MCP_API_KEY", "MULTISCRIBE_MCP_API_KEY"),
+    )
+    mcp_default_host: str = "127.0.0.1"
+    mcp_default_port: int = Field(default=8765, ge=1, le=65535)
+    mcp_transport: Literal["stdio", "sse"] = "stdio"
     ai_providers: list[ProviderConfig] = Field(default_factory=_default_ai_providers)
     adapters: list[AdapterConfig] = Field(default_factory=_default_adapters)
     publishers: list[PublisherConfig] = Field(default_factory=_default_publishers)

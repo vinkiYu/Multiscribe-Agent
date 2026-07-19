@@ -220,21 +220,40 @@ class KBService:
         await self._db.execute("DELETE FROM kb_documents WHERE id = ?", (document_id,))
 
     async def move_to_memory(self, document_id: str, target_memory_category: str) -> int:
-        """Copy document chunks into P17's existing memory table as a forward-compatible stub."""
+        """Copy unique document chunks into P17-compatible memory records."""
         rows = await self._db.fetchall(
             "SELECT content FROM kb_chunks WHERE document_id = ? ORDER BY rowid", (document_id,)
         )
+        inserted = 0
         for row in rows:
+            content = str(row["content"])
+            digest = hashlib.sha256(content.encode()).hexdigest()
+            existing = await self._db.fetchone(
+                "SELECT id FROM agent_memories WHERE json_extract(data, '$.sha256') = ?",
+                (digest,),
+            )
+            if existing is not None:
+                continue
             await self._db.execute(
                 "INSERT INTO agent_memories(id, content, tags, data) VALUES (?, ?, ?, ?)",
                 (
                     str(uuid4()),
-                    str(row["content"]),
-                    target_memory_category,
-                    _dump_object({"document_id": document_id}),
+                    content,
+                    json.dumps([target_memory_category], ensure_ascii=False),
+                    _dump_object(
+                        {
+                            "importance": 5,
+                            "created_at": _timestamp(),
+                            "agent_id": None,
+                            "metadata": {"document_id": document_id},
+                            "category_id": target_memory_category,
+                            "sha256": digest,
+                        }
+                    ),
                 ),
             )
-        return len(rows)
+            inserted += 1
+        return inserted
 
     async def _store_vectors(self, chunks: list[KBChunk]) -> None:
         """Best-effort vector persistence; text ingestion remains usable when unavailable."""
