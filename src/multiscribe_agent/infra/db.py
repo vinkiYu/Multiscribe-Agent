@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Iterable, Sequence
+from typing import Protocol, cast
 
 import aiosqlite
 
 type SqlParameters = Sequence[object]
+
+
+class _SqliteVecModule(Protocol):
+    """Minimal sqlite-vec module API used to locate its loadable extension."""
+
+    def loadable_path(self) -> str: ...
 
 
 class Database:
@@ -105,6 +113,37 @@ class Database:
             ON publish_history(published_at DESC)
             """,
         )
+
+    async def migrate_kb(self) -> bool:
+        """Create durable KB indexes and enable sqlite-vec when its optional extension exists."""
+        await self.connection.executescript(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS kb_documents_fts USING fts5(name, summary, body);
+            CREATE INDEX IF NOT EXISTS idx_kb_documents_category ON kb_documents(category_id);
+            CREATE INDEX IF NOT EXISTS idx_kb_chunks_document ON kb_chunks(document_id);
+            CREATE TABLE IF NOT EXISTS kb_chunk_dedup (
+                content_hash TEXT PRIMARY KEY,
+                chunk_id TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_kb_chunk_dedup_chunk ON kb_chunk_dedup(chunk_id);
+            """
+        )
+        await self.connection.commit()
+        try:
+            module = importlib.import_module("sqlite_vec")
+            sqlite_vec = cast(_SqliteVecModule, module)
+
+            await self.connection.enable_load_extension(True)
+            await self.connection.load_extension(sqlite_vec.loadable_path())
+            await self.connection.enable_load_extension(False)
+            await self.execute(
+                "CREATE VIRTUAL TABLE IF NOT EXISTS kb_chunks_vec USING vec0("
+                "chunk_id TEXT PRIMARY KEY, embedding float[384])"
+            )
+        except (ImportError, OSError, aiosqlite.Error):
+            return False
+        return True
 
     async def _configure(self) -> None:
         """Apply connection-level SQLite settings required by the application."""
@@ -344,6 +383,7 @@ async def init_db(path: str) -> Database:
     database = await Database.open(path)
     await init_schema(database)
     await database.migrate_publish_history()
+    await database.migrate_kb()
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)
     return database

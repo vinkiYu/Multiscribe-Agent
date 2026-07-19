@@ -19,6 +19,11 @@ from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepositor
 from multiscribe_agent.infra.repositories.kv import KvRepository
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
 from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
+from multiscribe_agent.knowledge.document_processor import DocumentProcessor
+from multiscribe_agent.knowledge.embedding_service import EmbeddingService
+from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
+from multiscribe_agent.knowledge.retriever import Retriever
+from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
@@ -87,6 +92,8 @@ class ServiceContext:
         self.scheduler: SchedulerService | None = None
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
+        self.kb_service: KBService | None = None
+        self.kb_capabilities: KBCapabilities | None = None
         self._initialized = False
 
     async def init(self) -> None:
@@ -100,6 +107,7 @@ class ServiceContext:
         source_data = SourceDataRepository(self.db)
         kv = KvRepository(self.db)
         self.config_service = ConfigService(kv)
+        await self._init_kb()
         scan_and_register()
         adapters = AdapterRegistry.get_instance()
         publishers = PublisherRegistry.get_instance()
@@ -154,6 +162,19 @@ class ServiceContext:
         if self.db is not None:
             await self.db.close()
         self._initialized = False
+
+    async def _init_kb(self) -> None:
+        """Initialize FTS5 knowledge services while preserving optional-feature degradation."""
+        if self.db is None:
+            raise RuntimeError("knowledge base initialization requires a database")
+        vector_enabled = await self.db.migrate_kb()
+        embeddings = EmbeddingService() if EmbeddingService.is_available() else None
+        vector_store = VectorStore(self.db) if vector_enabled else None
+        retriever = Retriever(self.db, vector_store, embeddings)
+        self.kb_service = KBService(
+            self.db, DocumentProcessor(), embeddings, vector_store, retriever
+        )
+        self.kb_capabilities = self.kb_service.capabilities
 
     async def run_daily_digest_task(self, task: ScheduleTask) -> dict[str, object]:
         """Build and run P11 from the persisted schedule task configuration."""
