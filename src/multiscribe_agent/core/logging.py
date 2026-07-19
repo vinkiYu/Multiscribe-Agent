@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import MutableMapping
-from typing import cast
+from importlib import import_module
+from typing import Any, cast
 
 import structlog
 
@@ -21,6 +22,7 @@ def configure_logging(log_level: str, *, json_output: bool = True) -> None:
     )
     structlog.configure(
         processors=[
+            _inject_trace_id,
             structlog.contextvars.merge_contextvars,
             _redact_sensitive,
             structlog.processors.add_log_level,
@@ -32,6 +34,21 @@ def configure_logging(log_level: str, *, json_output: bool = True) -> None:
         ),
         cache_logger_on_first_use=True,
     )
+
+
+def _inject_trace_id(
+    _logger: object, _method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
+    """Add the current OTel trace id when the optional SDK is active."""
+    try:
+        trace = import_module("opentelemetry.trace")
+    except ImportError:
+        return event_dict
+    span = trace.get_current_span()
+    context = span.get_span_context()
+    if context.is_valid:
+        event_dict.setdefault("trace_id", format(context.trace_id, "032x"))
+    return event_dict
 
 
 def get_logger() -> structlog.stdlib.BoundLogger:

@@ -1,0 +1,13 @@
+name: summary-quality
+description: 摘要质量评估（不依赖 P17 记忆）
+rubric: summary-quality
+samples:
+  - id: sq-001
+    input_path: tests/eval/fixtures/sq_001.json
+    expected_min_score: 0.8
+  - id: sq-002
+    input_path: tests/eval/fixtures/sq_002.json
+    expected_min_score: 0.75
+  - id: sq-003
+    input_path: tests/eval/fixtures/sq_003.json
+    expected_min_score: 0.7

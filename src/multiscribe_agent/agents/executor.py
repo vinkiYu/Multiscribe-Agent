@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Protocol
 from uuid import uuid4
@@ -22,6 +23,8 @@ from multiscribe_agent.domain.models import (
     ToolDefinition,
 )
 from multiscribe_agent.llm.provider import AIProvider
+from multiscribe_agent.observability.meter import get_metrics_registry
+from multiscribe_agent.observability.tracer import trace_span
 
 type ProviderFactory = Callable[[AgentDefinition], AIProvider]
 type ToolExecutor = Callable[[ToolCall], Awaitable[object]]
@@ -121,25 +124,30 @@ class AgentExecutor:
             content_parts: list[str] = []
             tool_calls: list[ToolCall] = []
             try:
-                async for response in provider.stream(context.build_messages(), tools or None):
-                    if response.content:
-                        content_parts.append(response.content)
-                        yield self._event(
-                            "content",
-                            {"content": response.content, "round": round_number},
-                            trace_id,
-                        )
-                    if response.tool_calls:
-                        tool_calls = response.tool_calls
-                        yield self._event(
-                            "tool_calls_delta",
-                            {
-                                "tool_calls": self._dump_tool_calls(response.tool_calls),
-                                "round": round_number,
-                            },
-                            trace_id,
-                        )
-                    context.add_usage(response.usage)
+                started = time.monotonic()
+                with trace_span("llm.generate", {"agent_id": agent_def.id, "round": round_number}):
+                    async for response in provider.stream(context.build_messages(), tools or None):
+                        if response.content:
+                            content_parts.append(response.content)
+                            yield self._event(
+                                "content",
+                                {"content": response.content, "round": round_number},
+                                trace_id,
+                            )
+                        if response.tool_calls:
+                            tool_calls = response.tool_calls
+                            yield self._event(
+                                "tool_calls_delta",
+                                {
+                                    "tool_calls": self._dump_tool_calls(response.tool_calls),
+                                    "round": round_number,
+                                },
+                                trace_id,
+                            )
+                        context.add_usage(response.usage)
+                get_metrics_registry().record_llm_call(
+                    context.usage_summary.total_tokens, time.monotonic() - started
+                )
             except ProviderError as exc:
                 log.warning(
                     "agent_provider_error",
@@ -238,7 +246,9 @@ class AgentExecutor:
                     raise NotImplementedError(
                         f"non-local tool execution is deferred to P18: {tool_call.name}"
                     )
-                result = await tool_executor(tool_call)
+                with trace_span("tool.invoke", {"tool": tool_call.name}):
+                    result = await tool_executor(tool_call)
+                get_metrics_registry().record_tool_call(tool_call.name)
                 serialized = self._serialize_tool_result(result)
             except Exception as exc:  # Tool plugins are an isolation boundary by design.
                 log.warning(

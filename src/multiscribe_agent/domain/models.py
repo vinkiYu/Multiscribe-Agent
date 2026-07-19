@@ -55,6 +55,21 @@ class TokenUsage(_DomainModel):
     total_tokens: int
 
 
+class InteropKey(_DomainModel):
+    """Persisted credential for external AI tool interoperability."""
+
+    model_config = ConfigDict(frozen=True)
+
+    key_id: str
+    key_hash: str
+    description: str = ""
+    created_at: int
+    approved: bool = False
+    rate_limit_per_minute: int = Field(default=60, ge=1)
+    last_used_at: int | None = None
+    request_count: int = Field(default=0, ge=0)
+
+
 class AIMessage(_DomainModel):
     """Provider-neutral message exchanged with an AI model."""
 

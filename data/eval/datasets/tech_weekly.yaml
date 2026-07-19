@@ -1,0 +1,24 @@
+name: tech-weekly
+description: 技术周报样本（每日推送主流程）
+rubric: tech-weekly
+samples:
+  - id: tw-001
+    input_path: tests/eval/fixtures/tw_001.json
+    expected_tags: [AI, LLM, agent]
+    expected_min_score: 0.7
+  - id: tw-002
+    input_path: tests/eval/fixtures/tw_002.json
+    expected_tags: [python, performance]
+    expected_min_score: 0.65
+  - id: tw-003
+    input_path: tests/eval/fixtures/tw_003.json
+    expected_tags: [frontend, design]
+    expected_min_score: 0.7
+  - id: tw-004
+    input_path: tests/eval/fixtures/tw_004.json
+    expected_tags: [devops, observability]
+    expected_min_score: 0.7
+  - id: tw-005
+    input_path: tests/eval/fixtures/tw_005.json
+    expected_tags: [security, llm]
+    expected_min_score: 0.7

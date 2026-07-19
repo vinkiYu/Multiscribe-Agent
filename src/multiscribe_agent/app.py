@@ -13,12 +13,14 @@ from fastapi.responses import JSONResponse
 
 from multiscribe_agent.api.routes import (
     agents,
+    ai_v1,
     auth,
     dashboard,
     digest,
     knowledge,
     mcp,
     memory,
+    metrics,
     publish_history,
     schedules,
     skills,
@@ -57,6 +59,11 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         allow_headers=["*"],
     )
 
+    @app.get("/healthz", include_in_schema=False)
+    async def healthz() -> dict[str, str]:
+        """Return a lightweight process health probe."""
+        return {"status": "ok"}
+
     @app.middleware("http")
     async def access_log(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -91,6 +98,8 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
 
     for router in (
         auth.router,
+        ai_v1.router,
+        metrics.router,
         dashboard.router,
         digest.router,
         knowledge.router,

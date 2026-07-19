@@ -11,7 +11,8 @@ from multiscribe_agent.llm.provider import AIProvider
 
 REFLECTOR_INSTRUCTION = """Assess whether the output satisfies the task.
 Return only JSON: {"quality":"pass|fail","score":0.0,"feedback":"..."}.
-The score must be between 0 and 1. Do not include Markdown fences."""
+The score must be between 0 and 10 (integers or 0.5 increments).
+Do not include Markdown fences."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,8 +48,8 @@ class Reflector:
             raise ValueError("reflection quality must be pass or fail")
         if not isinstance(score, int | float) or isinstance(score, bool):
             raise ValueError("reflection score must be numeric")
-        if not 0 <= float(score) <= 1:
-            raise ValueError("reflection score must be between 0 and 1")
+        if not 0 <= float(score) <= 10:
+            raise ValueError("reflection score must be between 0 and 10")
         if not isinstance(feedback, str):
             raise ValueError("reflection feedback must be a string")
         typed_quality = cast(Literal["pass", "fail"], quality)

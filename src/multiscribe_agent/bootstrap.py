@@ -31,11 +31,22 @@ from multiscribe_agent.memory.memory_service import MemoryService
 from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
 from multiscribe_agent.memory.repositories.memory_categories import MemoryCategoryRepository
 from multiscribe_agent.memory.repositories.memory_entries import MemoryEntryRepository
+from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_registry
+from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
+from multiscribe_agent.observability.tracer import setup_tracer
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
 from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
 from multiscribe_agent.services.ingestion import IngestionService
+from multiscribe_agent.services.interop import InteropService
+from multiscribe_agent.services.interop_rate_limit import SlidingWindowLimiter
+from multiscribe_agent.services.interop_registry import (
+    ToolRegistry as InteropToolRegistry,
+)
+from multiscribe_agent.services.interop_registry import (
+    build_default_registry,
+)
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
 from multiscribe_agent.skills.builtin_loader import load_builtin_skills
@@ -61,7 +72,9 @@ class _ProviderLoopReflector:
     async def assess(self, task: str, output: str) -> LoopAssessment:
         """Assess loop output with the provider selected for the curation agent."""
         reflection = await self.reflector.assess(task, output, self.provider)
-        return _MutableLoopAssessment(reflection.should_retry, reflection.feedback)
+        return _MutableLoopAssessment(
+            reflection.should_retry, reflection.feedback, reflection.score
+        )
 
 
 @dataclass(slots=True)
@@ -70,6 +83,7 @@ class _MutableLoopAssessment:
 
     should_retry: bool
     feedback: str
+    score: float
 
 
 class _StoredAgentStepExecutor:
@@ -107,6 +121,12 @@ class ServiceContext:
         self.kb_capabilities: KBCapabilities | None = None
         self.memory_service: MemoryService | None = None
         self.skill_service: SkillService | None = None
+        self.interop_service: InteropService | None = None
+        self.interop_limiter: SlidingWindowLimiter | None = None
+        self.interop_registry: InteropToolRegistry | None = None
+        self.observability_capabilities: ObservabilityCapabilities | None = None
+        self.metrics: MetricsRegistry | None = None
+        self.tracer: object | None = None
         self._initialized = False
 
     async def init(self) -> None:
@@ -114,6 +134,12 @@ class ServiceContext:
         if self._initialized:
             return
         self.db = await init_db(self.settings.db_path)
+        self.observability_capabilities = detect()
+        self.metrics = MetricsRegistry.create(self.observability_capabilities)
+        set_metrics_registry(self.metrics)
+        self.tracer = setup_tracer()
+        self.interop_service = InteropService(self.db)
+        self.interop_limiter = SlidingWindowLimiter(window_seconds=60)
         self.publish_history = get_publish_history()
         entities = EntityJsonRepository(self.db)
         task_logs = TaskLogRepository(self.db)
@@ -124,6 +150,7 @@ class ServiceContext:
         await self._init_memory()
         await self._init_skills()
         scan_and_register()
+        self.interop_registry = build_default_registry(self)
         adapters = AdapterRegistry.get_instance()
         publishers = PublisherRegistry.get_instance()
         tools = ToolRegistry.get_instance()

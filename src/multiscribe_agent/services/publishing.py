@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Callable, Mapping
 
 import structlog
 
+from multiscribe_agent.observability.meter import get_metrics_registry
+from multiscribe_agent.observability.tracer import trace_span
 from multiscribe_agent.plugins.registry import PublisherRegistry
 from multiscribe_agent.renderers.models import CuratedDigest
 
@@ -55,5 +58,14 @@ class PublishingService:
             raise KeyError(f"no digest renderer configured for target: {target}")
         publisher_class = self._publisher_registry.get(target)
         content = renderer(digest)
-        response = await publisher_class().publish(content, self._publisher_options.get(target))
+        started = time.monotonic()
+        try:
+            with trace_span("publisher.publish", {"publisher": target}):
+                response = await publisher_class().publish(
+                    content, self._publisher_options.get(target)
+                )
+        except Exception:
+            get_metrics_registry().record_publish(False, time.monotonic() - started)
+            raise
+        get_metrics_registry().record_publish(True, time.monotonic() - started)
         return {"status": "success", "response": response}

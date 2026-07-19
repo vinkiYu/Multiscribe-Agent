@@ -272,6 +272,18 @@ CREATE TABLE IF NOT EXISTS api_keys (
 CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(prefix);
 CREATE INDEX IF NOT EXISTS idx_api_keys_token ON api_keys(verification_token);
 
+CREATE TABLE IF NOT EXISTS interop_keys (
+    key_id TEXT PRIMARY KEY,
+    key_hash TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    approved INTEGER NOT NULL DEFAULT 0,
+    rate_limit_per_minute INTEGER NOT NULL DEFAULT 60,
+    last_used_at INTEGER,
+    request_count INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_interop_keys_approved ON interop_keys(approved);
+
 CREATE TABLE IF NOT EXISTS embeddings (
     id TEXT PRIMARY KEY,
     doc_id TEXT NOT NULL,

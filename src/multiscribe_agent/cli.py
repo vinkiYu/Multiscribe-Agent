@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import cast
 
 import click
@@ -14,6 +15,9 @@ from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import DEFAULT_CURATION_AGENT_ID, ServiceContext
 from multiscribe_agent.config import SystemSettings, get_settings
 from multiscribe_agent.domain.models import ScheduleTask
+from multiscribe_agent.eval.benchmark import run_benchmark
+from multiscribe_agent.eval.dataset import load_dataset
+from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.mcp.server import run_sse_server, run_stdio_server
 
 DEFAULT_RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
@@ -178,7 +182,80 @@ def _result_summary(result: dict[str, object]) -> str:
     return f"Daily digest finished: {message}; targets: {', '.join(statuses)}"
 
 
-@main.group(name="eval", invoke_without_command=True)
-def evaluate() -> None:
-    """Run evaluations when evaluation support is implemented."""
-    raise click.ClickException("not implemented yet")
+@main.command(name="eval")
+@click.option(
+    "--dataset",
+    "dataset_name",
+    required=True,
+    help="数据集名 (不含扩展名, 位于 data/eval/datasets/)。",
+)
+@click.option("--agent", default="default-curation-agent", show_default=True)
+@click.option(
+    "--datasets-dir",
+    default="data/eval/datasets",
+    show_default=True,
+    type=click.Path(exists=True, file_okay=False),
+)
+@click.option("--reports-dir", default="data/eval/reports", show_default=True)
+@click.option("--baseline", default="data/eval/baselines/last.json", show_default=True)
+@click.option("--regression-threshold", default=0.10, show_default=True, type=float)
+def evaluate(
+    dataset_name: str,
+    agent: str,
+    datasets_dir: str,
+    reports_dir: str,
+    baseline: str,
+    regression_threshold: float,
+) -> None:
+    """运行 LLM-as-Judge 评估并生成 Markdown 报告。"""
+    del agent  # Pipeline state is replayed directly; agent is retained for CLI compatibility.
+    settings = get_settings()
+    provider = _resolve_eval_provider(settings)
+    dataset_path = _resolve_dataset_path(Path(datasets_dir), dataset_name)
+    try:
+        dataset = load_dataset(dataset_path)
+        summary = asyncio.run(
+            run_benchmark(
+                provider,
+                dataset,
+                preferred_tags=[],
+                reports_dir=Path(reports_dir),
+                baseline_path=Path(baseline) if baseline else None,
+                regression_threshold=regression_threshold,
+            )
+        )
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"OK {summary.dataset_name} overall={summary.overall:.2f}")
+
+
+def _resolve_dataset_path(datasets_dir: Path, dataset_name: str) -> Path:
+    """Resolve dataset names while accepting hyphen and underscore aliases."""
+    direct = datasets_dir / f"{dataset_name}.yaml"
+    if direct.is_file() or "-" not in dataset_name:
+        return direct
+    alias = datasets_dir / f"{dataset_name.replace('-', '_')}.yaml"
+    return alias if alias.is_file() else direct
+
+
+def _resolve_eval_provider(settings: SystemSettings) -> AIProvider:
+    """Create the configured curation provider without initializing the service graph."""
+    config = next(
+        (
+            item
+            for item in settings.ai_providers
+            if item.id == settings.default_curation_provider_id
+        ),
+        None,
+    )
+    if config is None or not config.api_key:
+        raise click.ClickException("default curation provider has no API key; configure its key")
+    try:
+        return create_provider(
+            config,
+            model=settings.default_curation_model,
+            temperature=settings.default_curation_temperature,
+            proxy=settings.http_proxy or None,
+        )
+    except (NotImplementedError, RuntimeError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc

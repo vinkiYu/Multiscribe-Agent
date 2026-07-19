@@ -47,6 +47,13 @@ dev = [
     "ruff>=0.5",
     "types-click",
 ]
+observability = [
+    "opentelemetry-api>=1.27",
+    "opentelemetry-sdk>=1.27",
+    "opentelemetry-exporter-otlp>=1.27",
+    "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "prometheus-client>=0.20",
+]
 
 [project.scripts]
 multiscribe-agent = "multiscribe_agent.cli:main"

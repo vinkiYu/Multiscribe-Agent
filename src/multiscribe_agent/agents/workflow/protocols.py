@@ -17,6 +17,7 @@ class LoopAssessment(Protocol):
     """The part of a reflection result consumed by a workflow loop."""
 
     feedback: str
+    score: float
     should_retry: bool
 
 
