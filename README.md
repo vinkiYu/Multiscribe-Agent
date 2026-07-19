@@ -2,7 +2,7 @@
 
 🗞️ AI 驱动的每日资讯采集与智能推送平台 — 将 RSS / GitHub Trending / AI 搜索汇聚为个性化日报，推送至飞书、企微、公众号、小红书、钉钉等平台。
 
-> 本项目由 TypeScript（PrismFlowAgent）重构为 Python，基于 FastAPI + LangChain + SQLite 构建。
+> 本项目基于 FastAPI + LangChain + SQLite 构建。
 
 [![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg)](LICENSE)
