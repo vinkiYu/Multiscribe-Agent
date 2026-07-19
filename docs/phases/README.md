@@ -43,15 +43,15 @@
 | P18 | MCP 客户端 | 🟢 已通过 | 2026-07-19 | 5 MCP 工具(feed_rss/kb_search/digest_history/list_sources/list_publishers);stdio/SSE 传输;MCP_API_KEY 强制;REST 镜像;CLI mcp 子命令;mcp 1.28.1;10 测试;stdio/SSE smoke 进程存活 |
 | P19 | Skill 系统 | 🟢 已通过 | 2026-07-19 | 6 模块(frontmatter/scanner/registry/service/loader);3 内置 Skill;覆盖策略;5 REST 端点;executor 注入 instructions[:1500];12 测试 |
 | P20.1 | 前端扩展(Knowledge+Memory+Settings) | 🟢 已通过 | 2026-07-19 | 4 TSX + 2 service 完整重构;knowledge.ts → /api/kb/* 实时联调;memory.ts → localStorage+API 双轨;Settings → 4 Tab 含采集源/发布端;npm build 全绿;0 TS 错误;ESLint 1 warning |
-| P21 | 评估框架(LLM-as-Judge) | ⚪ 未开始 | — | 任务包已生成(P21-评估框架.md):dataset/evaluator/benchmark/judge_prompts/CLI eval 子命令;8 预置样本;回归检测 |
-| P22 | Interop 互操作层 | ⚪ 未开始 | — | 任务包已生成(P22-Interop.md):InteropKey/sliding-window limiter/ToolRegistry;register/tools/execute 3端点;OpenAI Function格式 |
-| P23 | 完整可观测性(OTel) | ⚪ 未开始 | — | 任务包已生成(P23-OTel.md):OTel tracer+meter+Prometheus /metrics;trace_id 注入 structlog;可选依赖降级 |
-| P24 | Loop Engineering 深化 | ⚪ 未开始 | — | 任务包已生成(P24-Loop深化.md):LoopSpec 多轮;退出条件(score/convergence/max);评估驱动 feedback_loop;loop-engineering-patterns Skill |
+| P21 | 评估框架(LLM-as-Judge) | 🟢 已通过 | 2026-07-19 | dataset/evaluator/benchmark/judge_prompts/CLI eval;2 datasets(tech-weekly/summary-quality);8 fixtures;11 测试;288 全量;rev1 修订白名单 |
+| P22 | Interop 互操作层 | 🟢 已通过 | 2026-07-19 | InteropKey(sha256)/SlidingWindowLimiter/ToolRegistry;/api/ai/v1/{register,tools,execute,keys/{id}/approve};3 个 tool(list_sources/kb_search/list_publishers);10 测试;288 全量;rev1 补入 app.py |
+| P23 | 完整可观测性(OTel) | 🟢 已通过 | 2026-07-19 | optional.py 缺包降级;OTel tracer(console/OTLP/no-op)+meter(Counter/Histogram);/metrics 端点;/healthz;structlog trace_id;executor/publisher 埋点;pyproject observability extra;14 测试;288 全量 |
+| P24 | Loop Engineering 深化 | 🟢 已通过 | 2026-07-19 | LoopSpec(max_rounds/threshold/convergence_delta)+execute_loop_step 多轮;exit_reason 4 分类(threshold/convergence/max_rounds/stuck);feedback_loop.trigger_refinement;data/skills/loop-engineering-patterns/SKILL.md;20 测试;288 全量;rev1 修 score_diff=abs() |
 
 **阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
 **阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
 **阶段三完成里程碑**：P20.1 ✅ → 阶段三完成。
-**阶段四待执行**：P21 / P22 / P23 / P24 任务包已就绪，等待执行。
+**阶段四完成里程碑**：P21 ✅ P22 ✅ P23 ✅ P24 ✅ → 阶段四完成。**全部 14 个后置包通过；后 MVP 重构闭环。**
 
 ## 依赖图
 
@@ -79,11 +79,34 @@ P16,P17 ──→ P20.1 前端深化 ✅
   └─ Settings → 4 Tab（basic/providers/sources/publishers）
   └─ npm build 全绿; ESLint 1 warning; 0 TS 错误
 
-阶段四（任务包已生成，待执行）：
-P21 评估框架 → P24 Loop 深化（评估驱动多轮自评）
-P22 Interop 互操作层（外部 AI 自助注册 + 执行网关）
-P23 OTel 全链路可观测（tracer + meter + Prometheus /metrics）
-P24 Loop Engineering（多轮退出 + feedback_loop + loop-engineering-patterns Skill）
+阶段四（已完成）：
+P21 评估框架 ✅
+  └─ eval/{dataset,evaluator,benchmark,judge_prompts,feedback_loop}.py
+  └─ CLI eval 子命令;2 datasets;8 fixtures
+P22 Interop 互操作层 ✅
+  └─ services/interop{,_rate_limit,_registry}.py
+  └─ /api/ai/v1/{register,tools,execute,keys/{id}/approve}
+  └─ 3 个 tool(list_sources/kb_search/list_publishers)
+P23 OTel 全链路可观测 ✅
+  └─ observability/{optional,tracer,meter}.py
+  └─ /metrics 端点;/healthz;structlog trace_id 注入
+  └─ executor/publisher 埋点;pyproject observability extra
+P24 Loop Engineering ✅
+  └─ agents/workflow/loop_node.py 多轮+LoopSpec
+  └─ eval/feedback_loop.py 评估驱动精炼
+  └─ data/skills/loop-engineering-patterns/SKILL.md
+
+**全局验证（阶段四 review 汇总）**：
+```
+pytest -q                288 passed, 4 deselected, 1 warning in 31.78s
+mypy src                 Success: no issues found in 135 source files
+ruff check .             All checks passed
+ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_digest.py)
+```
+
+**遗留诚实标注**：
+- `ruff format` 单文件 `daily_digest.py` 不在阶段四白名单，按规范未越权格式化。
+- P23 可选 OTel 包未实装（`.venv` 无 `pip` 且 `uv` 不可用），走缺包降级路径；`pip install -e ".[observability]"` 验证延期。
 ```
 
 ## 角色循环（固化）
