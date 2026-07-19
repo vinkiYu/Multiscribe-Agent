@@ -119,6 +119,28 @@ class Database:
         await self.connection.executescript(
             """
             CREATE VIRTUAL TABLE IF NOT EXISTS kb_documents_fts USING fts5(name, summary, body);
+            CREATE TRIGGER IF NOT EXISTS trg_kb_documents_ai AFTER INSERT ON kb_documents BEGIN
+                INSERT INTO kb_documents_fts(rowid, name, summary, body)
+                VALUES (
+                    new.rowid,
+                    COALESCE(json_extract(new.data, '$.name'), ''),
+                    COALESCE(json_extract(new.data, '$.summary'), ''),
+                    ''
+                );
+            END;
+            CREATE TRIGGER IF NOT EXISTS trg_kb_documents_ad AFTER DELETE ON kb_documents BEGIN
+                DELETE FROM kb_documents_fts WHERE rowid = old.rowid;
+            END;
+            CREATE TRIGGER IF NOT EXISTS trg_kb_documents_au AFTER UPDATE ON kb_documents BEGIN
+                DELETE FROM kb_documents_fts WHERE rowid = old.rowid;
+                INSERT INTO kb_documents_fts(rowid, name, summary, body)
+                VALUES (
+                    new.rowid,
+                    COALESCE(json_extract(new.data, '$.name'), ''),
+                    COALESCE(json_extract(new.data, '$.summary'), ''),
+                    ''
+                );
+            END;
             CREATE INDEX IF NOT EXISTS idx_kb_documents_category ON kb_documents(category_id);
             CREATE INDEX IF NOT EXISTS idx_kb_chunks_document ON kb_chunks(document_id);
             CREATE TABLE IF NOT EXISTS kb_chunk_dedup (
