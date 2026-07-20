@@ -47,11 +47,18 @@
 | P22 | Interop 互操作层 | 🟢 已通过 | 2026-07-19 | InteropKey(sha256)/SlidingWindowLimiter/ToolRegistry;/api/ai/v1/{register,tools,execute,keys/{id}/approve};3 个 tool(list_sources/kb_search/list_publishers);10 测试;288 全量;rev1 补入 app.py |
 | P23 | 完整可观测性(OTel) | 🟢 已通过 | 2026-07-19 | optional.py 缺包降级;OTel tracer(console/OTLP/no-op)+meter(Counter/Histogram);/metrics 端点;/healthz;structlog trace_id;executor/publisher 埋点;pyproject observability extra;14 测试;288 全量 |
 | P24 | Loop Engineering 深化 | 🟢 已通过 | 2026-07-19 | LoopSpec(max_rounds/threshold/convergence_delta)+execute_loop_step 多轮;exit_reason 4 分类(threshold/convergence/max_rounds/stuck);feedback_loop.trigger_refinement;data/skills/loop-engineering-patterns/SKILL.md;20 测试;288 全量;rev1 修 score_diff=abs() |
+| P25 | 架构债清理总览 | 📋 已规划 | 2026-07-20 | 基于 ARCHITECTURE_EVALUATION_REPORT 拆解 P0-P3 缺陷为 5 个任务包;复核每条缺陷的真实代码状态(P0-3/P0-4 部分已被阶段四覆盖) |
+| P25.1 | P0 生产就绪门禁 | 🟢 已通过 | 2026-07-20 | P0-1 上下文溢出截断+should_warn_budget;P0-2 stream()超时(asyncio.wait_for 滚动 deadline);P0-3 trace_headers.py httpx hook;P0-4 EndpointRateLimiter middleware(429+Retry-After);16 新测试;304 全量;mypy/ruff 全绿 |
+| P26 | Harness 与工作流稳定性 | ⚪ 未开始 | — | P1-1 ReAct 死锁检测(连续 3 次相同调用);P1-2 budget_warning 事件;P1-3 EventBus;P1-4 Loop 迭代持久化(workflow_iterations 表) |
+| P27 | 安全加固与可观测性补全 | ⚪ 未开始 | — | P1-5 慢查询监控;P1-6 告警规则引擎(阈值/窗口/比率);P1-11 SQL 审计日志;P1-12 CSRF double-submit cookie |
+| P28 | 数据层与插件生态 | ⚪ 未开始 | — | P1-7 ConnectionPool(读 N + 写 1);P1-8 jieba 中文分词;P1-9 插件 api_version;P1-10 subprocess 沙箱;P1-13 pytest-cov(≥75%);P1-14 pytest-benchmark |
+| P29 | P2/P3 长期优化（大纲） | ⚪ 未开始 | — | P2 配置版本/暂停恢复/备份/热重载/密钥轮换/契约测试;P3 token 精度/流式工具/读副本/Jaeger UI;持续优化不设硬节点 |
 
 **阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
 **阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
 **阶段三完成里程碑**：P20.1 ✅ → 阶段三完成。
 **阶段四完成里程碑**：P21 ✅ P22 ✅ P23 ✅ P24 ✅ → 阶段四完成。**全部 14 个后置包通过；后 MVP 重构闭环。**
+**阶段五进行中**：P25.1 ✅（P0 门禁已通过）；P26/P27/P28 待执行。
 
 ## 依赖图
 
@@ -95,6 +102,14 @@ P24 Loop Engineering ✅
   └─ agents/workflow/loop_node.py 多轮+LoopSpec
   └─ eval/feedback_loop.py 评估驱动精炼
   └─ data/skills/loop-engineering-patterns/SKILL.md
+
+阶段五（架构债清理，规划中）：
+基于 ARCHITECTURE_EVALUATION_REPORT.md（2026-07-20）
+  └─ P25.1 P0 生产就绪门禁（上下文溢出/超时/trace 传播/限流）
+  └─ P26 Harness 与工作流稳定性（死锁检测/预警/EventBus/迭代持久化）
+  └─ P27 安全加固与可观测性补全（慢查询/告警引擎/SQL 审计/CSRF）
+  └─ P28 数据层与插件生态（连接池/中文分词/版本检查/沙箱/覆盖率/性能基准）
+  └─ P29 P2/P3 长期优化（配置版本/暂停恢复/备份/热重载/密钥轮换/契约测试/token 精度/流式工具/读副本/Jaeger UI）
 
 **全局验证（阶段四 review 汇总）**：
 ```
