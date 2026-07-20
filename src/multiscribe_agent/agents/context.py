@@ -10,6 +10,7 @@ DEFAULT_TOKEN_BUDGET = 120_000
 TOOL_RESULT_LIMIT = 8_000
 TOOL_RESULT_TAIL = 6_000
 MESSAGE_OVERHEAD_TOKENS = 4
+USER_MESSAGE_BUDGET_RATIO = 0.8
 
 
 class HarnessContext:
@@ -46,7 +47,9 @@ class HarnessContext:
 
     def add_user(self, message: str) -> None:
         """Append a user message and trim the context when necessary."""
-        self.messages.append(AIMessage(role="user", content=message))
+        self.messages.append(
+            AIMessage(role="user", content=self._maybe_truncate_user_message(message))
+        )
         self.trim_if_needed()
 
     def add_assistant(self, message: str, tool_calls: list[ToolCall] | None = None) -> None:
@@ -96,6 +99,19 @@ class HarnessContext:
         """Estimate message tokens monotonically using a four-characters heuristic."""
         selected = self.build_messages(trim=False) if messages is None else messages
         return sum(self._estimate_message(message) for message in selected)
+
+    def should_warn_budget(self, threshold: float = USER_MESSAGE_BUDGET_RATIO) -> bool:
+        """Return whether the untrimmed context has reached a budget threshold."""
+        if self.token_budget <= 0:
+            return False
+        return self.estimate_tokens(self.build_messages(trim=False)) >= int(
+            self.token_budget * threshold
+        )
+
+    def estimated_tokens_remaining(self) -> int:
+        """Return the approximate number of tokens available before the budget is hit."""
+        current = self.estimate_tokens(self.build_messages(trim=False))
+        return max(0, self.token_budget - current)
 
     def trim_if_needed(self) -> None:
         """Trim middle history while preserving the first and recent atomic groups."""
@@ -168,18 +184,38 @@ class HarnessContext:
         marker = f"[tool result truncated: original_chars={len(content)}]\n"
         return marker + content[-tail_length:]
 
+    def _maybe_truncate_user_message(self, message: str) -> str:
+        """Keep one user message within the share of the budget reserved for it."""
+        estimated = self._estimate_text(message)
+        threshold = max(1, int(self.token_budget * USER_MESSAGE_BUDGET_RATIO))
+        if estimated <= threshold:
+            return message
+
+        marker = f"[Truncated]\n[original_tokens={estimated}; message_budget={threshold}]"
+        char_limit = max(len(marker) + 2, threshold * 4)
+        remaining = max(0, char_limit - len(marker) - 2)
+        head_length = remaining // 2
+        tail_length = remaining - head_length
+        head = message[:head_length]
+        tail = message[-tail_length:] if tail_length else ""
+        return f"{head}\n{marker}\n{tail}"
+
     @staticmethod
     def _estimate_group(group: list[AIMessage]) -> int:
         return sum(HarnessContext._estimate_message(message) for message in group)
 
     @staticmethod
     def _estimate_message(message: AIMessage) -> int:
-        payload_length = len(message.content)
+        estimate = HarnessContext._estimate_text(message.content)
         if message.tool_calls:
-            payload_length += len(
-                json.dumps(
-                    [tool_call.model_dump(mode="json") for tool_call in message.tool_calls],
-                    ensure_ascii=False,
-                )
+            tool_payload = json.dumps(
+                [tool_call.model_dump(mode="json") for tool_call in message.tool_calls],
+                ensure_ascii=False,
             )
-        return max(1, (payload_length + 3) // 4) + MESSAGE_OVERHEAD_TOKENS
+            estimate += (len(tool_payload) + 3) // 4
+        return max(1, estimate)
+
+    @staticmethod
+    def _estimate_text(text: str) -> int:
+        """Estimate tokens for raw text using the four-characters heuristic."""
+        return (len(text) + MESSAGE_OVERHEAD_TOKENS + 3) // 4

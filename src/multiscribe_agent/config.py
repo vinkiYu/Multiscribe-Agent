@@ -65,6 +65,31 @@ class StorageConfig(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
+class RateLimitConfig(BaseModel):
+    """Per-path sliding-window limits for human-facing API endpoints."""
+
+    enabled: bool = True
+    rules: dict[str, tuple[int, int]] = Field(
+        default_factory=lambda: {
+            "/api/auth/login": (10, 60),
+            "/api/agents/run": (20, 60),
+            "/api/digest/run": (5, 60),
+        }
+    )
+    exempt_paths: tuple[str, ...] = ("/healthz", "/metrics", "/api/ai/v1/")
+
+    @field_validator("rules")
+    @classmethod
+    def _validate_rules(cls, value: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+        """Reject malformed path rules before middleware initialization."""
+        for path, (limit, window_seconds) in value.items():
+            if not path.startswith("/"):
+                raise ValueError("rate limit paths must start with '/'")
+            if limit <= 0 or window_seconds <= 0:
+                raise ValueError("rate limit and window must be positive")
+        return value
+
+
 def _default_ai_providers() -> list[ProviderConfig]:
     return [
         ProviderConfig(
@@ -229,6 +254,7 @@ class SystemSettings(BaseSettings):
     closed_plugins: list[str] = Field(default_factory=list)
     selection_fetch_days: int = 2
     selection_query_field: str = "ingestion_date"
+    rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
 
     @field_validator("default_digest_targets", "default_digest_adapter_ids", mode="before")
     @classmethod

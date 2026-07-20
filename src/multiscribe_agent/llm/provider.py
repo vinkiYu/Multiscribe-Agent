@@ -25,6 +25,7 @@ from multiscribe_agent.domain.models import (
     ToolCall,
     ToolDefinition,
 )
+from multiscribe_agent.observability.trace_headers import install_trace_propagation
 
 
 class AIProvider(Protocol):
@@ -209,11 +210,15 @@ def create_provider(
     if config.type == "openai":
         from multiscribe_agent.llm.providers.openai import OpenAIProvider
 
-        return OpenAIProvider(config, resolved_model, resolved_temperature, proxy)
+        openai_provider = OpenAIProvider(config, resolved_model, resolved_temperature, proxy)
+        install_trace_propagation(openai_provider)
+        return openai_provider
     if config.type == "anthropic":
         from multiscribe_agent.llm.providers.anthropic import AnthropicProvider
 
-        return AnthropicProvider(config, resolved_model, resolved_temperature, proxy)
+        anthropic_provider = AnthropicProvider(config, resolved_model, resolved_temperature, proxy)
+        install_trace_propagation(anthropic_provider)
+        return anthropic_provider
     if config.type in {"google", "ollama"}:
         raise NotImplementedError(f"{config.type} provider is deferred to P18")
     raise ProviderError(f"unknown provider type: {config.type}")

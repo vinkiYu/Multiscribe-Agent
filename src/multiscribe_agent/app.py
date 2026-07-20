@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from multiscribe_agent.api.middleware import EndpointRateLimiter
 from multiscribe_agent.api.routes import (
     agents,
     ai_v1,
@@ -58,6 +59,12 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    if settings.rate_limit.enabled:
+        app.add_middleware(
+            EndpointRateLimiter,
+            rules=settings.rate_limit.rules,
+            exempt_paths=settings.rate_limit.exempt_paths,
+        )
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, str]:
