@@ -1,6 +1,6 @@
 # MultiscribeAgent
 
-> 本地优先、可编排、可追踪的 AI 内容生产平台。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
+> 一个面向资讯采集、AI 筛选、摘要生成和多渠道发布的 Agent 应用平台。系统支持 RSS、GitHub Trending、Follow、AI Search 等内容源接入，通过可配置 Agent 和自研 DAG 工作流完成“内容采集 → 去重 → AI 筛选 → 摘要生成 → 多平台发布”的自动化闭环，并提供知识库、记忆、MCP、Interop、调度和评估能力。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
 
 <p align="center">
   <img src="docs/pic/宣传页.png" alt="MultiscribeAgent 宣传页" width="100%">
@@ -228,16 +228,6 @@ uv run pytest -q
 GPL-3.0-only — 详见 [LICENSE](LICENSE)
 
 ---
-
-## 🙏 致谢与谱系
-
-| 项目 | 作用 |
-|---|---|
-| [PrismFlowAgent](https://github.com/vinkiYu/PrismFlowAgent) | TypeScript 原始实现，本项目的重构起点 |
-| [LangChain](https://github.com/langchain-ai/langchain) | LLM 编排框架 |
-| [FastAPI](https://github.com/tiangolo/fastapi) | API 框架 |
-| [SQLite](https://www.sqlite.org/) | 嵌入式数据库 |
-| [Tailwind CSS](https://tailwindcss.com/) | 前端样式框架 |
 
 ---
 
