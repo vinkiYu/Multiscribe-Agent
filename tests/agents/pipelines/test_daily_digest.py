@@ -193,6 +193,15 @@ def test_workflow_declares_five_nodes_and_data_dependencies() -> None:
     assert workflow.steps[2].exit_condition == "llm"
 
 
+def test_explicit_empty_targets_disable_default_publishers() -> None:
+    """An explicit empty target list is a preview-only run, while omission keeps defaults."""
+    preview = DailyDigestConfig.from_mapping({"curate_agent_id": "curator", "targets": []})
+    default = DailyDigestConfig.from_mapping({"curate_agent_id": "curator"})
+
+    assert preview.targets == []
+    assert default.targets == ["feishu_bot", "wecom_bot"]
+
+
 @pytest.mark.asyncio
 async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() -> None:
     """Mocked pipeline retries curation, sorts selected entries, and isolates a target error."""
@@ -203,6 +212,8 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
     result = await pipeline.run(run_date="2026-07-17")
 
     assert result["result_count"] == 2
+    assert [item["title"] for item in result["curated"]] == ["Three", "One"]
+    assert result["overview"] == "今日重点资讯概览"
     assert result["targets"]["good"]["status"] == "success"
     assert result["targets"]["bad"]["status"] == "error"
     assert ingestion.calls == [

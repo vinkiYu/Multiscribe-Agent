@@ -74,7 +74,8 @@ class DailyDigestConfig:
         if not isinstance(curate_agent_id, str):
             raise ValueError("daily digest config requires curate_agent_id")
         adapter_ids = _string_list(values.get("adapter_ids"), "adapter_ids")
-        targets = _string_list(values.get("targets"), "targets")
+        raw_targets = values.get("targets")
+        targets = _string_list(raw_targets, "targets")
         raw_configs = values.get("adapter_configs", {})
         if not isinstance(raw_configs, Mapping):
             raise ValueError("adapter_configs must be an object")
@@ -88,7 +89,7 @@ class DailyDigestConfig:
             adapter_ids=adapter_ids,
             fetch_days=_positive_int(values.get("fetch_days"), 2, "fetch_days"),
             top_n=_positive_int(values.get("top_n"), 5, "top_n"),
-            targets=targets or ["feishu_bot", "wecom_bot"],
+            targets=targets if raw_targets is not None else ["feishu_bot", "wecom_bot"],
             enable_overview=_bool_value(values.get("enable_overview"), True, "enable_overview"),
             loop_max_iterations=_positive_int(
                 values.get("loop_max_iterations"), 3, "loop_max_iterations"
@@ -184,10 +185,17 @@ class DailyDigestPipeline:
         result_count = payload.get("result_count")
         if not isinstance(result_count, int) or isinstance(result_count, bool):
             raise WorkflowError("daily digest final result is missing result_count")
+        targets = payload.get("targets", {})
         return {
             "result_count": result_count,
-            "message": f"published {result_count} curated items",
-            "targets": payload.get("targets", {}),
+            "message": (
+                f"published {result_count} curated items"
+                if targets
+                else f"generated {result_count} curated items without publishing"
+            ),
+            "targets": targets,
+            "curated": payload.get("curated", []),
+            "overview": payload.get("overview", ""),
         }
 
     async def stream(self, *, run_date: str | None = None) -> AsyncIterator[WorkflowEvent]:
@@ -389,7 +397,14 @@ class _DailyDigestStepExecutor:
                     result_data=result,
                     error_message=str(error) if status == "error" and error is not None else None,
                 )
-        return _dump_json({"result_count": len(items), "targets": targets})
+        return _dump_json(
+            {
+                "result_count": len(items),
+                "targets": targets,
+                "curated": [_digest_item_dict(item) for item in items],
+                "overview": overview,
+            }
+        )
 
 
 def _string_list(value: object, name: str) -> list[str]:
