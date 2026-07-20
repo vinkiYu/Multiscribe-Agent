@@ -10,7 +10,7 @@ export default function Settings() {
       <div className="page-head">
         <div>
           <h1>系统设置</h1>
-          <p>此页展示环境配置项和填写示例。页面不会保存修改，请在服务端 .env 中配置后重启服务。</p>
+          <p>此页只展示需要填写的配置项和示例。这里的输入框不能保存；请编辑项目根目录的 .env 文件后重启服务。</p>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ function BasicSettings() {
 function ProviderSettings() {
   return <SettingsTable title="AI 模型服务" rows={[
     ['OpenAI', 'OPENAI_API_KEY', '支持 OPENAI_API_BASE_URL 中转端点'],
-    ['Anthropic', 'ANTHROPIC_API_KEY', '配置后可在 Agent 中选择'],
+    ['Anthropic', 'ANTHROPIC_API_KEY', '配置后可在 AI 摘要规则中选择'],
     ['Google', 'GOOGLE_API_KEY', '可选'],
     ['Ollama（本地）', '无需 key', '需要本机运行 Ollama 服务'],
   ]} />
@@ -65,7 +65,7 @@ function SourceSettings() {
       <div className="card-head"><span>采集源配置</span></div>
       <div className="card-body">
         <p className="text-muted text-sm" style={{ marginBottom: 16 }}>
-          以下参数写入 .env 后重启服务生效。实际配置请编辑项目根目录下的 <code>.env</code> 文件。
+          以下内容写入 <code>.env</code> 文件后，需要重启服务才会生效。请直接编辑项目根目录下的 <code>.env</code> 文件。
         </p>
 
         <details style={{ marginBottom: 16 }}>
@@ -81,8 +81,8 @@ function SourceSettings() {
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>AI 搜索</summary>
           <div className="grid cols-2" style={{ marginTop: 12, gap: 12 }}>
             <Field label="AI_SEARCH_PROVIDER" placeholder="perplexity / phind / custom" />
-            <Field label="PERPLEXITY_API_KEY" placeholder="API Key（留空则不启用）" type="password" />
-            <Field label="PHIND_API_KEY" placeholder="API Key（留空则不启用）" type="password" />
+            <Field label="PERPLEXITY_API_KEY" placeholder="访问密钥（留空则不启用）" type="password" />
+            <Field label="PHIND_API_KEY" placeholder="访问密钥（留空则不启用）" type="password" />
             <Field label="AI_SEARCH_CUSTOM_ENDPOINT" placeholder="https://api.example.com/v1/chat" />
           </div>
         </details>
@@ -108,14 +108,14 @@ function PublisherSettings() {
         <div className="card-head"><span>发布端配置</span></div>
         <div className="card-body">
           <p className="text-muted text-sm" style={{ marginBottom: 16 }}>
-            敏感凭据不会在此页保存或回显。请将实际值保留在 .env。
+            访问密钥等敏感信息不会在这里保存或显示。请将实际值写入 .env 文件。
           </p>
 
           <details style={{ marginBottom: 16 }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>微信公众号</summary>
             <div className="grid cols-2" style={{ marginTop: 12, gap: 12 }}>
               <Field label="WECHAT_APP_ID" placeholder="wx…" />
-              <Field label="WECHAT_APP_SECRET" placeholder="App Secret（请在 .env 中配置）" type="password" />
+              <Field label="WECHAT_APP_SECRET" placeholder="应用密钥（请在 .env 中配置）" type="password" />
             </div>
           </details>
 
@@ -145,13 +145,13 @@ function PublisherSettings() {
           <details>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>飞书群机器人</summary>
             <div style={{ marginTop: 12 }}>
-              <Field label="FEISHU_WEBHOOK" placeholder="飞书自定义机器人 Webhook 地址" />
+              <Field label="FEISHU_WEBHOOK" placeholder="飞书机器人连接地址（Webhook）" />
             </div>
           </details>
           <details style={{ marginTop: 12 }}>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>企业微信机器人</summary>
             <div style={{ marginTop: 12 }}>
-              <Field label="WECOM_WEBHOOK" placeholder="企业微信群机器人 Webhook 地址" />
+              <Field label="WECOM_WEBHOOK" placeholder="企业微信机器人连接地址（Webhook）" />
             </div>
           </details>
         </div>

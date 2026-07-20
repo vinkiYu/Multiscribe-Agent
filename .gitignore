@@ -15,8 +15,10 @@ node_modules/
 # === Agent 执行与内部文档 (本地使用,不推 GitHub) ===
 # Agent 执行prompt、review 记录
 codex/
-# 所有规划/设计/阶段文档(保留本地开发用,GitHub 只推 src/ tests/ scripts/ README/)
-docs/
+# 规划/设计/阶段文档保留本地；README 展示用截图位于 docs/pic/ 并推送。
+docs/*
+!docs/pic/
+!docs/pic/*.png
 DESIGN.md
 
 # === 本地开发产物 (不上传) ===

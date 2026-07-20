@@ -69,7 +69,7 @@ export default function Generation() {
   const handlePublish = async () => {
     if (publishing) return
     const ok = window.confirm(
-      '确认重新执行摘要流程并发布到飞书机器人？这会将新生成的内容发送到对应群组。',
+      '确认重新生成摘要并发送到已设置的渠道？这会发出一份新的摘要。',
     )
     if (!ok) return
     setPublishing(true)
@@ -85,7 +85,7 @@ export default function Generation() {
       })
       setTargets(normalizeTargets(publishResult.targets))
       setPublished(true)
-      showSuccess('已执行发布流程，请查看下方渠道结果')
+      showSuccess('已重新生成并发送，请查看下方结果')
     } catch (err) {
       showError('发布失败：' + friendlyError(err))
     } finally {
@@ -97,11 +97,11 @@ export default function Generation() {
     <>
       <div className="page-head">
         <div>
-          <h1>{published ? '本次运行结果' : '摘要预览'}</h1>
+          <h1>{published ? '本次发送结果' : '摘要与发布'}</h1>
           <p>
             {published
-              ? '以下是本次生成的摘要及各发布渠道的结果。'
-              : '查看 AI 生成的摘要。编辑内容只影响当前预览和复制；点击发布会按当前配置重新执行摘要流程。'}
+              ? '这里显示本次生成的摘要，以及发送到各渠道的结果。'
+              : '这里显示刚生成的摘要。编辑只影响当前页面和复制内容；点击发送会按当前设置重新生成摘要，并发送到已配置的渠道。'}
           </p>
         </div>
         <div className="actions">
@@ -114,7 +114,7 @@ export default function Generation() {
             disabled={!markdown}
             type="button"
           >
-            {editing ? '完成编辑' : '编辑摘要'}
+            {editing ? '完成编辑' : '修改当前摘要'}
           </button>
           {published ? (
             <Link className="btn" to="/history">
@@ -127,7 +127,7 @@ export default function Generation() {
               disabled={!markdown || publishing}
               type="button"
             >
-              {publishing ? <span className="spinner" /> : '重新执行并发布'}
+              {publishing ? <span className="spinner" /> : '重新生成并发送'}
             </button>
           )}
         </div>
@@ -136,7 +136,7 @@ export default function Generation() {
       {/* Publish result panel */}
       {targets.length > 0 && (
         <div className="toolbar" style={{ marginBottom: 16 }}>
-          <span className="text-muted text-sm">发布结果：</span>
+          <span className="text-muted text-sm">发送结果：</span>
           {targets.map(t => (
             <span
               key={t.target_id}
@@ -205,13 +205,13 @@ export default function Generation() {
       ) : (
         <div className="empty">
           <strong>暂无摘要</strong>
-          <p>请先在「采集与筛选」页面抓取内容并生成摘要预览。</p>
+          <p>请先在「内容来源」抓取内容并生成摘要。</p>
           <Link
             className="btn"
             to="/selection"
             style={{ marginTop: 16, display: 'inline-flex' }}
           >
-            去采集与筛选
+            前往内容来源
           </Link>
         </div>
       )}

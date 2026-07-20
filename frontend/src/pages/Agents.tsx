@@ -8,7 +8,7 @@ import type { WorkflowDefinition } from '../services/workflowService'
 import { useToast } from '../context/ToastContext'
 
 const EMPTY_AGENT: Omit<AgentDefinition, 'id'> = {
-  name: '新 Agent',
+  name: '新 AI 摘要规则',
   description: '',
   system_prompt:
     '你是资讯摘要助手。请按规则挑选最相关的内容，并返回包含标题、摘要、相关度评分的列表。',
@@ -80,7 +80,7 @@ export default function Agents() {
     if (!editing?.name?.trim()) e.name = '请填写名称'
     if (!editing?.provider_id?.trim()) e.provider_id = '请选择模型服务'
     if (!editing?.model?.trim()) e.model = '请选择模型'
-    if (!editing?.system_prompt?.trim()) e.system_prompt = '请填写系统指令'
+    if (!editing?.system_prompt?.trim()) e.system_prompt = '请填写给 AI 的处理要求'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -102,7 +102,7 @@ export default function Agents() {
 
   const handleDelete = async (a: AgentDefinition) => {
     const ok = window.confirm(
-      `删除 Agent「${a.name}」？使用该 Agent 的任务可能无法运行。此操作无法撤销。`,
+      `删除 AI 摘要规则「${a.name}」？使用这条规则的任务可能无法运行。此操作无法撤销。`,
     )
     if (!ok) return
     try {
@@ -116,7 +116,7 @@ export default function Agents() {
 
   const handleDeleteWf = async (id: string, name: string) => {
     const ok = window.confirm(
-      `删除工作流「${name}」？相关定时任务可能无法运行。此操作无法撤销。`,
+      `删除处理流程「${name}」？相关定时任务可能无法正常运行。此操作无法撤销。`,
     )
     if (!ok) return
     try {
@@ -132,9 +132,9 @@ export default function Agents() {
     <>
       <div className="page-head">
         <div>
-          <h1>Agent 与生成规则</h1>
+          <h1>AI 摘要规则</h1>
           <p>
-            Agent 决定使用哪个模型、遵循什么指令以及如何生成摘要。工作流用于将多个处理步骤组合成可重复运行的流程。
+            在这里选择 AI 模型，并说明它应如何挑选、整理和输出内容。处理流程会把这些步骤组合起来，按同样的方式重复执行。
           </p>
         </div>
         <div className="actions">
@@ -143,7 +143,7 @@ export default function Agents() {
           </button>
           {tab === 'agents' && (
             <button className="btn primary" onClick={openAdd} type="button">
-              新建 Agent
+              新建 AI 摘要规则
             </button>
           )}
         </div>
@@ -155,22 +155,22 @@ export default function Agents() {
           onClick={() => setTab('agents')}
           type="button"
         >
-          Agent（{agents.length}）
+          AI 摘要规则（{agents.length}）
         </button>
         <button
           className={'tab ' + (tab === 'workflows' ? 'active' : '')}
           onClick={() => setTab('workflows')}
           type="button"
         >
-          工作流（{workflows.length}）
+          处理流程（{workflows.length}）
         </button>
       </div>
 
       {tab === 'agents' ? (
         agents.length === 0 ? (
           <div className="empty">
-            <strong>还没有 Agent</strong>
-            <p>Agent 用于定义 AI 如何生成摘要。点击「新建 Agent」开始。</p>
+            <strong>还没有 AI 摘要规则</strong>
+            <p>一条规则决定 AI 如何生成摘要。点击「新建 AI 摘要规则」开始。</p>
           </div>
         ) : (
           <article className="card">
@@ -234,12 +234,12 @@ export default function Agents() {
               marginBottom: 16,
             }}
           >
-            工作流编辑器即将开放。当前仅支持查看和删除已有工作流。
+            处理流程暂时不能在这里编辑。你仍可查看或删除已有流程。
           </div>
           {workflows.length === 0 ? (
             <div className="empty">
-              <strong>暂无工作流</strong>
-              <p>工作流编辑器即将开放，敬请期待。</p>
+              <strong>暂无处理流程</strong>
+              <p>暂时还不能在页面中新建或编辑处理流程。</p>
             </div>
           ) : (
             <article className="card">
@@ -291,8 +291,8 @@ export default function Agents() {
         >
           <div className="modal" style={{ maxWidth: 640 }}>
             <div className="modal-head">
-              <strong>{editing.id.startsWith('agent_') ? '新建 Agent' : '编辑 Agent'}</strong>
-              <button className="btn icon-btn" onClick={closeModal} type="button" aria-label="关闭 Agent 编辑">
+              <strong>{editing.id.startsWith('agent_') ? '新建 AI 摘要规则' : '编辑 AI 摘要规则'}</strong>
+              <button className="btn icon-btn" onClick={closeModal} type="button" aria-label="关闭 AI 摘要规则编辑">
                 <X size={16} aria-hidden="true" />
               </button>
             </div>
@@ -322,7 +322,7 @@ export default function Agents() {
                 />
               </div>
               <div className="field">
-                <label>系统指令</label>
+                <label>给 AI 的处理要求</label>
                 <textarea
                   className="input"
                   style={{ minHeight: 100 }}
@@ -332,7 +332,7 @@ export default function Agents() {
                   }
                 />
                 <span className="text-muted text-xs">
-                  说明这个 Agent 的角色、规则和输出要求。
+                  告诉 AI 需要关注什么、怎样筛选，以及摘要应怎样写。
                 </span>
                 {errors.system_prompt && (
                   <span style={{ color: '#c0392b', fontSize: 11 }}>{errors.system_prompt}</span>

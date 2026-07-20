@@ -79,7 +79,7 @@ export default function KnowledgeBase() {
       setUploadName('')
       setUploadText('')
       setNotice({
-        message: `文档「${created.name}」已添加，共 ${created.chunk_count} 个分块`,
+        message: `文档「${created.name}」已添加，共 ${created.chunk_count} 个可检索片段`,
         tone: 'success',
       })
       setTab('search')
@@ -142,7 +142,7 @@ export default function KnowledgeBase() {
 
   const handleDelete = async (id: string) => {
     const document = documents.find(item => item.id === id)
-    if (!window.confirm(`删除文档「${document?.name ?? id}」？文档分块和索引也会一并删除。`)) return
+    if (!window.confirm(`删除文档「${document?.name ?? id}」？该文档保存的可检索内容也会一并删除。`)) return
     try {
       await knowledgeService.deleteDocument(id)
       setDocuments(current => current.filter(d => d.id !== id))
@@ -161,7 +161,7 @@ export default function KnowledgeBase() {
       <div className="page-head">
         <div>
           <h1>知识库</h1>
-          <p>上传文档供 Agent 检索，支持文本粘贴和 .txt、.md、.csv 文件导入。</p>
+          <p>上传文档，让 AI 在生成摘要时参考。支持直接粘贴文本，以及导入 .txt、.md、.csv 文件。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={refreshAll} disabled={loading} type="button">
@@ -283,8 +283,8 @@ export default function KnowledgeBase() {
               </ul>
               <h4 style={{ marginTop: 0, marginBottom: 8, fontSize: '0.95rem' }}>工作原理</h4>
               <p className="text-sm text-muted">
-                文档内容会被分块（chunk），每块生成向量嵌入，结合 FTS5 全文索引，
-                通过 RRF（Reciprocal Rank Fusion）混合检索，返回最相关的结果。
+                系统会把文档拆成便于查找的小段，同时按关键词和内容含义匹配，
+                结果会按相关性排序。
               </p>
               <p className="text-sm text-muted" style={{ marginTop: 8 }}>
                 PDF 和 DOCX 暂不支持浏览器直接导入，请先复制文本内容后粘贴到上方输入框。
@@ -358,7 +358,7 @@ export default function KnowledgeBase() {
               {loading && documents.length === 0 ? (
                 <div className="empty">
                   <strong>正在加载文档</strong>
-                  <p>正在读取知识库中的文档和索引状态。</p>
+                  <p>正在读取已上传的文档。</p>
                 </div>
               ) : documents.length === 0 ? (
                 <div className="empty">
@@ -373,7 +373,7 @@ export default function KnowledgeBase() {
                       <tr>
                         <th>名称</th>
                         <th>分类</th>
-                        <th>分块</th>
+                        <th>可检索片段</th>
                         <th>创建时间</th>
                         <th>操作</th>
                       </tr>

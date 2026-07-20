@@ -49,8 +49,8 @@ export default function Logs() {
     <>
       <div className="page-head">
         <div>
-          <h1>技术日志</h1>
-          <p>最近 100 条任务运行记录，包含状态、耗时和详细消息。</p>
+          <h1>系统日志</h1>
+          <p>最近 100 次任务的运行记录，包含完成情况和耗时。点击一条记录可查看完整信息。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={load} disabled={loading} type="button">
@@ -77,8 +77,8 @@ export default function Logs() {
 
       {filtered.length === 0 ? (
         <div className="empty">
-          <strong>暂无日志</strong>
-          <p>运行一次摘要任务即可看到记录。</p>
+          <strong>暂无系统日志</strong>
+          <p>运行一次内容处理后，记录会显示在这里。</p>
         </div>
       ) : (
         <article className="card">

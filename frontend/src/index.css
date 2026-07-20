@@ -106,6 +106,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
   font-weight: 650;
   transition: color 140ms ease, background 140ms ease, border-color 140ms ease, transform 120ms ease;
+  position: relative;
   cursor: pointer;
   background: transparent;
   text-decoration: none;
@@ -124,6 +125,51 @@ a { color: inherit; text-decoration: none; }
 }
 
 .side-nav a:active { transform: translateY(1px); }
+
+.nav-drag-handle {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease;
+}
+
+.side-nav a:hover .nav-drag-handle,
+.side-nav a:focus-visible .nav-drag-handle {
+  color: var(--color-fg);
+  opacity: 0.7;
+}
+
+.side-nav a.dragging {
+  cursor: grabbing;
+  opacity: 0.54;
+}
+
+.side-nav a.dragging:active { transform: none; }
+
+.side-nav.is-reordering a {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.side-nav a.drop-before::before,
+.side-nav a.drop-after::after {
+  position: absolute;
+  right: 8px;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  content: '';
+}
+
+.side-nav a.drop-before::before { top: -3px; }
+.side-nav a.drop-after::after { bottom: -3px; }
+
+@media (hover: none) {
+  .nav-drag-handle { opacity: 0.38; }
+}
 
 .nav-icon {
   width: 20px;

@@ -110,8 +110,8 @@ export default function Memory() {
     <>
       <div className="page-head">
         <div>
-          <h1>记忆与偏好</h1>
-          <p>设置内容偏好，数据保存在浏览器本地{backendOnline ? '，并同步至后端' : ''}。</p>
+          <h1>内容偏好</h1>
+          <p>设置希望优先关注的主题和每份摘要的条数。设置会保存在当前浏览器{backendOnline ? '，并同步到系统' : ''}。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={exportPreferences} type="button">
@@ -205,11 +205,11 @@ export default function Memory() {
         </article>
 
         <article className="card">
-          <div className="card-head"><span>导入偏好</span></div>
+          <div className="card-head"><span>导入设置</span></div>
           <div className="card-body">
-            <p className="text-muted text-sm">粘贴先前导出的 JSON，导入将覆盖当前浏览器中的偏好。</p>
+            <p className="text-muted text-sm">粘贴之前导出的设置内容（JSON 格式）。导入后会替换当前浏览器中的设置。</p>
             <textarea
-              aria-label="导入偏好 JSON"
+              aria-label="导入设置内容"
               value={importValue}
               placeholder='{"preferred_tags": [], "blocked_sources": [], "push_time": "09:00", "max_items_per_digest": 5}'
               onChange={event => setImportValue(event.target.value)}
@@ -222,7 +222,7 @@ export default function Memory() {
               disabled={!importValue.trim()}
               type="button"
             >
-              <Upload size={16} aria-hidden="true" />导入 JSON
+              <Upload size={16} aria-hidden="true" />导入设置
             </button>
           </div>
         </article>
@@ -231,12 +231,12 @@ export default function Memory() {
       <section style={{ marginTop: 16 }}>
         <article className="card">
           <div className="card-head">
-            <span>记忆历史</span>
+            <span>偏好记录</span>
             {backendOnline === true && (
               <span className="badge">{history.length} 条</span>
             )}
             {backendOnline === false && (
-              <span className="badge">仅本地</span>
+              <span className="badge">本机保存</span>
             )}
             {backendOnline === null && (
               <span className="badge">检查中</span>
@@ -244,17 +244,17 @@ export default function Memory() {
           </div>
           {historyLoading ? (
             <div className="empty" style={{ minHeight: 160 }}>
-              <strong>正在加载记忆历史…</strong>
+              <strong>正在加载偏好记录…</strong>
             </div>
           ) : backendOnline === false ? (
             <div className="empty" style={{ minHeight: 160 }}>
-              <strong>记忆后端 API 尚未上线</strong>
-              <p>保存的本地偏好仍会在刷新页面后恢复。Agent 记忆历史将在 P17 后端上线后显示。</p>
+              <strong>偏好记录暂不可用</strong>
+              <p>你已保存的内容偏好会在刷新后保留。更多自动记录会在功能启用后显示。</p>
             </div>
           ) : history.length === 0 ? (
             <div className="empty" style={{ minHeight: 160 }}>
-              <strong>尚无记忆记录</strong>
-              <p>Agent 在运行过程中产生的关键决策和偏好将自动沉淀在这里。</p>
+              <strong>尚无偏好记录</strong>
+              <p>AI 在运行时产生的关键偏好和选择会显示在这里。</p>
             </div>
           ) : (
             <div className="card-body" style={{ padding: 0 }}>

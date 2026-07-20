@@ -23,7 +23,7 @@ const PRESETS: Array<{ label: string; cron: string }> = [
 ]
 
 const EMPTY_TASK: Omit<ScheduleTask, 'id'> = {
-  name: '新任务',
+  name: '新的定时任务',
   task_type: 'daily_digest',
   cron: '0 8 * * *',
   enabled: true,
@@ -43,7 +43,7 @@ function withTaskDefaults(task: ScheduleTask): ScheduleTask {
 }
 
 function describeCron(cron: string): string {
-  return PRESETS.find(p => p.cron === cron)?.label ?? '自定义计划'
+  return PRESETS.find(p => p.cron === cron)?.label ?? '自定义时间规则'
 }
 
 export default function TaskManagement() {
@@ -145,8 +145,8 @@ export default function TaskManagement() {
     <>
       <div className="page-head">
         <div>
-          <h1>自动任务</h1>
-          <p>设置按计划自动运行的任务，例如每天定时生成摘要。</p>
+          <h1>定时任务</h1>
+          <p>设置系统在指定时间自动生成摘要，并按当前配置发送。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={load} disabled={loading} type="button">
@@ -160,8 +160,8 @@ export default function TaskManagement() {
 
       {tasks.length === 0 ? (
         <div className="empty">
-          <strong>暂无自动任务</strong>
-          <p>你可以创建一个每日定时任务，让系统在指定时间自动运行摘要流程。</p>
+          <strong>暂无定时任务</strong>
+          <p>创建一条定时任务后，系统会在指定时间自动生成并发送摘要。</p>
         </div>
       ) : (
         <article className="card">
@@ -270,9 +270,9 @@ export default function TaskManagement() {
                 </select>
               </div>
               <div className="field">
-                <label>摘要配置</label>
+                <label>运行内容</label>
                 <div className="text-muted text-sm">
-                  使用系统默认精选 Agent，发布渠道沿用服务端配置。保存后可通过「立即运行」验证任务。
+                  系统会使用默认的 AI 摘要规则，并发送到已经设置好的渠道。保存后可点「立即运行」检查是否正常。
                 </div>
               </div>
               <div className="field">
@@ -293,17 +293,17 @@ export default function TaskManagement() {
                 </div>
               </div>
               <div className="field">
-                <label>自定义 Cron 表达式（高级）</label>
+                <label>高级时间规则（可选）</label>
                 <input
                   className="input text-mono"
                   value={editing.cron ?? ''}
                   onChange={e =>
                     setEditing(p => (p ? { ...p, cron: e.target.value } : p))
                   }
-                  placeholder="0 8 * * *"
+                  placeholder="例如：0 8 * * *（每天 08:00）"
                 />
                 <span className="text-muted text-xs">
-                  格式：分 时 日 月 周。例如「0 8 * * *」表示每天 08:00。
+                  填写顺序为：分钟、小时、日期、月份、星期。例如「0 8 * * *」表示每天 08:00。
                 </span>
               </div>
               <div className="check-row">

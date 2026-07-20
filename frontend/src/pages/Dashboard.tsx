@@ -64,7 +64,7 @@ export default function Dashboard() {
       })
       const count = result.result_count ?? result.results?.length ?? 0
       if (count > 0) {
-        showSuccess(`已抓取 BBC 示例来源：${count} 条，内容已写入待处理队列`)
+        showSuccess(`已抓取 BBC 示例来源：${count} 条，已准备好生成摘要`)
       } else {
         showInfo('已抓取 BBC 示例来源，暂无新内容')
       }
@@ -101,7 +101,7 @@ export default function Dashboard() {
       <div className="page-head">
         <div>
           <h1>工作台</h1>
-          <p>查看内容采集、摘要生成和发布状态，或开始一次新的内容处理。</p>
+          <p>查看内容抓取、摘要生成和发送情况，也可以从这里开始处理一批新内容。</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={load} disabled={loading} type="button">
@@ -127,7 +127,7 @@ export default function Dashboard() {
         <article className="card metric">
           <span className="metric-label">定时任务</span>
           <strong className="metric-value">{taskCount}</strong>
-          <span className="metric-note">已创建的自动任务</span>
+          <span className="metric-note">已创建的定时任务</span>
         </article>
         <article className="card metric">
           <span className="metric-label">最近 10 次成功</span>
@@ -144,7 +144,7 @@ export default function Dashboard() {
       <section className="grid cols-2" style={{ marginTop: 16 }}>
         <article className="card">
           <div className="card-head">
-            <span>核心处理流程</span>
+            <span>使用步骤</span>
             <span className="badge live">
               <i className="dot live" />
               可运行
@@ -154,22 +154,22 @@ export default function Dashboard() {
             <div className="list">
               <div className="list-item">
                 <div className="list-copy">
-                  <strong>1. 采集与筛选</strong>
-                  <span>添加内容来源，抓取并生成摘要预览</span>
+                  <strong>1. 内容来源</strong>
+                  <span>添加 RSS 来源，抓取想要整理的内容</span>
                 </div>
                 <Link className="btn" to="/selection">打开</Link>
               </div>
               <div className="list-item">
                 <div className="list-copy">
-                  <strong>2. 确认并发布</strong>
-                  <span>编辑摘要后重新执行流程，目前发布按钮使用飞书机器人</span>
+                  <strong>2. 摘要与发布</strong>
+                  <span>检查摘要后，系统会按当前设置重新生成，并发送到已配置的渠道</span>
                 </div>
                 <Link className="btn" to="/generation">打开</Link>
               </div>
               <div className="list-item">
                 <div className="list-copy">
                   <strong>3. 查看运行记录</strong>
-                  <span>查看每次运行的输入、结果和错误</span>
+                  <span>查看每次处理是否完成、生成了什么，以及失败原因</span>
                 </div>
                 <Link className="btn" to="/history">查看</Link>
               </div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
             {logs.length === 0 ? (
               <div className="empty">
                 <strong>暂无运行记录</strong>
-                <p>你还没有运行过任何任务。可先去采集与筛选页面生成第一份摘要。</p>
+                <p>你还没有运行过任何任务。可先到内容来源页面生成第一份摘要。</p>
                 <Link className="btn" to="/selection" style={{ marginTop: 12, display: 'inline-flex' }}>
                   创建第一次摘要
                 </Link>

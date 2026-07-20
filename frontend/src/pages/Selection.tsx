@@ -49,7 +49,7 @@ export default function Selection() {
       setLastFetchCount(count)
       setLastFetchAt(new Date().toLocaleTimeString('zh-CN', { hour12: false }))
       if (count > 0) {
-        showSuccess(`已抓取 ${count} 条内容，已写入待处理队列`)
+        showSuccess(`已抓取 ${count} 条内容，已准备好生成摘要`)
       } else {
         showInfo('抓取完成，该来源暂时没有新内容')
       }
@@ -104,9 +104,9 @@ export default function Selection() {
     <>
       <div className="page-head">
         <div>
-          <h1>采集与筛选</h1>
+          <h1>内容来源</h1>
           <p>
-            添加内容来源并抓取最新内容，然后生成摘要预览。发布动作将在下一步单独确认。
+            添加 RSS 地址并抓取内容，再生成一份摘要供你确认。生成摘要不会发送到任何渠道。
           </p>
         </div>
         <div className="actions">
@@ -171,7 +171,7 @@ export default function Selection() {
             >
               {lastFetchCount > 0 ? (
                 <>
-                  ✅ 已抓取 <strong>{lastFetchCount}</strong> 条内容，已写入待处理队列。
+                  ✅ 已抓取 <strong>{lastFetchCount}</strong> 条内容，已准备好生成摘要。
                 </>
               ) : (
                 <>该来源暂时没有新内容。你可以尝试更换地址或稍后再试。</>
@@ -184,11 +184,11 @@ export default function Selection() {
       {/* Step 2: Generate preview */}
       <section className="card">
         <div className="card-head">
-          <span>第 2 步 · 生成摘要预览</span>
+          <span>第 2 步 · 生成摘要</span>
         </div>
         <div className="card-body">
           <p className="text-muted text-sm" style={{ marginTop: 0 }}>
-            生成预览不会向任何渠道发布。你可以在下一页确认内容后再选择发布渠道。
+            这一步只会生成摘要，不会发送内容。请在下一页检查摘要后再发送。
           </p>
           <button
             className="btn primary"
@@ -207,7 +207,7 @@ export default function Selection() {
 
           {digestResult && (
             <p className="text-sm" style={{ marginTop: 12, color: 'var(--color-accent)' }}>
-              摘要已生成，可在「摘要预览」页面查看。
+              摘要已生成，可在「摘要与发布」页面查看。
             </p>
           )}
         </div>

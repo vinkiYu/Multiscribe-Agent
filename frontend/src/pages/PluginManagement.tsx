@@ -6,8 +6,8 @@ export default function PluginManagement() {
       type: 'publisher',
       builtin: true,
       desc: '将摘要推送到飞书群机器人',
-      status: '需配置',
-      configured: '配置 FEISHU_WEBHOOK 后可用',
+      status: '需要配置',
+      configured: '填写飞书机器人地址后可发送',
     },
     {
       id: 'wecom_bot',
@@ -15,8 +15,8 @@ export default function PluginManagement() {
       type: 'publisher',
       builtin: true,
       desc: '将摘要推送到企业微信群机器人',
-      status: '需配置',
-      configured: '配置 WECOM_WEBHOOK 后可用',
+      status: '需要配置',
+      configured: '填写企业微信机器人地址后可发送',
     },
     {
       id: 'rss',
@@ -24,8 +24,8 @@ export default function PluginManagement() {
       type: 'adapter',
       builtin: true,
       desc: '从 RSS 订阅源抓取内容',
-      status: '内置可用',
-      configured: '运行时传入 RSS 地址',
+      status: '可直接使用',
+      configured: '运行时需要提供 RSS 地址',
     },
     {
       id: 'github_trending',
@@ -33,8 +33,8 @@ export default function PluginManagement() {
       type: 'adapter',
       builtin: true,
       desc: '抓取 GitHub 热门项目及其更新信息',
-      status: '已注册',
-      configured: '运行时传入语言和数量参数',
+      status: '已加入系统',
+      configured: '运行时还需选择语言和数量',
     },
     {
       id: 'ai_search',
@@ -42,8 +42,8 @@ export default function PluginManagement() {
       type: 'adapter',
       builtin: true,
       desc: '通过配置的 AI 搜索服务补充内容来源',
-      status: '需配置',
-      configured: '需要对应搜索服务凭据',
+      status: '需要配置',
+      configured: '需要填写对应搜索服务的访问密钥',
     },
     {
       id: 'follow_opml',
@@ -51,8 +51,8 @@ export default function PluginManagement() {
       type: 'adapter',
       builtin: true,
       desc: '从 OPML 文件或地址导入订阅源',
-      status: '已注册',
-      configured: '当前前端未提供导入入口',
+      status: '已加入系统',
+      configured: '当前页面暂不支持导入',
     },
     {
       id: 'dingtalk',
@@ -60,8 +60,8 @@ export default function PluginManagement() {
       type: 'publisher',
       builtin: true,
       desc: '将摘要发布到钉钉自定义机器人',
-      status: '已注册',
-      configured: '需在运行参数中提供 Webhook',
+      status: '已加入系统',
+      configured: '运行时需要填写机器人连接地址',
     },
     {
       id: 'wechat',
@@ -69,8 +69,8 @@ export default function PluginManagement() {
       type: 'publisher',
       builtin: true,
       desc: '将摘要创建为微信公众号草稿',
-      status: '已注册',
-      configured: '需在运行参数中提供 App ID 和密钥',
+      status: '已加入系统',
+      configured: '运行时需要填写 App ID 和密钥',
     },
     {
       id: 'xiaohongshu',
@@ -78,8 +78,8 @@ export default function PluginManagement() {
       type: 'publisher',
       builtin: true,
       desc: '将摘要发布为小红书图文笔记',
-      status: '已注册',
-      configured: '需在运行参数中提供 App Key 和密钥',
+      status: '已加入系统',
+      configured: '运行时需要填写 App Key 和密钥',
     },
   ]
 
@@ -92,16 +92,16 @@ export default function PluginManagement() {
   const labels: Record<string, string> = {
     publisher: '发布渠道',
     adapter: '数据采集',
-    storage: '存储插件',
-    tool: '智能工具',
+    storage: '数据存储',
+    tool: '辅助工具',
   }
 
   return (
     <>
       <div className="page-head">
         <div>
-          <h1>插件</h1>
-          <p>查看系统已注册的采集器和发布渠道。这里展示的是能力注册状态，不代表外部凭据已经配置。</p>
+          <h1>扩展功能</h1>
+          <p>查看系统可用的采集和发送能力。状态会说明该功能是否还需要填写连接信息。</p>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export default function PluginManagement() {
           marginBottom: 16,
         }}
       >
-        插件的启用、停用和配置当前仍由服务端和运行参数控制；页面暂不提供修改入口。
+        这里仅展示当前已加入的功能，不能在此启用、停用或填写连接信息。请在系统设置或启动参数中完成配置。
       </div>
 
       {Object.entries(grouped).map(([type, items]) => (
@@ -143,7 +143,7 @@ export default function PluginManagement() {
                     )}
                   </span>
                   <span
-                    className={'badge ' + (plugin.status === '内置可用' ? 'live' : '')}
+                    className={'badge ' + (plugin.status === '可直接使用' ? 'live' : '')}
                     aria-label={plugin.status}
                   >
                     {plugin.status}

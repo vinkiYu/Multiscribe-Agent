@@ -1,12 +1,34 @@
 # MultiscribeAgent
 
-🗞️ AI 驱动的每日资讯采集与智能推送平台 — 将 RSS / GitHub Trending / AI 搜索汇聚为个性化日报，推送至飞书、企微、公众号、小红书、钉钉等平台。
+> 本地优先、可编排、可追踪的 AI 内容生产平台。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
 
-> 本项目基于 FastAPI + LangChain + SQLite 构建。
+<p align="center">
+  <img src="docs/pic/宣传页.png" alt="MultiscribeAgent 宣传页" width="100%">
+</p>
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-GPL--3.0-green.svg)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/vinkiYu/Multiscribe-Agent?style=social)](https://github.com/vinkiYu/Multiscribe-Agent/stargazers)
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <a href="https://www.langchain.com/"><img src="https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white" alt="LangChain"></a>
+  <a href="https://langchain-ai.github.io/langgraph/"><img src="https://img.shields.io/badge/LangGraph-1C3C3C?logo=langchain&logoColor=white" alt="LangGraph"></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=111827" alt="React"></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite"></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.sqlite.org/"><img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite"></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
+  <a href="https://opentelemetry.io/"><img src="https://img.shields.io/badge/OpenTelemetry-000000?logo=opentelemetry&logoColor=white" alt="OpenTelemetry"></a>
+  <a href="https://prometheus.io/"><img src="https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white" alt="Prometheus"></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-111827?logo=anthropic&logoColor=white" alt="Model Context Protocol"></a>
+  <a href="https://github.com/vinkiYu/Multiscribe-Agent"><img src="https://img.shields.io/github/stars/vinkiYu/Multiscribe-Agent?style=flat&logo=github" alt="GitHub Stars"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-65B32E" alt="GPL-3.0"></a>
+</p>
+
+> `采集 → 去重 → AI 精选 → 摘要生成 → 多渠道发布`
+
+**核心能力**：声明式 Agent、DAG 工作流、Loop 自评、插件生态、知识库与记忆系统、MCP / Interop、全链路可观测性。
 
 ---
 
@@ -27,6 +49,14 @@
 | 🧠 **知识库 + 记忆** | 历史内容去重（RAG） · 用户偏好记忆 · 跨任务上下文复用 |
 | 📊 **评估框架** | LLM-as-Judge，量化摘要质量 / 推荐相关性 / 流程稳定性 |
 | 🔗 **MCP 扩展** | 外部 MCP 客户端（Claude Desktop / Cursor）可直接调用采集与推送能力 |
+
+## 🖥️ 控制台预览
+
+管理后台将采集、筛选、生成、发布、知识库、记忆、插件与任务运行记录汇总到一个工作区。
+
+<p align="center">
+  <img src="docs/pic/控制台.png" alt="MultiscribeAgent 控制台" width="100%">
+</p>
 
 ---
 
@@ -123,118 +153,27 @@ curl http://127.0.0.1:8000/api/dashboard/stats \
 
 ---
 
-## 🏗️ 系统架构
+## 🧭 架构设计
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      ingestion 层                           │
-│   RSS Adapter  ·  GitHub Trending  ·  AI Search  ·  ...    │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       core 层                                │
-│     SQLite (WAL)  ·  FTS5  ·  aiosqlite  ·  KV Repository  │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       llm 层                                │
-│         OpenAI  ·  Anthropic  ·  Google  ·  Ollama          │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     agents 层                               │
-│   Agent Harness (ReAct)  ·  Daily Digest Pipeline  ·  DAG   │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    publishing 层                            │
-│   飞书  ·  企微  ·  公众号  ·  小红书  ·  钉钉  ·  RSS     │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      api 层                                 │
-│          FastAPI  ·  SSE  ·  JWT  ·  structlog              │
-└─────────────────────────────────────────────────────────────┘
-```
+MultiscribeAgent 以 FastAPI 作为统一入口，由 `ServiceContext` 组合领域服务；Agent Harness、DAG 工作流与 Loop 自评负责执行编排，插件生态承载采集、发布和工具扩展，SQLite、知识库、记忆与可观测性贯穿整条内容生产链路。
 
-**技术栈**：Python 3.12+ · FastAPI · LangChain · LangGraph · SQLite WAL + FTS5 · sqlite-vec · structlog · pytest · ruff · mypy
+### 核心运行链路
 
----
+<p align="center">
+  <img src="docs/pic/核心架构.png" alt="MultiscribeAgent 核心架构" width="100%">
+</p>
 
-## 📦 功能路线图
+### 完整组件架构
 
-### MVP 已完成 ✅
-
-| 功能 | 说明 |
-|---|---|
-| ✅ RSS 采集 | Hacker News / BBC News 等标准 RSS / Atom 源 |
-| ✅ AI 精选 | 基于 LLM 打分 + Loop 自评的 Top-N 精选 |
-| ✅ 飞书推送 | Markdown 卡片 + 签名验证 |
-| ✅ 企微推送 | Markdown 卡片 |
-| ✅ DAG 工作流 | 拓扑排序 + 并行执行 + 环检测 |
-| ✅ 调度器 | APScheduler 热重载 + task_logs |
-| ✅ API + CLI | FastAPI + JWT + structlog |
-| ✅ Docker 部署 | `docker compose up` 一键起服务 |
-
-### 阶段一开发中 🚧
-
-| 功能 | 状态 |
-|---|---|
-| ✅ GitHub Trending 采集 | 已完成 |
-| ✅ AI 搜索（Perplexity / Phind） | 已完成 |
-| ✅ 微信公众号图文发布 | 已完成 |
-| ✅ 小红书笔记发布 | 已完成 |
-| ✅ 钉钉机器人推送 | 已完成 |
-| 🟡 前端管理后台（Knowledge + Memory） | 开发中 |
-
-### 阶段二及后续规划 📋
-
-| 功能 | 计划版本 |
-|---|---|
-| ✅ 知识库 RAG（sqlite-vec + FTS5 + RRF） | 已完成 |
-| ✅ 用户偏好记忆系统 | 已完成 |
-| ✅ MCP 外部调用接口 | 已完成 |
-| ✅ 预置 Skill（技术周报 / 多源对比 / 智能推荐） | 已完成 |
-| 📋 LLM-as-Judge 评估框架 | v0.4 |
-| 📋 全链路 OTel 可观测性 | v0.4 |
-| 📋 多轮 Loop 自评迭代 | v0.5 |
-
----
-
-## 📁 项目结构
-
-```
-MultiscribeAgent/
-├── src/multiscribe_agent/          # Python 源码
-│   ├── agents/                      # Agent Harness · DAG · Pipeline
-│   ├── core/                        # DB · Repository · FTS5
-│   ├── domain/models.py             # 核心领域模型
-│   ├── llm/                         # LLM Provider（OpenAI / Anthropic / ...）
-│   ├── plugins/                     # 四类插件（Adapter / Publisher / Tool / Skill）
-│   ├── adapters/                    # 采集适配器（RSS · GitHub · AI Search）
-│   ├── publishers/                  # 发布器（飞书 · 企微 · 公众号 · 钉钉）
-│   ├── scheduler/                  # APScheduler 调度器
-│   ├── api/routes/                  # FastAPI 路由
-│   └── observability/              # structlog · OTel
-├── frontend/                        # React 管理后台
-│   ├── src/
-│   │   ├── pages/                  # Dashboard · Knowledge · Memory · Settings ...
-│   │   ├── services/               # API 调用层
-│   │   └── components/             # 布局组件
-│   └── dist/                        # 构建产物（Docker 挂载）
-├── tests/                          # pytest 测试套件
-├── scripts/                        # 便捷入口脚本
-├── docs/                           # 架构文档 · MVP 定义 · 阶段看板
-├── .env.example                    # 配置模板
-├── docker-compose.yml             # Docker 部署
-├── Dockerfile                      # Python 容器镜像
-└── pyproject.toml                  # uv 项目配置
-```
+<details>
+  <summary>展开查看完整架构图</summary>
+  <br>
+  <img src="docs/pic/架构图.png" alt="MultiscribeAgent 完整组件架构" width="100%">
+</details>
 
 ---
 
 ## ⚙️ 配置参考
-
 | 变量 | 必填 | 说明 |
 |---|:---:|---|
 | `OPENAI_API_KEY` | ✅* | OpenAI API Key（使用 OpenAI 时必填） |
