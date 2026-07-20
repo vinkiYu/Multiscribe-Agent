@@ -43,7 +43,15 @@ export default function KnowledgeBase() {
       ])
       if (docs.status === 'fulfilled') setDocuments(docs.value)
       if (cats.status === 'fulfilled') setCategories(cats.value)
-      setNotice(null)
+      const failures = [
+        docs.status === 'rejected' ? '文档列表' : null,
+        cats.status === 'rejected' ? '分类列表' : null,
+      ].filter(Boolean)
+      setNotice(
+        failures.length
+          ? { message: `${failures.join('、')}加载失败，请稍后重试`, tone: 'error' }
+          : null,
+      )
     } catch {
       setNotice({ message: '无法加载知识库数据', tone: 'error' })
     } finally {
@@ -133,6 +141,8 @@ export default function KnowledgeBase() {
   }
 
   const handleDelete = async (id: string) => {
+    const document = documents.find(item => item.id === id)
+    if (!window.confirm(`删除文档「${document?.name ?? id}」？文档分块和索引也会一并删除。`)) return
     try {
       await knowledgeService.deleteDocument(id)
       setDocuments(current => current.filter(d => d.id !== id))
@@ -286,7 +296,7 @@ export default function KnowledgeBase() {
 
       {tab === 'search' && (
         <>
-          <section className="card" style={{ marginBottom: 16 }}>
+          <section className="card" style={{ marginBottom: 16 }} aria-busy={loading}>
             <div className="card-head"><span>搜索内容</span></div>
             <div className="card-body">
               <div className="actions" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -345,7 +355,12 @@ export default function KnowledgeBase() {
                 <span>已上传文档</span>
                 <span className="badge">{documents.length} 条</span>
               </div>
-              {documents.length === 0 ? (
+              {loading && documents.length === 0 ? (
+                <div className="empty">
+                  <strong>正在加载文档</strong>
+                  <p>正在读取知识库中的文档和索引状态。</p>
+                </div>
+              ) : documents.length === 0 ? (
                 <div className="empty">
                   <FileSearch size={28} aria-hidden="true" />
                   <strong>尚无可展示的文档</strong>

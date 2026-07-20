@@ -3,7 +3,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Multiscribe 是本地优先、可编排、可追踪的 AI 信息生产工作台。">
-  <title>Multiscribe · 让重要信息按你的规则，稳定抵达</title>
+  <title>Multiscribe</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Bodoni+Moda:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
@@ -156,7 +157,7 @@
     .btn-primary { background: var(--accent); border-color: color-mix(in srgb, var(--accent) 72%, var(--fg)); box-shadow: inset 0 1px color-mix(in srgb, var(--surface) 42%, transparent), 0 2px 4px color-mix(in srgb, var(--fg) 12%, transparent); }
     .btn-primary:hover { background: var(--accent); border-color: var(--fg); }
     .btn-ghost { background: transparent; }
-    .menu-button { display: none; width: 44px; padding: 0; }
+    .site-header .menu-button { display: none; width: 44px; padding: 0; white-space: nowrap; }
     .demo-note { color: var(--muted); font-size: 10px; }
 
     .hero {
@@ -205,6 +206,28 @@
       pointer-events: none;
     }
     .btn-primary { position: relative; }
+
+    .cursor-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      width: 190px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      filter: blur(48px);
+      pointer-events: none;
+      transform: translate3d(-200px, -200px, 0) translate(-50%, -50%) scale(.72);
+      will-change: transform, opacity;
+      transition: opacity 180ms ease, filter 180ms ease;
+    }
+
+    .cursor-glow.is-visible {
+      opacity: .17;
+      filter: blur(48px);
+    }
 
     .hero-copy {
       width: var(--page);
@@ -551,15 +574,6 @@
     .cta-band { position: relative; isolation: isolate; overflow: hidden; background: var(--fg); color: var(--surface); }
     .cta-backdrop { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
     .cta-wordmark { position: absolute; left: -1.5vw; bottom: -3.5vw; color: color-mix(in srgb, var(--surface) 4%, transparent); font-family: "Albert Sans", sans-serif; font-size: clamp(96px, 18vw, 280px); font-weight: 850; line-height: .72; white-space: nowrap; }
-    .cta-rail { position: absolute; height: 1px; background: color-mix(in srgb, var(--surface) 15%, transparent); }
-    .cta-rail::before, .cta-rail::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; border: 1px solid color-mix(in srgb, var(--surface) 30%, transparent); border-radius: 50%; background: var(--fg); transform: translateY(-50%); }
-    .cta-rail::before { left: 0; }
-    .cta-rail::after { right: 0; }
-    .cta-rail-a { top: 24%; left: 54%; width: 38%; }
-    .cta-rail-b { top: 48%; left: 64%; width: 28%; }
-    .cta-marker { position: absolute; color: color-mix(in srgb, var(--surface) 34%, transparent); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; white-space: nowrap; }
-    .cta-marker-a { top: calc(24% - 24px); left: 54%; }
-    .cta-marker-b { top: calc(48% + 12px); left: 64%; }
     .cta-crop { position: absolute; width: 18px; height: 18px; border-color: color-mix(in srgb, var(--surface) 18%, transparent); }
     .cta-crop-a { top: 32px; left: 32px; border-top: 1px solid; border-left: 1px solid; }
     .cta-crop-b { right: 32px; bottom: 32px; border-right: 1px solid; border-bottom: 1px solid; }
@@ -567,7 +581,8 @@
     .cta-inner h2 { margin: 0; max-width: 16ch; font-family: var(--display); font-size: clamp(42px, 6.8vw, 88px); line-height: .95; letter-spacing: 0; font-weight: 780; }
     .cta-bottom { display: flex; justify-content: space-between; align-items: end; gap: 40px; }
     .cta-bottom p { margin: 0; max-width: 48ch; color: var(--border); }
-    .cta-band .btn-ghost { color: var(--surface); border-color: var(--muted); }
+    .cta-band .btn-ghost { background: transparent; color: var(--surface); border-color: var(--muted); }
+    .cta-band .btn-ghost:hover { border-color: var(--surface); background: color-mix(in srgb, var(--surface) 9%, transparent); }
 
     .site-footer { border-top: 1px solid var(--muted); background: var(--fg); color: var(--surface); }
     .footer-inner { width: var(--page); min-height: 180px; margin: 0 auto; padding: 36px 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; }
@@ -579,15 +594,16 @@
       :root { --page: min(100% - 32px, 960px); }
       .nav { grid-template-columns: 1fr auto; }
       .nav-links { display: none; }
-      .menu-button { display: inline-flex; }
+      .site-header .menu-button { display: inline-flex; }
       .nav-actions .btn-ghost:not(.menu-button) { display: none; }
       .nav-actions .menu-button { display: inline-flex; }
       .nav-links.open {
         display: grid;
         position: fixed;
         inset: 64px 0 auto;
+        z-index: 21;
         padding: 12px 16px 20px;
-        background: color-mix(in srgb, var(--surface) 72%, transparent);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
         border-bottom: 1px solid var(--glass-line);
         box-shadow: 0 4px 8px color-mix(in srgb, var(--fg) 8%, transparent), inset 0 1px color-mix(in srgb, var(--surface) 82%, transparent);
         -webkit-backdrop-filter: blur(28px) saturate(1.18);
@@ -636,9 +652,6 @@
       .cta-bottom .btn { flex: 1; }
       .footer-inner { align-items: flex-start; flex-direction: column; }
       .cta-wordmark { left: -4vw; bottom: 1vw; font-size: clamp(76px, 26vw, 140px); }
-      .cta-rail-a { top: 28%; left: 56%; width: 34%; }
-      .cta-rail-b, .cta-marker-b { display: none; }
-      .cta-marker-a { top: calc(28% - 22px); left: 56%; }
       .canvas-head { height: auto; min-height: 72px; align-items: flex-start; gap: 10px; flex-direction: column; padding-block: 10px; }
       .canvas-actions { width: 100%; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
       .connection-status { order: 2; }
@@ -647,19 +660,22 @@
       .product-stage { min-height: 600px; }
       .feed-row { grid-template-columns: 28px minmax(0, 1fr); }
       .feed-row > .badge { grid-column: 2; justify-self: start; }
+      .cursor-glow { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
       .liquid-window::after { display: none; }
+      .cursor-glow { display: none; }
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-Dc64tLo3.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-c5JnKTwz.css">
+  <script type="module" crossorigin src="/assets/index-BQHr7CLV.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Ciq5eOtw.css">
 </head>
 <body>
   <div id="landing">
+  <div id="cursor-glow" class="cursor-glow" aria-hidden="true"></div>
   <a class="skip-link" href="#top">跳到主要内容</a>
   <header class="site-header" data-od-id="site-header">
     <nav class="nav" aria-label="主导航">
@@ -782,10 +798,6 @@
     <section class="cta-band" id="start" data-od-id="start-section">
       <div class="cta-backdrop" aria-hidden="true">
         <span class="cta-wordmark">MULTISCRIBE</span>
-        <span class="cta-rail cta-rail-a"></span>
-        <span class="cta-rail cta-rail-b"></span>
-        <span class="cta-marker cta-marker-a">SOURCE / RULE / DELIVERY</span>
-        <span class="cta-marker cta-marker-b">TRACE 05 · READY</span>
         <span class="cta-crop cta-crop-a"></span>
         <span class="cta-crop cta-crop-b"></span>
       </div>
@@ -821,6 +833,7 @@
         navLinks.classList.remove('open');
         menuButton.setAttribute('aria-expanded', 'false');
         menuButton.setAttribute('aria-label', '打开导航');
+        menuButton.textContent = '菜单';
       }
       menuButton?.addEventListener('click', () => {
         if (!navLinks) return;
@@ -828,8 +841,19 @@
         navLinks.classList.toggle('open', open);
         menuButton.setAttribute('aria-expanded', String(open));
         menuButton.setAttribute('aria-label', open ? '关闭导航' : '打开导航');
+        menuButton.textContent = open ? '关闭' : '菜单';
       });
       navLinks?.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
+      document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', event => {
+          const href = link.getAttribute('href') || '';
+          const target = document.getElementById(href.slice(1));
+          if (!target) return;
+          event.preventDefault();
+          closeMenu();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
       document.addEventListener('keydown', event => {
         if (event.key === 'Escape') closeMenu();
       });
@@ -985,6 +1009,63 @@
         windowElement.style.setProperty('--liquid-y', '50%');
       });
     });
+    // Keep a soft accent light behind the landing page content on precise-pointer devices.
+    const cursorGlow = document.querySelector('#cursor-glow');
+    const pointerQuery = window.matchMedia('(pointer: fine)');
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (cursorGlow && pointerQuery.matches && !reducedMotionQuery.matches) {
+      let targetX = -200;
+      let targetY = -200;
+      let currentX = targetX;
+      let currentY = targetY;
+      let frame = 0;
+      let visible = false;
+
+      const renderGlow = () => {
+        const deltaX = targetX - currentX;
+        const deltaY = targetY - currentY;
+        currentX += deltaX * .18;
+        currentY += deltaY * .18;
+        cursorGlow.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) translate(-50%, -50%) scale(${visible ? 1 : .72})`;
+
+        if (Math.abs(deltaX) > .2 || Math.abs(deltaY) > .2) {
+          frame = requestAnimationFrame(renderGlow);
+        } else {
+          frame = 0;
+        }
+      };
+
+      const scheduleGlow = () => {
+        if (!frame) frame = requestAnimationFrame(renderGlow);
+      };
+
+      const hideGlow = () => {
+        visible = false;
+        cursorGlow.classList.remove('is-visible');
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+      };
+
+      window.addEventListener('pointermove', (event) => {
+        targetX = event.clientX;
+        targetY = event.clientY;
+        if (!visible) {
+          visible = true;
+          cursorGlow.classList.add('is-visible');
+        }
+        scheduleGlow();
+      }, { passive: true });
+      document.addEventListener('pointerout', (event) => {
+        if (!event.relatedTarget) hideGlow();
+      });
+      window.addEventListener('blur', hideGlow);
+      pointerQuery.addEventListener?.('change', (event) => {
+        if (!event.matches) hideGlow();
+      });
+      reducedMotionQuery.addEventListener?.('change', (event) => {
+        if (event.matches) hideGlow();
+      });
+    }
     window.addEventListener('beforeunload', closeRealtimeConnections);
   </script>
 

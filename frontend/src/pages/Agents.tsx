@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import { listAgents, saveAgent, deleteAgent } from '../services/agentService'
 import type { AgentDefinition } from '../services/agentService'
 import { listWorkflows, deleteWorkflow } from '../services/workflowService'
@@ -24,10 +25,10 @@ const PROVIDER_OPTIONS = [
 ]
 
 const MODEL_OPTIONS: Record<string, string[]> = {
-  'default-openai': ['gpt-4o-mini', 'gpt-4o', 'gpt-5.4-mini', 'gpt-5.2'],
-  'default-anthropic': ['claude-3-5-sonnet', 'claude-3-opus'],
-  'default-google': ['gemini-2.0-flash', 'gemini-1.5-pro'],
-  'default-ollama': ['llama3.1', 'qwen2.5'],
+  'default-openai': ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'o3-mini'],
+  'default-anthropic': ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-3-5-haiku-latest'],
+  'default-google': ['gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'],
+  'default-ollama': ['llama3.1', 'qwen2.5', 'deepseek-r1'],
 }
 
 export default function Agents() {
@@ -291,8 +292,8 @@ export default function Agents() {
           <div className="modal" style={{ maxWidth: 640 }}>
             <div className="modal-head">
               <strong>{editing.id.startsWith('agent_') ? '新建 Agent' : '编辑 Agent'}</strong>
-              <button className="btn icon-btn" onClick={closeModal} type="button">
-                ×
+              <button className="btn icon-btn" onClick={closeModal} type="button" aria-label="关闭 Agent 编辑">
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
             <div className="modal-body">

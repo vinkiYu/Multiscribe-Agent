@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 import {
   listSchedules,
   saveSchedule,
@@ -11,7 +12,6 @@ import { useToast } from '../context/ToastContext'
 
 const TASK_TYPE_LABELS: Record<string, string> = {
   daily_digest: '每日摘要',
-  ingestion: '内容采集',
 }
 
 const PRESETS: Array<{ label: string; cron: string }> = [
@@ -27,7 +27,23 @@ const EMPTY_TASK: Omit<ScheduleTask, 'id'> = {
   task_type: 'daily_digest',
   cron: '0 8 * * *',
   enabled: true,
-  config: {},
+  config: { curate_agent_id: 'default-curation-agent' },
+}
+
+function withTaskDefaults(task: ScheduleTask): ScheduleTask {
+  if (task.task_type !== 'daily_digest') return task
+  const agentId =
+    typeof task.config.curate_agent_id === 'string' && task.config.curate_agent_id.trim()
+      ? task.config.curate_agent_id
+      : 'default-curation-agent'
+  return {
+    ...task,
+    config: { ...task.config, curate_agent_id: agentId },
+  }
+}
+
+function describeCron(cron: string): string {
+  return PRESETS.find(p => p.cron === cron)?.label ?? '自定义计划'
 }
 
 export default function TaskManagement() {
@@ -53,13 +69,22 @@ export default function TaskManagement() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    if (!showModal) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeModal()
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [showModal])
+
   const openAdd = () => {
-    setEditing({ id: 'task_' + Date.now(), ...EMPTY_TASK })
+    setEditing(withTaskDefaults({ id: 'task_' + Date.now(), ...EMPTY_TASK }))
     setShowModal(true)
   }
 
   const openEdit = (t: ScheduleTask) => {
-    setEditing({ ...t })
+    setEditing(withTaskDefaults({ ...t, config: { ...t.config } }))
     setShowModal(true)
   }
 
@@ -72,7 +97,7 @@ export default function TaskManagement() {
     if (!editing?.id || !editing?.name) return
     setSaving(true)
     try {
-      await saveSchedule(editing)
+      await saveSchedule(withTaskDefaults(editing))
       showSuccess('任务已保存')
       closeModal()
       await load()
@@ -155,7 +180,10 @@ export default function TaskManagement() {
                 {tasks.map(t => (
                   <tr key={t.id}>
                     <td><strong>{t.name}</strong></td>
-                    <td className="text-mono">{t.cron}</td>
+                    <td>
+                      <strong>{describeCron(t.cron)}</strong>
+                      <div className="text-mono text-xs text-muted">{t.cron}</div>
+                    </td>
                     <td>{TASK_TYPE_LABELS[t.task_type] ?? t.task_type}</td>
                     <td>
                       <span className={'badge ' + (t.enabled ? 'live' : '')}>
@@ -214,7 +242,9 @@ export default function TaskManagement() {
           <div className="modal">
             <div className="modal-head">
               <strong>{editing.id.startsWith('task_') ? '新增任务' : '编辑任务'}</strong>
-              <button className="btn icon-btn" onClick={closeModal} type="button">×</button>
+              <button className="btn icon-btn" onClick={closeModal} type="button" aria-label="关闭任务编辑">
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
             <div className="modal-body">
               <div className="field">
@@ -237,8 +267,13 @@ export default function TaskManagement() {
                   }
                 >
                   <option value="daily_digest">每日摘要</option>
-                  <option value="ingestion">内容采集</option>
                 </select>
+              </div>
+              <div className="field">
+                <label>摘要配置</label>
+                <div className="text-muted text-sm">
+                  使用系统默认精选 Agent，发布渠道沿用服务端配置。保存后可通过「立即运行」验证任务。
+                </div>
               </div>
               <div className="field">
                 <label>执行计划（常用预设）</label>

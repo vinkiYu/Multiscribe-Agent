@@ -34,13 +34,19 @@ export default function Memory() {
 
   const handleSave = async () => {
     memoryService.savePreferences(preferences)
-    setNotice('偏好已保存到此浏览器')
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-    // Best-effort backend sync
+
     if (backendOnline) {
-      await memoryService.syncPreferencesToBackend(preferences)
+      const synced = await memoryService.syncPreferencesToBackend(preferences)
+      setNotice(
+        synced
+          ? '偏好已保存到浏览器，并已同步至后端'
+          : '偏好已保存到浏览器，但后端同步失败，当前仍可正常使用本地配置',
+      )
+      return
     }
+    setNotice('偏好已保存到此浏览器')
   }
 
   const reset = () => {
@@ -79,12 +85,22 @@ export default function Memory() {
     URL.revokeObjectURL(url)
   }
 
-  const importPreferences = () => {
+  const importPreferences = async () => {
     try {
       memoryService.importPreferences(importValue)
-      setPreferences(memoryService.getPreferences())
+      const imported = memoryService.getPreferences()
+      setPreferences(imported)
       setImportValue('')
-      setNotice('偏好导入成功')
+      if (backendOnline) {
+        const synced = await memoryService.syncPreferencesToBackend(imported)
+        setNotice(
+          synced
+            ? '偏好导入成功，并已同步至后端'
+            : '偏好导入成功，但后端同步失败，当前仍保留本地配置',
+        )
+      } else {
+        setNotice('偏好导入成功，已保存在此浏览器')
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '导入失败，请检查 JSON 格式')
     }
@@ -202,7 +218,7 @@ export default function Memory() {
             />
             <button
               className="btn"
-              onClick={importPreferences}
+              onClick={() => void importPreferences()}
               disabled={!importValue.trim()}
               type="button"
             >

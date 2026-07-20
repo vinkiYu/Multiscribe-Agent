@@ -10,7 +10,7 @@ export default function Settings() {
       <div className="page-head">
         <div>
           <h1>系统设置</h1>
-          <p>此页说明环境配置并提供静态表单预览。凭据不会从浏览器写入服务器，请在 .env 中配置。</p>
+          <p>此页展示环境配置项和填写示例。页面不会保存修改，请在服务端 .env 中配置后重启服务。</p>
         </div>
       </div>
 
@@ -92,7 +92,6 @@ function SourceSettings() {
           <div className="card-body" style={{ marginTop: 8 }}>
             <p className="text-muted text-sm" style={{ marginBottom: 12 }}>
               RSS 源通过 <code>data/sources.yaml</code> 配置，支持 title / url / category / update_interval 字段。
-              也可通过前端「采集与筛选」页面导入 OPML 文件批量添加。
             </p>
             <Field label="SOURCES_FILE" placeholder="data/sources.yaml" />
           </div>
@@ -173,17 +172,10 @@ function SettingsTable({ title, rows }: { title: string; rows: string[][] }) {
 }
 
 function Field({ label, placeholder, type = 'text' }: { label: string; placeholder: string; type?: string }) {
-  const id = label.toLowerCase().replace(/_/g, '-')
   return (
     <div className="field">
-      <label htmlFor={id} className="text-sm text-muted">{label}</label>
-      <input
-        id={id}
-        className="input"
-        type={type}
-        placeholder={placeholder}
-        style={{ fontFamily: type === 'password' ? 'monospace' : 'inherit' }}
-      />
+      <span className="text-sm text-muted">{label}</span>
+      <code className="config-value" data-kind={type}>{placeholder}</code>
     </div>
   )
 }

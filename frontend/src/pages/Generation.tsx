@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, Link } from 'react-router-dom'
-import { runDigest } from '../services/digestService'
+import { DEFAULT_CURATION_AGENT_ID, runDigest } from '../services/digestService'
 import type { DigestResult, DigestTargetResult } from '../services/digestService'
 import { useToast } from '../context/ToastContext'
 
@@ -22,6 +22,16 @@ function labelStatus(s: string): string {
   return STATUS_LABELS[s] ?? s
 }
 
+function normalizeTargets(
+  targets: DigestResult['targets'],
+): DigestTargetResult[] {
+  if (Array.isArray(targets)) return targets
+  return Object.entries(targets ?? {}).map(([target_id, result]) => ({
+    target_id,
+    ...result,
+  }))
+}
+
 export default function Generation() {
   const location = useLocation()
   const { showSuccess, showError } = useToast()
@@ -32,6 +42,7 @@ export default function Generation() {
   const [publishing, setPublishing] = useState(false)
 
   const result = (location.state?.digestResult ?? null) as DigestResult | null
+  const sourceUrl = typeof location.state?.rssUrl === 'string' ? location.state.rssUrl : undefined
 
   // Auto-populate from digest result on first render
   if (result?.curated?.length && !markdown) {
@@ -58,19 +69,23 @@ export default function Generation() {
   const handlePublish = async () => {
     if (publishing) return
     const ok = window.confirm(
-      '确认将本次摘要发布到飞书机器人？该操作会将内容发送到对应群组。',
+      '确认重新执行摘要流程并发布到飞书机器人？这会将新生成的内容发送到对应群组。',
     )
     if (!ok) return
     setPublishing(true)
     try {
       const publishResult = await runDigest({
         // The backend re-runs the pipeline and pushes to the requested targets.
+        curate_agent_id: DEFAULT_CURATION_AGENT_ID,
         targets: ['feishu_bot'],
         top_n: result?.curated?.length ?? 5,
+        ...(sourceUrl
+          ? { adapter_ids: ['rss'], adapter_configs: { rss: { rss_url: sourceUrl } } }
+          : {}),
       })
-      setTargets(publishResult.targets ?? [])
+      setTargets(normalizeTargets(publishResult.targets))
       setPublished(true)
-      showSuccess('已尝试发布，请查看下方结果')
+      showSuccess('已执行发布流程，请查看下方渠道结果')
     } catch (err) {
       showError('发布失败：' + friendlyError(err))
     } finally {
@@ -86,7 +101,7 @@ export default function Generation() {
           <p>
             {published
               ? '以下是本次生成的摘要及各发布渠道的结果。'
-              : '查看 AI 生成的摘要，可编辑后再决定是否发布。生成本身不会向任何渠道发送内容。'}
+              : '查看 AI 生成的摘要。编辑内容只影响当前预览和复制；点击发布会按当前配置重新执行摘要流程。'}
           </p>
         </div>
         <div className="actions">
@@ -112,7 +127,7 @@ export default function Generation() {
               disabled={!markdown || publishing}
               type="button"
             >
-              {publishing ? <span className="spinner" /> : '发布到飞书机器人'}
+              {publishing ? <span className="spinner" /> : '重新执行并发布'}
             </button>
           )}
         </div>

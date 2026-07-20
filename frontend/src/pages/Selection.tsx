@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { triggerIngestion, getRecentLogs } from '../services/dashboardService'
-import { runDigest } from '../services/digestService'
+import { DEFAULT_CURATION_AGENT_ID, runDigest } from '../services/digestService'
+import { memoryService } from '../services/memory'
 import { useToast } from '../context/ToastContext'
 import type { DigestResult } from '../services/digestService'
 
@@ -63,15 +64,18 @@ export default function Selection() {
   const handleGeneratePreview = async () => {
     setGenerating(true)
     try {
+      const maxItems = memoryService.getPreferences().max_items_per_digest
       const result = await runDigest({
-        top_n: 5,
-        // Intentionally omit `targets` so no external channel receives anything.
+        curate_agent_id: DEFAULT_CURATION_AGENT_ID,
+        top_n: maxItems,
+        // An explicit empty target list means preview only; the backend must not apply defaults.
+        targets: [],
         adapter_ids: ['rss'],
         adapter_configs: { rss: { rss_url: rssUrl } },
       })
       setDigestResult(result)
       showSuccess('摘要已生成，进入预览页面后可确认是否发布')
-      navigate('/generation', { state: { digestResult: result } })
+      navigate('/generation', { state: { digestResult: result, rssUrl: rssUrl } })
     } catch (err) {
       showError('生成失败：' + friendlyError(err))
     } finally {

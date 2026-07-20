@@ -31,7 +31,11 @@ const NAV_ITEMS = [
   { label: '系统设置', icon: Settings, path: '/settings' },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const { logout } = useAuth()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
@@ -67,6 +71,7 @@ export default function Sidebar() {
             to={path}
             end={path === '/'}
             className={({ isActive }) => (isActive ? 'active' : '')}
+            onClick={() => onNavigate?.()}
           >
             <span className="nav-icon" aria-hidden="true">
               <Icon size={18} />

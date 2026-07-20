@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Menu, X } from 'lucide-react'
 import Sidebar from './Sidebar'
 
@@ -8,6 +8,17 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    if (!sidebarOpen) return
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false)
+    }
+
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [sidebarOpen])
 
   return (
     <div className="app-shell">
@@ -24,17 +35,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Mobile sidebar */}
       <div
-        className={`sidebar ${sidebarOpen ? 'open' : ''}`}
-        style={{
-          position: 'fixed',
-          left: 0,
-          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-          width: 'min(280px, calc(100vw - 48px))',
-          transition: 'transform 180ms ease',
-          zIndex: 70,
-        }}
+        id="mobile-sidebar"
+        className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}
+        aria-hidden={!sidebarOpen}
       >
-        <Sidebar />
+        <Sidebar onNavigate={() => setSidebarOpen(false)} />
       </div>
 
       <main className="main">
@@ -42,7 +47,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <button
           className="btn icon-btn floating-menu"
           onClick={() => setSidebarOpen(o => !o)}
-          aria-label="打开导航"
+          aria-expanded={sidebarOpen}
+          aria-controls="mobile-sidebar"
+          aria-label={sidebarOpen ? '关闭导航' : '打开导航'}
           type="button"
         >
           {sidebarOpen ? <X size={18} /> : <Menu size={18} />}

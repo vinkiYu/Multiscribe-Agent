@@ -11,7 +11,8 @@ export interface MemoryPreferences {
   preferred_tags: string[]
   blocked_sources: string[]
   push_time: string
-  max_items_per_digest: number // frontend-only; not sent to backend
+  // Stored locally and applied to manual digest preview runs.
+  max_items_per_digest: number
 }
 
 export interface MemoryEntry {
@@ -190,15 +191,17 @@ export const memoryService = {
     this.savePreferences(decoded)
   },
 
-  // Sync preferences to backend (best-effort; fails silently if offline)
-  async syncPreferencesToBackend(preferences: MemoryPreferences): Promise<void> {
+  // Sync preferences to backend while letting the page explain a failed sync.
+  async syncPreferencesToBackend(preferences: MemoryPreferences): Promise<boolean> {
     try {
       await requestMemory<Record<string, unknown>>('/memory/preferences', {
         method: 'PUT',
         body: JSON.stringify(backendPrefs(preferences)),
       })
+      return true
     } catch {
       // offline — preferences already saved locally
+      return false
     }
   },
 

@@ -33,6 +33,8 @@ export default function Dashboard() {
   const [logs, setLogs] = useState<TaskLog[]>([])
   const [loading, setLoading] = useState(true)
   const [ingesting, setIngesting] = useState(false)
+  const [checkingConnection, setCheckingConnection] = useState(false)
+  const [connectionState, setConnectionState] = useState<'unknown' | 'ok' | 'error'>('unknown')
   const [lastChecked, setLastChecked] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -42,7 +44,9 @@ export default function Dashboard() {
       setStats(s)
       setLogs(l)
       setLastChecked(new Date().toLocaleTimeString('zh-CN', { hour12: false }))
+      setConnectionState('ok')
     } catch (err) {
+      setConnectionState('error')
       showError('加载失败：' + friendlyError(err))
     } finally {
       setLoading(false)
@@ -60,15 +64,30 @@ export default function Dashboard() {
       })
       const count = result.result_count ?? result.results?.length ?? 0
       if (count > 0) {
-        showSuccess(`已同步 BBC 示例来源：${count} 条`)
+        showSuccess(`已抓取 BBC 示例来源：${count} 条，内容已写入待处理队列`)
       } else {
-        showInfo('已检查 BBC 示例来源，暂无新内容')
+        showInfo('已抓取 BBC 示例来源，暂无新内容')
       }
       await load()
     } catch (err) {
       showError('同步失败：' + friendlyError(err))
     } finally {
       setIngesting(false)
+    }
+  }
+
+  const handleCheckConnection = async () => {
+    setCheckingConnection(true)
+    try {
+      await getStats()
+      setConnectionState('ok')
+      setLastChecked(new Date().toLocaleTimeString('zh-CN', { hour12: false }))
+      showSuccess('后端服务连接正常')
+    } catch (err) {
+      setConnectionState('error')
+      showError('连接检查失败：' + friendlyError(err))
+    } finally {
+      setCheckingConnection(false)
     }
   }
 
@@ -94,7 +113,7 @@ export default function Dashboard() {
             disabled={ingesting}
             type="button"
           >
-            {ingesting ? <span className="spinner" /> : '同步 BBC 示例来源'}
+            {ingesting ? <span className="spinner" /> : '抓取 BBC 示例来源'}
           </button>
         </div>
       </div>
@@ -143,7 +162,7 @@ export default function Dashboard() {
               <div className="list-item">
                 <div className="list-copy">
                   <strong>2. 确认并发布</strong>
-                  <span>编辑摘要后选择发布渠道（当前支持飞书）</span>
+                  <span>编辑摘要后重新执行流程，目前发布按钮使用飞书机器人</span>
                 </div>
                 <Link className="btn" to="/generation">打开</Link>
               </div>
@@ -163,20 +182,24 @@ export default function Dashboard() {
             <span>系统连接</span>
             <button
               className="btn"
-              onClick={handleSync}
-              disabled={ingesting}
+              onClick={handleCheckConnection}
+              disabled={checkingConnection}
               type="button"
             >
-              重新检测
+              {checkingConnection ? <span className="spinner" /> : '检查连接'}
             </button>
           </div>
           <div className="card-body">
             <div className="list">
               <div className="list-item">
-                <span>内容来源</span>
-                <span className="badge live">
-                  <i className="dot live" />
-                  示例来源可用
+                <span>后端服务</span>
+                <span className={'badge ' + (connectionState === 'ok' ? 'live' : '')}>
+                  <i className={'dot ' + (connectionState === 'ok' ? 'live' : '')} />
+                  {connectionState === 'ok'
+                    ? '连接正常'
+                    : connectionState === 'error'
+                      ? '连接失败'
+                      : '尚未检查'}
                 </span>
               </div>
               <div className="list-item">
