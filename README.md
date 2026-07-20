@@ -1,6 +1,6 @@
 # MultiscribeAgent
 
-> 一个面向资讯采集、AI 筛选、摘要生成和多渠道发布的 Agent 应用平台。系统支持 RSS、GitHub Trending、Follow、AI Search 等内容源接入，通过可配置 Agent 和自研 DAG 工作流完成“内容采集 → 去重 → AI 筛选 → 摘要生成 → 多平台发布”的自动化闭环，并提供知识库、记忆、MCP、Interop、调度和评估能力。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
+一个面向资讯采集、AI 筛选、摘要生成和多渠道发布的 Agent 应用平台。系统支持 RSS、GitHub Trending、Follow、AI Search 等内容源接入，通过可配置 Agent 和自研 DAG 工作流完成`采集 → 去重 → AI 精选 → 摘要生成 → 多渠道发布`的自动化闭环，并提供知识库、记忆、MCP、Interop、调度和评估能力。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
 
 <p align="center">
   <img src="docs/pic/宣传页.png" alt="MultiscribeAgent 宣传页" width="100%">
@@ -26,7 +26,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-65B32E" alt="GPL-3.0"></a>
 </p>
 
-> `采集 → 去重 → AI 精选 → 摘要生成 → 多渠道发布`
 
 **核心能力**：声明式 Agent、DAG 工作流、Loop 自评、插件生态、知识库与记忆系统、MCP / Interop、全链路可观测性。
 
