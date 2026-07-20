@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import mimetypes
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
 import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from multiscribe_agent.api.middleware import CsrfMiddleware, EndpointRateLimiter
 from multiscribe_agent.api.routes import (
@@ -36,6 +39,16 @@ from multiscribe_agent.core.errors import (
     ValidationError,
 )
 from multiscribe_agent.core.logging import configure_logging, get_logger
+
+
+def _mount_frontend(app: FastAPI) -> None:
+    """Serve the built React SPA when its production bundle is available."""
+    dist_path = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    if dist_path.is_dir():
+        # Windows maps .css to application/x-css, which Chromium rejects for stylesheets.
+        mimetypes.add_type("text/css", ".css", strict=True)
+        # Register last so API and documentation routes keep precedence over the SPA.
+        app.mount("/", StaticFiles(directory=dist_path, html=True), name="frontend")
 
 
 def create_app(settings: SystemSettings, context: ServiceContext | None = None) -> FastAPI:
@@ -121,4 +134,5 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         schedules.router,
     ):
         app.include_router(router)
+    _mount_frontend(app)
     return app

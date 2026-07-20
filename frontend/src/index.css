@@ -22,7 +22,11 @@
 
 /* Base resets */
 *, *::before, *::after { box-sizing: border-box; }
-html { color-scheme: light; }
+html {
+  color-scheme: light;
+  /* One-time revision to invalidate browsers that cached the pre-fix CSS MIME type. */
+  --static-asset-revision: 20260720;
+}
 body {
   margin: 0;
   background: var(--color-bg);
