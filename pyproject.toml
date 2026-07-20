@@ -43,6 +43,8 @@ dev = [
     "pre-commit",
     "pytest>=8",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "pytest-benchmark>=4.0",
     "respx>=0.21",
     "ruff>=0.5",
     "types-click",
@@ -53,6 +55,9 @@ observability = [
     "opentelemetry-exporter-otlp>=1.27",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "prometheus-client>=0.20",
+]
+text = [
+    "jieba>=0.42",
 ]
 
 [project.scripts]
@@ -83,7 +88,10 @@ follow_imports = "skip"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-markers = ["e2e: real external dependency tests (skipped by default)"]
+markers = [
+    "e2e: real external dependency tests (skipped by default)",
+    "benchmark: performance benchmark test (requires pytest-benchmark)",
+]
 addopts = "-m 'not e2e'"
 
 [dependency-groups]

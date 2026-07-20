@@ -16,6 +16,8 @@ type AgentEventType = Literal[
     "final_content",
     "error",
     "usage",
+    "loop_detected",
+    "budget_warning",
 ]
 
 
@@ -32,6 +34,8 @@ class AgentEvent:
         tool_error: ``tool_call``, ``error``, and ``round``.
         usage: ``round`` plus ``input_tokens``, ``output_tokens``, and ``total_tokens``.
         error: ``message`` and optional ``round``.
+        loop_detected: ``tool``, ``args_hash``, ``consecutive_repeats``, and ``round``.
+        budget_warning: ``used_tokens``, ``budget``, ``remaining``, and ``round``.
     """
 
     type: AgentEventType

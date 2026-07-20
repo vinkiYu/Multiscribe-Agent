@@ -8,11 +8,25 @@ from collections.abc import Mapping
 
 from multiscribe_agent.domain.models import PluginMetadata, ToolCall, ToolDefinition
 from multiscribe_agent.plugins.base import (
+    PLUGIN_API_VERSION,
     BaseAdapter,
     BasePublisher,
     BaseStorageProvider,
     BaseTool,
 )
+
+
+class IncompatiblePluginError(RuntimeError):
+    """Raised when a plugin declares an unsupported Plugin API version."""
+
+
+def _check_compatibility(metadata: PluginMetadata) -> None:
+    """Reject plugin metadata that cannot satisfy the current plugin contract."""
+    if metadata.api_version != PLUGIN_API_VERSION:
+        raise IncompatiblePluginError(
+            f"plugin {metadata.id} api_version={metadata.api_version} "
+            f"but system requires {PLUGIN_API_VERSION}"
+        )
 
 
 class _ClassRegistry[PluginT]:
@@ -23,6 +37,7 @@ class _ClassRegistry[PluginT]:
 
     def register(self, key: str, plugin_class: type[PluginT], metadata: PluginMetadata) -> None:
         """Register or replace a plugin class under a stable key."""
+        _check_compatibility(metadata)
         self._entries[key] = (plugin_class, metadata)
 
     def get(self, key: str) -> type[PluginT]:
@@ -110,6 +125,7 @@ class ToolRegistry:
     def register(self, tool_class: type[BaseTool], metadata: PluginMetadata | None = None) -> None:
         """Register or replace a tool class without instantiating it."""
         resolved = metadata or tool_class.metadata
+        _check_compatibility(resolved)
         self._classes[resolved.id] = (tool_class, resolved)
 
     def register_tool(self, tool: BaseTool) -> None:

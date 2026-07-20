@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -32,6 +33,8 @@ type ToolsOverride = tuple[list[ToolDefinition], ToolExecutor]
 
 DEFAULT_MAX_ROUNDS = 5
 DEFAULT_REFLECTOR_MAX_RETRIES = 1
+DEADLOCK_WINDOW = 3
+DEADLOCK_MAX_REPEATS = 3
 log = structlog.get_logger(__name__)
 
 
@@ -118,8 +121,20 @@ class AgentExecutor:
         )
         context.add_user(user_input)
         reflection_retries = 0
+        recent_tool_calls: list[tuple[str, str]] = []
 
         for round_number in range(1, self._max_rounds + 1):
+            if context.should_warn_budget(threshold=0.8):
+                yield self._event(
+                    "budget_warning",
+                    {
+                        "used_tokens": context.estimate_tokens(),
+                        "budget": context.token_budget,
+                        "remaining": context.estimated_tokens_remaining(),
+                        "round": round_number,
+                    },
+                    trace_id,
+                )
             yield self._event("round_start", {"round": round_number}, trace_id)
             content_parts: list[str] = []
             tool_calls: list[ToolCall] = []
@@ -173,6 +188,26 @@ class AgentExecutor:
             )
 
             if tool_calls:
+                for tool_call in tool_calls:
+                    signature = self._tool_call_signature(tool_call)
+                    recent_tool_calls.append(signature)
+                    if len(recent_tool_calls) > DEADLOCK_WINDOW:
+                        recent_tool_calls.pop(0)
+                    if (
+                        len(recent_tool_calls) == DEADLOCK_MAX_REPEATS
+                        and len(set(recent_tool_calls)) == 1
+                    ):
+                        yield self._event(
+                            "loop_detected",
+                            {
+                                "tool": tool_call.name,
+                                "args_hash": signature[1],
+                                "consecutive_repeats": DEADLOCK_MAX_REPEATS,
+                                "round": round_number,
+                            },
+                            trace_id,
+                        )
+                        return
                 yield self._event(
                     "tool_calls",
                     {"tool_calls": self._dump_tool_calls(tool_calls), "round": round_number},
@@ -313,6 +348,18 @@ class AgentExecutor:
     @staticmethod
     def _dump_tool_calls(tool_calls: list[ToolCall]) -> list[dict[str, object]]:
         return [tool_call.model_dump(mode="json") for tool_call in tool_calls]
+
+    @staticmethod
+    def _tool_call_signature(tool_call: ToolCall) -> tuple[str, str]:
+        """Return a bounded signature used to identify repeated tool calls."""
+        arguments = json.dumps(
+            tool_call.arguments,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        args_hash = hashlib.sha256(arguments.encode("utf-8")).hexdigest()[:16]
+        return tool_call.name, args_hash
 
     @staticmethod
     def _event(event_type: AgentEventType, data: dict[str, object], trace_id: str) -> AgentEvent:

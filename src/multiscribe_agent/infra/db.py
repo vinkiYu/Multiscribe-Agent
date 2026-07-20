@@ -3,12 +3,30 @@
 from __future__ import annotations
 
 import importlib
+import time
 from collections.abc import Iterable, Sequence
-from typing import Protocol, cast
+from contextvars import ContextVar
+from typing import TYPE_CHECKING, Protocol, cast
 
 import aiosqlite
+import structlog
+
+if TYPE_CHECKING:
+    from multiscribe_agent.infra.connection_pool import ConnectionPool
+    from multiscribe_agent.observability.sql_audit import AuditEntry, SqlAuditLogger
 
 type SqlParameters = Sequence[object]
+log = structlog.get_logger(__name__)
+_active_write_connection: ContextVar[aiosqlite.Connection | None] = ContextVar(
+    "active_write_connection", default=None
+)
+
+
+class _AuditLogger(Protocol):
+    """Minimal audit sink accepted by the database wrapper."""
+
+    async def record(self, statement: str, parameters: SqlParameters) -> AuditEntry:
+        """Record one write statement."""
 
 
 class _SqliteVecModule(Protocol):
@@ -20,31 +38,111 @@ class _SqliteVecModule(Protocol):
 class Database:
     """Wrap an aiosqlite connection with small typed query helpers."""
 
-    def __init__(self, connection: aiosqlite.Connection) -> None:
+    def __init__(
+        self,
+        connection: aiosqlite.Connection | None = None,
+        *,
+        pool: ConnectionPool | None = None,
+        slow_query_threshold: float = 1.0,
+        enable_sql_audit: bool = True,
+    ) -> None:
         """Create a database wrapper around an open connection."""
-        self.connection = connection
+        if slow_query_threshold <= 0:
+            raise ValueError("slow_query_threshold must be positive")
+        if connection is None and pool is None:
+            raise ValueError("Database requires a connection or pool")
+        self._pool = pool
+        self.connection = connection if connection is not None else pool.write_connection  # type: ignore[union-attr]
+        self._slow_query_threshold = slow_query_threshold
+        self._enable_sql_audit = enable_sql_audit
+        self._audit_logger: _AuditLogger | None = None
 
     @classmethod
-    async def open(cls, path: str) -> Database:
+    async def open(
+        cls,
+        path: str,
+        *,
+        slow_query_threshold: float = 1.0,
+        enable_sql_audit: bool = True,
+    ) -> Database:
         """Open a database connection and apply SQLite runtime settings."""
         connection = await aiosqlite.connect(path)
         connection.row_factory = aiosqlite.Row
-        database = cls(connection)
+        database = cls(
+            connection,
+            slow_query_threshold=slow_query_threshold,
+            enable_sql_audit=enable_sql_audit,
+        )
         await database._configure()
         return database
 
+    @classmethod
+    async def open_with_pool(
+        cls,
+        path: str,
+        *,
+        read_pool_size: int = 5,
+        write_timeout: float = 30.0,
+        slow_query_threshold: float = 1.0,
+        enable_sql_audit: bool = True,
+    ) -> Database:
+        """Open a file-backed database using separate read and write lanes."""
+        from multiscribe_agent.infra.connection_pool import ConnectionPool
+
+        pool = ConnectionPool(
+            path,
+            read_pool_size=read_pool_size,
+            write_timeout=write_timeout,
+        )
+        await pool.initialize()
+        return cls(
+            pool=pool,
+            slow_query_threshold=slow_query_threshold,
+            enable_sql_audit=enable_sql_audit,
+        )
+
+    def set_audit_logger(self, audit_logger: SqlAuditLogger | None) -> None:
+        """Attach the audit sink used for subsequent write statements."""
+        self._audit_logger = audit_logger
+
     async def close(self) -> None:
         """Close the underlying SQLite connection."""
-        await self.connection.close()
+        if self._pool is not None:
+            await self._pool.close()
+        else:
+            await self.connection.close()
 
     async def execute(self, statement: str, parameters: SqlParameters = ()) -> int:
         """Execute one write statement, commit it, and return affected rows."""
-        cursor = await self.connection.execute(statement, parameters)
+        active_connection = _active_write_connection.get()
+        if active_connection is not None:
+            return await self._execute_on_connection(active_connection, statement, parameters)
+        if self._pool is not None:
+            async with self._pool.acquire_write() as connection:
+                return await self._execute_on_connection(connection, statement, parameters)
+        return await self._execute_on_connection(self.connection, statement, parameters)
+
+    async def _execute_on_connection(
+        self,
+        connection: aiosqlite.Connection,
+        statement: str,
+        parameters: SqlParameters,
+    ) -> int:
+        """Run one write on a selected lane and apply observability hooks."""
+        started = time.monotonic()
+        cursor = await connection.execute(statement, parameters)
         try:
-            await self.connection.commit()
+            await connection.commit()
             return cursor.rowcount
         finally:
             await cursor.close()
+            self._record_query_observability(statement, parameters, time.monotonic() - started)
+            token = _active_write_connection.set(connection)
+            try:
+                await self._audit_write(statement, parameters)
+                await self._sync_tokenized_fts(connection, statement, parameters)
+            finally:
+                _active_write_connection.reset(token)
 
     async def executemany(
         self,
@@ -52,13 +150,34 @@ class Database:
         parameter_sets: Iterable[SqlParameters],
     ) -> int:
         """Execute a batch write and return the number of database changes."""
-        changes_before = self.connection.total_changes
-        cursor = await self.connection.executemany(statement, parameter_sets)
+        if self._pool is not None:
+            async with self._pool.acquire_write() as connection:
+                return await self._executemany_on_connection(connection, statement, parameter_sets)
+        return await self._executemany_on_connection(self.connection, statement, parameter_sets)
+
+    async def _executemany_on_connection(
+        self,
+        connection: aiosqlite.Connection,
+        statement: str,
+        parameter_sets: Iterable[SqlParameters],
+    ) -> int:
+        """Run a batch write on a selected lane."""
+        started = time.monotonic()
+        materialized = list(parameter_sets)
+        changes_before = connection.total_changes
+        cursor = await connection.executemany(statement, materialized)
         try:
-            await self.connection.commit()
-            return self.connection.total_changes - changes_before
+            await connection.commit()
+            return connection.total_changes - changes_before
         finally:
             await cursor.close()
+            self._record_query_observability(statement, (), time.monotonic() - started)
+            token = _active_write_connection.set(connection)
+            try:
+                for parameters in materialized:
+                    await self._audit_write(statement, parameters)
+            finally:
+                _active_write_connection.reset(token)
 
     async def fetchone(
         self,
@@ -66,11 +185,26 @@ class Database:
         parameters: SqlParameters = (),
     ) -> aiosqlite.Row | None:
         """Return the first row for a parameterized query."""
-        cursor = await self.connection.execute(statement, parameters)
+        if self._pool is not None:
+            async with self._pool.acquire_read() as connection:
+                return await self._fetchone_on_connection(connection, statement, parameters)
+        return await self._fetchone_on_connection(self.connection, statement, parameters)
+
+    async def _fetchone_on_connection(
+        self,
+        connection: aiosqlite.Connection,
+        statement: str,
+        parameters: SqlParameters,
+    ) -> aiosqlite.Row | None:
+        """Fetch one row on a selected read lane."""
+        started = time.monotonic()
+        normalized_parameters = self._normalize_fts_parameters(statement, parameters)
+        cursor = await connection.execute(statement, normalized_parameters)
         try:
             return await cursor.fetchone()
         finally:
             await cursor.close()
+            self._record_query_observability(statement, parameters, time.monotonic() - started)
 
     async def fetchall(
         self,
@@ -78,11 +212,119 @@ class Database:
         parameters: SqlParameters = (),
     ) -> list[aiosqlite.Row]:
         """Return all rows for a parameterized query."""
-        cursor = await self.connection.execute(statement, parameters)
+        if self._pool is not None:
+            async with self._pool.acquire_read() as connection:
+                return await self._fetchall_on_connection(connection, statement, parameters)
+        return await self._fetchall_on_connection(self.connection, statement, parameters)
+
+    async def _fetchall_on_connection(
+        self,
+        connection: aiosqlite.Connection,
+        statement: str,
+        parameters: SqlParameters,
+    ) -> list[aiosqlite.Row]:
+        """Fetch all rows on a selected read lane."""
+        started = time.monotonic()
+        normalized_parameters = self._normalize_fts_parameters(statement, parameters)
+        cursor = await connection.execute(statement, normalized_parameters)
         try:
             return list(await cursor.fetchall())
         finally:
             await cursor.close()
+            self._record_query_observability(statement, parameters, time.monotonic() - started)
+
+    async def _audit_write(self, statement: str, parameters: SqlParameters) -> None:
+        """Send write statements to the audit sink without affecting the caller."""
+        if (
+            not self._enable_sql_audit
+            or self._audit_logger is None
+            or not self._is_write_statement(statement)
+            or "SQL_AUDIT_LOG" in statement.upper()
+        ):
+            return
+        try:
+            await self._audit_logger.record(statement, parameters)
+        except (aiosqlite.Error, OSError, RuntimeError, TypeError, ValueError) as exc:
+            log.warning("sql_audit_failed", error_type=type(exc).__name__, error=str(exc))
+
+    def _record_query_observability(
+        self, statement: str, parameters: SqlParameters, duration: float
+    ) -> None:
+        """Emit slow-query warning and update the optional metric backend."""
+        if duration < self._slow_query_threshold:
+            return
+        parameter_count = len(parameters) if hasattr(parameters, "__len__") else 0
+        log.warning(
+            "slow_query",
+            statement=statement[:200],
+            param_count=parameter_count,
+            duration_ms=round(duration * 1000, 2),
+            threshold_ms=round(self._slow_query_threshold * 1000, 2),
+        )
+        try:
+            from multiscribe_agent.observability.meter import get_metrics_registry
+
+            registry = get_metrics_registry()
+            record_slow_query = getattr(registry, "record_slow_query", None)
+            if callable(record_slow_query):
+                record_slow_query(duration)
+            else:
+                record_counter = getattr(registry, "_record_counter", None)
+                if callable(record_counter):
+                    record_counter("slow_query")
+        except (ImportError, RuntimeError, TypeError):
+            log.debug("slow_query_metric_unavailable")
+
+    @staticmethod
+    def _is_write_statement(statement: str) -> bool:
+        """Return whether a statement is one of the audited SQL write operations."""
+        return statement.lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
+
+    @staticmethod
+    def _normalize_fts_parameters(statement: str, parameters: SqlParameters) -> SqlParameters:
+        """Apply the same tokenizer to FTS query parameters as to indexed text."""
+        upper = statement.upper()
+        if " MATCH ?" not in upper or not any(
+            name in upper for name in ("_FTS", "FTS5", "SOURCE_DATA_FTS", "AGENT_MEMORIES_FTS")
+        ):
+            return parameters
+        if not parameters or not isinstance(parameters[0], str):
+            return parameters
+        from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
+
+        return (tokenize_for_fts(parameters[0]), *parameters[1:])
+
+    async def _sync_tokenized_fts(
+        self,
+        connection: aiosqlite.Connection,
+        statement: str,
+        parameters: SqlParameters,
+    ) -> None:
+        """Replace the raw kb chunk trigger row with jieba-tokenized content."""
+        upper = statement.upper()
+        if "INSERT INTO KB_CHUNKS" not in upper or not parameters:
+            return
+        chunk_id = parameters[0]
+        if not isinstance(chunk_id, str):
+            return
+        try:
+            from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
+
+            cursor = await connection.execute(
+                "SELECT rowid, content FROM kb_chunks WHERE id = ?", (chunk_id,)
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+            if row is None:
+                return
+            update = await connection.execute(
+                "UPDATE kb_chunks_fts SET content = ? WHERE rowid = ?",
+                (tokenize_for_fts(str(row["content"])), int(row["rowid"])),
+            )
+            await update.close()
+            await connection.commit()
+        except (ImportError, aiosqlite.Error, KeyError, TypeError, ValueError):
+            return
 
     async def migrate_publish_history(self) -> None:
         """Create the publisher outcome table and its bounded-query indexes."""
@@ -258,6 +500,33 @@ CREATE TABLE IF NOT EXISTS schedules (
     updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS workflow_iterations (
+    workflow_run_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    round INTEGER NOT NULL,
+    output TEXT NOT NULL DEFAULT '',
+    score REAL,
+    feedback TEXT,
+    converged INTEGER NOT NULL DEFAULT 0,
+    reason TEXT NOT NULL DEFAULT '',
+    recorded_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    PRIMARY KEY (workflow_run_id, step_id, round)
+);
+CREATE INDEX IF NOT EXISTS idx_workflow_iterations_run
+    ON workflow_iterations(workflow_run_id);
+
+CREATE TABLE IF NOT EXISTS sql_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    statement TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    param_count INTEGER NOT NULL DEFAULT 0,
+    suspicious INTEGER NOT NULL DEFAULT 0,
+    suspicious_patterns TEXT NOT NULL DEFAULT '',
+    recorded_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sql_audit_suspicious ON sql_audit_log(suspicious);
+CREATE INDEX IF NOT EXISTS idx_sql_audit_recorded_at ON sql_audit_log(recorded_at);
+
 CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -412,9 +681,28 @@ async def _backfill_source_fts(db: Database) -> None:
     )
 
 
-async def init_db(path: str) -> Database:
+async def init_db(
+    path: str,
+    *,
+    slow_query_threshold: float = 1.0,
+    enable_sql_audit: bool = True,
+    use_pool: bool = False,
+    read_pool_size: int = 5,
+) -> Database:
     """Open, initialize, repair, and return a ready SQLite database."""
-    database = await Database.open(path)
+    if use_pool and path != ":memory:":
+        database = await Database.open_with_pool(
+            path,
+            read_pool_size=read_pool_size,
+            slow_query_threshold=slow_query_threshold,
+            enable_sql_audit=enable_sql_audit,
+        )
+    else:
+        database = await Database.open(
+            path,
+            slow_query_threshold=slow_query_threshold,
+            enable_sql_audit=enable_sql_audit,
+        )
     await init_schema(database)
     await database.migrate_publish_history()
     await database.migrate_kb()

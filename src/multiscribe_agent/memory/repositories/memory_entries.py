@@ -8,6 +8,7 @@ from builtins import list as builtin_list
 
 from multiscribe_agent.domain.models import MemoryEntry
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
 
 
 class DuplicateEntryError(ValueError):
@@ -45,6 +46,14 @@ class MemoryEntryRepository:
                 json.dumps(data, ensure_ascii=False, sort_keys=True),
             ),
         )
+        await self._db.execute(
+            """
+            UPDATE agent_memories_fts
+            SET content = ?, tags = ?
+            WHERE rowid = (SELECT rowid FROM agent_memories WHERE id = ?)
+            """,
+            (tokenize_for_fts(entry.content), tokenize_for_fts(json.dumps(entry.tags)), entry.id),
+        )
         return entry.id
 
     async def save_batch(self, entries: list[MemoryEntry]) -> int:
@@ -81,7 +90,7 @@ class MemoryEntryRepository:
 
     async def fts_search(self, query: str, limit: int = 20) -> builtin_list[MemoryEntry]:
         """Find memories through the existing FTS5 table."""
-        terms = " ".join(part for part in query.replace("'", " ").split() if part)
+        terms = tokenize_for_fts(query.replace("'", " "))
         if not terms:
             return []
         rows = await self._db.fetchall(

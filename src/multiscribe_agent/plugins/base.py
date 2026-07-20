@@ -11,6 +11,7 @@ import structlog
 from multiscribe_agent.domain.models import PluginMetadata, UnifiedData
 
 log = structlog.get_logger(__name__)
+PLUGIN_API_VERSION = "1.0"
 
 
 class BaseAdapter(ABC):

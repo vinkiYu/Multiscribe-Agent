@@ -1,0 +1,25 @@
+rules:
+  - name: high_error_count
+    metric: error_count
+    type: threshold
+    threshold: 10
+    window_seconds: 60
+    description: "错误数超过 10"
+  - name: high_publish_failure_rate
+    metric: publish_failure
+    type: ratio
+    threshold: 0
+    window_seconds: 300
+    description: "5 分钟内推送失败率 > 50%"
+  - name: slow_llm_latency
+    metric: llm_latency
+    type: window
+    threshold: 30.0
+    window_seconds: 60
+    description: "LLM 平均延迟 > 30s"
+  - name: frequent_slow_queries
+    metric: slow_query
+    type: ratio
+    threshold: 0
+    window_seconds: 60
+    description: "1 分钟内慢查询占比 > 50%"

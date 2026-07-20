@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from multiscribe_agent.api.middleware import EndpointRateLimiter
+from multiscribe_agent.api.middleware import CsrfMiddleware, EndpointRateLimiter
 from multiscribe_agent.api.routes import (
     agents,
     ai_v1,
@@ -59,6 +59,8 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    if settings.csrf_enabled:
+        app.add_middleware(CsrfMiddleware, exempt_paths=settings.csrf_exempt_paths)
     if settings.rate_limit.enabled:
         app.add_middleware(
             EndpointRateLimiter,

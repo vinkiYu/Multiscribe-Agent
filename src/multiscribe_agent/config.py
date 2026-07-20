@@ -65,6 +65,14 @@ class StorageConfig(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
+class DatabaseConfig(BaseModel):
+    """Database observability and audit settings."""
+
+    path: str = "data/database.sqlite"
+    slow_query_threshold_seconds: float = Field(default=1.0, gt=0)
+    enable_sql_audit: bool = True
+
+
 class RateLimitConfig(BaseModel):
     """Per-path sliding-window limits for human-facing API endpoints."""
 
@@ -255,6 +263,26 @@ class SystemSettings(BaseSettings):
     selection_fetch_days: int = 2
     selection_query_field: str = "ingestion_date"
     rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
+    slow_query_threshold_seconds: float = Field(
+        default=1.0,
+        gt=0,
+        validation_alias=AliasChoices(
+            "SLOW_QUERY_THRESHOLD_SECONDS", "MULTISCRIBE_SLOW_QUERY_THRESHOLD_SECONDS"
+        ),
+    )
+    enable_sql_audit: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("ENABLE_SQL_AUDIT", "MULTISCRIBE_ENABLE_SQL_AUDIT"),
+    )
+    csrf_enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("CSRF_ENABLED", "MULTISCRIBE_CSRF_ENABLED"),
+    )
+    csrf_exempt_paths: tuple[str, ...] = (
+        "/api/login",
+        "/api/auth/login",
+        "/api/ai/v1/",
+    )
 
     @field_validator("default_digest_targets", "default_digest_adapter_ids", mode="before")
     @classmethod

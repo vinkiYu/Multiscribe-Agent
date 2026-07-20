@@ -333,3 +333,5 @@ class PluginMetadata(_DomainModel):
     icon: str = ""
     config_fields: list[ConfigField] = Field(default_factory=list)
     is_builtin: bool = True
+    api_version: str = "1.0"
+    min_system_version: str = "0.1.0"

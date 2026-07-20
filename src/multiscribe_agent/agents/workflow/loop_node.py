@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
 from multiscribe_agent.core.errors import WorkflowError
 from multiscribe_agent.domain.models import WorkflowStep
@@ -59,8 +60,10 @@ async def execute_loop_step(
     reflector: LoopReflector | None,
     *,
     trace_id: str,
+    workflow_run_id: str | None = None,
+    iteration_store: IterationStore | None = None,
 ) -> tuple[str, list[dict[str, object]]]:
-    """Execute an agent step until score, convergence, rule, or round bound exits."""
+    """Execute a loop and optionally persist/resume its iteration checkpoints."""
     del trace_id
     if step.agent_id is None:
         raise WorkflowError("loop step requires agent_id")
@@ -69,7 +72,23 @@ async def execute_loop_step(
     current_input = step_input
     iterations: list[LoopIteration] = []
     output = ""
-    for round_number in range(1, spec.max_rounds + 1):
+    if iteration_store is not None and workflow_run_id is not None:
+        persisted = await iteration_store.list_for_step(workflow_run_id, step.id)
+        iterations.extend(_iteration_from_record(record) for record in persisted)
+        if persisted:
+            latest = persisted[-1]
+            output = latest.output
+            if latest.converged or latest.round >= spec.max_rounds:
+                return output, [_dump_iteration(iteration) for iteration in iterations]
+            if latest.feedback:
+                current_input = f"{task}\n\nFeedback from previous attempt:\n{latest.feedback}"
+            first_round = latest.round + 1
+        else:
+            first_round = 1
+    else:
+        first_round = 1
+
+    for round_number in range(first_round, spec.max_rounds + 1):
         output = await executor.execute(step.agent_id, current_input)
         rule_converged, score, feedback = await _evaluate(
             step.exit_condition, task, output, reflector, spec
@@ -82,17 +101,29 @@ async def execute_loop_step(
         )
         reason = _classify_exit(spec, score, score_delta, round_number, rule_converged)
         converged = reason in {"threshold", "convergence", "condition"}
-        iterations.append(
-            LoopIteration(
-                round=round_number,
-                output=output,
-                score=score,
-                delta=score_delta,
-                feedback=feedback,
-                converged=converged,
-                reason=reason,
-            )
+        iteration = LoopIteration(
+            round=round_number,
+            output=output,
+            score=score,
+            delta=score_delta,
+            feedback=feedback,
+            converged=converged,
+            reason=reason,
         )
+        iterations.append(iteration)
+        if iteration_store is not None and workflow_run_id is not None:
+            await iteration_store.append(
+                IterationRecord(
+                    workflow_run_id=workflow_run_id,
+                    step_id=step.id,
+                    round=iteration.round,
+                    output=iteration.output,
+                    score=iteration.score,
+                    feedback=iteration.feedback,
+                    converged=iteration.converged,
+                    reason=iteration.reason,
+                )
+            )
         if reason in {"threshold", "convergence", "condition", "max_rounds"}:
             break
         if feedback is not None:
@@ -168,3 +199,16 @@ def _dump_iteration(iteration: LoopIteration) -> dict[str, object]:
         "converged": iteration.converged,
         "reason": iteration.reason,
     }
+
+
+def _iteration_from_record(record: IterationRecord) -> LoopIteration:
+    """Restore a persisted record into the in-memory workflow history shape."""
+    return LoopIteration(
+        round=record.round,
+        output=record.output,
+        score=record.score,
+        delta=None,
+        feedback=record.feedback,
+        converged=record.converged,
+        reason=record.reason,
+    )

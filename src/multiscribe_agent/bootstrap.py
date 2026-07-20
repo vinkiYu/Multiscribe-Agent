@@ -13,6 +13,7 @@ from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
 from multiscribe_agent.infra.db import Database, init_db
@@ -31,8 +32,10 @@ from multiscribe_agent.memory.memory_service import MemoryService
 from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
 from multiscribe_agent.memory.repositories.memory_categories import MemoryCategoryRepository
 from multiscribe_agent.memory.repositories.memory_entries import MemoryEntryRepository
+from multiscribe_agent.observability.alerts import AlertEngine, load_rules
 from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_registry
 from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
+from multiscribe_agent.observability.sql_audit import SqlAuditLogger
 from multiscribe_agent.observability.tracer import setup_tracer
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
@@ -127,17 +130,31 @@ class ServiceContext:
         self.observability_capabilities: ObservabilityCapabilities | None = None
         self.metrics: MetricsRegistry | None = None
         self.tracer: object | None = None
+        self.event_bus: EventBus | None = None
+        self.alerts: AlertEngine | None = None
+        self.sql_audit: SqlAuditLogger | None = None
         self._initialized = False
 
     async def init(self) -> None:
         """Initialize database, plugins, services, executor adapters, and scheduler."""
         if self._initialized:
             return
-        self.db = await init_db(self.settings.db_path)
+        self.db = await init_db(
+            self.settings.db_path,
+            slow_query_threshold=self.settings.slow_query_threshold_seconds,
+            enable_sql_audit=self.settings.enable_sql_audit,
+            use_pool=True,
+        )
+        if self.settings.enable_sql_audit:
+            self.sql_audit = SqlAuditLogger(self.db)
+            self.db.set_audit_logger(self.sql_audit)
+        rules_path = Path(__file__).parent / "observability" / "alert_rules.yaml"
+        self.alerts = AlertEngine(load_rules(rules_path))
         self.observability_capabilities = detect()
         self.metrics = MetricsRegistry.create(self.observability_capabilities)
         set_metrics_registry(self.metrics)
         self.tracer = setup_tracer()
+        self.event_bus = get_event_bus()
         self.interop_service = InteropService(self.db)
         self.interop_limiter = SlidingWindowLimiter(window_seconds=60)
         self.publish_history = get_publish_history()
