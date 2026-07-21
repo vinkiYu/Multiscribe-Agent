@@ -14,7 +14,8 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     register_daily_digest_executor,
 )
 from multiscribe_agent.core.errors import WorkflowError
-from multiscribe_agent.domain.models import ScheduleTask, SourceData
+from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData
+from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
@@ -60,6 +61,42 @@ class FakeCurator:
         assert agent_id == "curator"
         self.inputs.append(user_input)
         return next(self._outputs)
+
+
+class MemoryAwareFakeCurator(FakeCurator):
+    """Curator double that exposes the summaries supplied to its harness context."""
+
+    def __init__(self, outputs: list[str]) -> None:
+        super().__init__(outputs)
+        self.memory_summaries: list[str] = []
+
+    async def execute_with_memory(
+        self, agent_id: str, user_input: str, memory_summaries: list[str]
+    ) -> str:
+        self.memory_summaries = memory_summaries
+        return await self.execute(agent_id, user_input)
+
+
+class FakeMemoryService:
+    """Small retrieval boundary used to exercise digest memory injection and degradation."""
+
+    def __init__(
+        self, preferences: UserPreferences, entries: list[MemoryEntry], fail: bool = False
+    ) -> None:
+        self._preferences = preferences
+        self._entries = entries
+        self._fail = fail
+
+    async def get_preferences(self) -> UserPreferences:
+        if self._fail:
+            raise RuntimeError("memory unavailable")
+        return self._preferences
+
+    async def search_entries(self, query: str, limit: int = 20) -> list[MemoryEntry]:
+        del query, limit
+        if self._fail:
+            raise RuntimeError("memory unavailable")
+        return self._entries
 
 
 @dataclass(frozen=True)
@@ -142,6 +179,9 @@ def _curation_json() -> str:
 
 def _pipeline(
     curator_outputs: list[str],
+    *,
+    curator: FakeCurator | None = None,
+    memory_service: FakeMemoryService | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
@@ -159,7 +199,7 @@ def _pipeline(
             _source("three", "https://example.test/three", "Three"),
         ]
     )
-    curator = FakeCurator(curator_outputs)
+    curator = curator or FakeCurator(curator_outputs)
     GoodPublisher.received = []
     publishing = PublishingService(
         FakePublisherRegistry({"good": GoodPublisher, "bad": BadPublisher}),  # type: ignore[arg-type]
@@ -170,7 +210,13 @@ def _pipeline(
     )
     return (
         DailyDigestPipeline(
-            ingestion, repository, curator, publishing, config, RetryOnceReflector()
+            ingestion,
+            repository,
+            curator,
+            publishing,
+            config,
+            RetryOnceReflector(),
+            memory_service=memory_service,
         ),
         curator,
         ingestion,
@@ -237,6 +283,54 @@ async def test_stream_exposes_loop_iteration_and_invalid_json_becomes_workflow_e
     invalid_pipeline, _, _ = _pipeline(["not JSON"])
     with pytest.raises(WorkflowError, match="valid JSON"):
         await invalid_pipeline.run(run_date="2026-07-17")
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_applies_memory_constraints_and_injects_preferences() -> None:
+    """Blocked topics stay out of the curator while matching durable memory reaches it."""
+    curator = MemoryAwareFakeCurator([_curation_json(), _curation_json(), "overview"])
+    memory = FakeMemoryService(
+        UserPreferences(["technology"], [], "09:00", 0, blocked_topics=["one description"]),
+        [
+            MemoryEntry(
+                id="memory-1",
+                content="Prioritize practical Agent and RAG engineering updates.",
+                importance=9,
+                tags=["technology"],
+                created_at=1_700_000_000,
+                metadata={"trusted": True},
+            )
+        ],
+    )
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        curator=curator,
+        memory_service=memory,
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["result_count"] == 1
+    assert '"id":"one"' not in curator.inputs[0]
+    assert '"id": "three"' in curator.inputs[0]
+    assert curator.memory_summaries == [
+        "Preference memory (importance=9; tags=technology): "
+        "Prioritize practical Agent and RAG engineering updates."
+    ]
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_degrades_when_memory_is_unavailable() -> None:
+    """A memory outage keeps the original curation and publishing path available."""
+    unavailable = FakeMemoryService(UserPreferences([], [], "09:00", 0), [], fail=True)
+    pipeline, curator, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"], memory_service=unavailable
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["result_count"] == 2
+    assert len(curator.inputs) == 3
 
 
 @pytest.mark.asyncio

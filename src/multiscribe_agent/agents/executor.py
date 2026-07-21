@@ -87,12 +87,18 @@ class AgentExecutor:
         user_input: str,
         *,
         tools_override: ToolsOverride | None = None,
+        memory_summaries: list[str] | None = None,
     ) -> AIResponse:
         """Collect an event stream and return its final provider-neutral response."""
         final_content = ""
         error_message = "agent run ended without final content"
         usage: TokenUsage | None = None
-        async for event in self.stream(agent_def, user_input, tools_override=tools_override):
+        async for event in self.stream(
+            agent_def,
+            user_input,
+            tools_override=tools_override,
+            memory_summaries=memory_summaries,
+        ):
             if event.type == "final_content":
                 final_content = str(event.data["content"])
             elif event.type == "error":
@@ -111,6 +117,7 @@ class AgentExecutor:
         user_input: str,
         *,
         tools_override: ToolsOverride | None = None,
+        memory_summaries: list[str] | None = None,
     ) -> AsyncIterator[AgentEvent]:
         """Yield observable events for a bounded ReAct and reflection loop."""
         trace_id = uuid4().hex
@@ -119,7 +126,9 @@ class AgentExecutor:
         context = HarnessContext(
             self._build_system_prompt(agent_def), token_budget=self._token_budget
         )
-        context.add_user(user_input)
+        for summary in memory_summaries or []:
+            context.inject_memory(summary)
+        context.add_user(user_input, important=True)
         reflection_retries = 0
         recent_tool_calls: list[tuple[str, str]] = []
 
@@ -245,7 +254,7 @@ class AgentExecutor:
                     feedback = self._prompt_service.render(
                         "common", "ReflectionFeedback", feedback=reflection.feedback
                     )
-                    context.add_user(feedback)
+                    context.add_user(feedback, important=True)
                     continue
 
             yield self._event(

@@ -194,3 +194,20 @@ async def test_run_returns_final_response(agent_def: AgentDefinition) -> None:
     assert response.content == "answer"
     assert response.usage is not None
     assert response.usage.total_tokens == 7
+
+
+@pytest.mark.asyncio
+async def test_memory_summaries_are_injected_into_system_context(
+    agent_def: AgentDefinition,
+) -> None:
+    """Callers can supply bounded durable memories without changing the user task."""
+    provider = FakeProvider([[AIResponse(content="answer")]])
+
+    await make_executor(provider).run(
+        agent_def,
+        "question",
+        memory_summaries=["Prefer Agent and RAG engineering content."],
+    )
+
+    assert "[Memory]" in provider.stream_inputs[0][0].content
+    assert "Prefer Agent and RAG engineering content." in provider.stream_inputs[0][0].content

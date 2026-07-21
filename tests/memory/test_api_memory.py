@@ -30,6 +30,7 @@ async def test_memory_api_crud_search_preferences_and_extract() -> None:
                 json={
                     "preferred_tags": ["ai"],
                     "block_sources": ["noise"],
+                    "blocked_topics": ["web3"],
                     "push_time": "08:30",
                     "importance_threshold": 6,
                 },
@@ -47,6 +48,7 @@ async def test_memory_api_crud_search_preferences_and_extract() -> None:
             )
         assert saved.status_code == 200
         assert saved.json()["push_time"] == "08:30"
+        assert saved.json()["blocked_topics"] == ["web3"]
         assert listed.json()[0]["content"] == "API searchable memory"
         assert searched.json()[0]["content"] == "API searchable memory"
         assert extracted.json() == {"extracted": 0}

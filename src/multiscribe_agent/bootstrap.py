@@ -103,7 +103,23 @@ class _StoredAgentStepExecutor:
             raise LookupError(f"agent not found: {agent_id}")
         return (await self._executor.run(AgentDefinition.model_validate(raw), user_input)).content
 
+    async def execute_with_memory(
+        self, agent_id: str, user_input: str, memory_summaries: list[str]
+    ) -> str:
+        """Execute a stored agent while injecting bounded durable-memory summaries."""
+        raw = await self._agents.get("agents", agent_id)
+        if raw is None:
+            raise LookupError(f"agent not found: {agent_id}")
+        return (
+            await self._executor.run(
+                AgentDefinition.model_validate(raw),
+                user_input,
+                memory_summaries=memory_summaries,
+            )
+        ).content
 
+
+# 负责装配配置、Agent、工作流、采集服务和发布服务,保证 API、CLI、调度任务复用同一套运行时依赖
 class ServiceContext:
     """Lazily initialize and reload the concrete service graph for API and CLI use."""
 
@@ -247,6 +263,7 @@ class ServiceContext:
             UserPreferences(
                 preferred_tags=[],
                 block_sources=[],
+                blocked_topics=[],
                 push_time=self.settings.memory_default_push_time,
                 importance_threshold=self.settings.memory_importance_threshold,
             ),
@@ -292,6 +309,7 @@ class ServiceContext:
         )
         await load_builtin_skills(self.skill_service)
 
+    #
     async def run_daily_digest_task(self, task: ScheduleTask) -> dict[str, object]:
         """Build and run P11 from the persisted schedule task configuration."""
         self._require_initialized()
@@ -309,6 +327,7 @@ class ServiceContext:
             _ProviderLoopReflector(Reflector(), self._provider_for_agent(definition)),
             self.db,
             self.publish_history,
+            self.memory_service,
         )
         return await pipeline.run()
 

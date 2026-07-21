@@ -37,6 +37,7 @@ async def save_preferences(
             _string_list(payload, "block_sources"),
             _text(payload, "push_time"),
             _integer(payload, "importance_threshold"),
+            blocked_topics=_string_list(payload, "blocked_topics"),
         )
         await _service(context).save_preferences(preferences)
     except ValueError as exc:
@@ -121,6 +122,7 @@ def _preferences_response(preferences: UserPreferences) -> dict[str, object]:
     return {
         "preferred_tags": preferences.preferred_tags,
         "block_sources": preferences.block_sources,
+        "blocked_topics": preferences.blocked_topics,
         "push_time": preferences.push_time,
         "importance_threshold": preferences.importance_threshold,
     }

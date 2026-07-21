@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from multiscribe_agent.memory.repositories.memory_categories import MemoryCategoryRepository
 
@@ -17,6 +17,7 @@ class UserPreferences:
     block_sources: list[str]
     push_time: str
     importance_threshold: int
+    blocked_topics: list[str] = field(default_factory=list)
 
 
 DEFAULT_PREFERENCES = UserPreferences([], [], "09:00", 5)
@@ -49,6 +50,7 @@ class PreferenceStore:
             {
                 "preferred_tags": preferences.preferred_tags,
                 "block_sources": preferences.block_sources,
+                "blocked_topics": preferences.blocked_topics,
                 "push_time": preferences.push_time,
                 "importance_threshold": preferences.importance_threshold,
             },
@@ -59,11 +61,18 @@ def _preferences_from_data(data: dict[str, object], defaults: UserPreferences) -
     """Convert untrusted persisted JSON into one validated preference value."""
     preferred_tags = _string_list(data.get("preferred_tags"))
     block_sources = _string_list(data.get("block_sources"))
+    blocked_topics = _string_list(data.get("blocked_topics"))
     push_time = data.get("push_time", defaults.push_time)
     threshold = data.get("importance_threshold", defaults.importance_threshold)
     if not isinstance(push_time, str) or not isinstance(threshold, int):
         raise ValueError("invalid persisted user preferences")
-    preferences = UserPreferences(preferred_tags, block_sources, push_time, threshold)
+    preferences = UserPreferences(
+        preferred_tags,
+        block_sources,
+        push_time,
+        threshold,
+        blocked_topics=blocked_topics,
+    )
     _validate_preferences(preferences)
     return preferences
 

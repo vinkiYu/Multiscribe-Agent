@@ -15,7 +15,7 @@ def test_import() -> None:
 
 def test_version() -> None:
     """The package exposes its current version."""
-    assert multiscribe_agent.__version__ == "1.1.0"
+    assert multiscribe_agent.__version__ == "1.1.2"
 
 
 def test_cli_version() -> None:
@@ -23,4 +23,4 @@ def test_cli_version() -> None:
     result = CliRunner().invoke(main, ["--version"])
 
     assert result.exit_code == 0
-    assert "multiscribe-agent 1.1.0" in result.output
+    assert "multiscribe-agent 1.1.2" in result.output

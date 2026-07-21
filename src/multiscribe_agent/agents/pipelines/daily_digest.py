@@ -9,7 +9,9 @@ from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as Date
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
+
+import structlog
 
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
@@ -25,6 +27,7 @@ from multiscribe_agent.domain.models import (
 )
 from multiscribe_agent.domain.ports import SourceDataRepository
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.memory.digest_context import DigestMemoryContextBuilder, DigestMemoryService
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
@@ -36,6 +39,7 @@ OVERVIEW_AGENT_ID = "daily_digest_overview"
 FANOUT_AGENT_ID = "daily_digest_fanout"
 WORKFLOW_ID = "daily_digest"
 FEEDBACK_SEPARATOR = "\n\nFeedback from previous attempt:\n"
+log = structlog.get_logger(__name__)
 
 
 class IngestionRunner(Protocol):
@@ -45,6 +49,16 @@ class IngestionRunner(Protocol):
         self, adapter_configs: list[dict[str, object]], task_log_id: str | None = None
     ) -> dict[str, int]:
         """Run configured adapters and persist their normalized results."""
+
+
+@runtime_checkable
+class MemoryAwareAgentStepExecutor(Protocol):
+    """Optional executor extension that can inject durable memory into HarnessContext."""
+
+    async def execute_with_memory(
+        self, agent_id: str, user_input: str, memory_summaries: list[str]
+    ) -> str:
+        """Execute one agent step with compact system-context memory."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,14 +72,18 @@ class DailyDigestConfig:
     targets: list[str] = field(default_factory=lambda: ["feishu_bot", "wecom_bot"])
     enable_overview: bool = True
     loop_max_iterations: int = 3
+    curate_candidate_limit: int = 100
     adapter_configs: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Reject invalid bounded workflow settings before scheduling execution."""
         if not self.curate_agent_id.strip():
             raise ValueError("curate_agent_id must not be empty")
-        if self.fetch_days <= 0 or self.top_n <= 0 or self.loop_max_iterations <= 0:
-            raise ValueError("fetch_days, top_n, and loop_max_iterations must be positive")
+        if (
+            min(self.fetch_days, self.top_n, self.loop_max_iterations, self.curate_candidate_limit)
+            <= 0
+        ):
+            raise ValueError("daily digest numeric limits must be positive")
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, object]) -> DailyDigestConfig:
@@ -93,6 +111,9 @@ class DailyDigestConfig:
             enable_overview=_bool_value(values.get("enable_overview"), True, "enable_overview"),
             loop_max_iterations=_positive_int(
                 values.get("loop_max_iterations"), 3, "loop_max_iterations"
+            ),
+            curate_candidate_limit=_positive_int(
+                values.get("curate_candidate_limit"), 100, "curate_candidate_limit"
             ),
             adapter_configs=adapter_configs,
         )
@@ -150,6 +171,7 @@ def build_daily_digest_workflow(config: DailyDigestConfig) -> WorkflowDefinition
     )
 
 
+# 每日信息聚合管道
 class DailyDigestPipeline:
     """Assemble per-run pipeline dependencies into a P10 workflow execution."""
 
@@ -163,6 +185,7 @@ class DailyDigestPipeline:
         reflector: LoopReflector,
         db: Database | None = None,
         publish_history: PublishHistory | None = None,
+        memory_service: DigestMemoryService | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -173,6 +196,7 @@ class DailyDigestPipeline:
         self._reflector = reflector
         self._db = db
         self._publish_history = publish_history
+        self._memory_service = memory_service
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
@@ -217,6 +241,7 @@ class DailyDigestPipeline:
             self._reflector,
             self._db,
             self._publish_history,
+            self._memory_service,
         )
         return await pipeline.run()
 
@@ -233,6 +258,7 @@ class DailyDigestPipeline:
             date_value,
             self._db,
             self._publish_history,
+            self._memory_service,
         )
         return WorkflowEngine(step_executor, _WorkflowStore(workflow), self._reflector)
 
@@ -270,6 +296,7 @@ class _DailyDigestStepExecutor:
         run_date: str,
         db: Database | None,
         publish_history: PublishHistory | None,
+        memory_service: DigestMemoryService | None = None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -279,6 +306,7 @@ class _DailyDigestStepExecutor:
         self._run_date = run_date
         self._db = db
         self._publish_history = publish_history
+        self._memory_service = memory_service
         self._total_scanned = 0
 
     async def execute(self, agent_id: str, user_input: str) -> str:
@@ -335,11 +363,34 @@ class _DailyDigestStepExecutor:
         """Ask the injected curator for scored JSON and preserve the top configured entries."""
         item_payload, feedback = _split_feedback(value)
         items = _load_unified_items(item_payload)
+        memory_summaries: list[str] = []
+        if self._memory_service is not None:
+            try:
+                memory_context = await DigestMemoryContextBuilder(
+                    self._memory_service, self._config.curate_candidate_limit
+                ).build(items)
+                items = memory_context.items
+                memory_summaries = memory_context.memory_summaries
+                if memory_context.blocked_count:
+                    log.info(
+                        "daily_digest_candidates_blocked",
+                        count=memory_context.blocked_count,
+                    )
+            except Exception as exc:  # Memory must never block the scheduled digest.
+                log.warning("daily_digest_memory_degraded", error_type=type(exc).__name__)
+                items = items[: self._config.curate_candidate_limit]
+        else:
+            items = items[: self._config.curate_candidate_limit]
         prompt = CURATE_PROMPT.format(
             items=_dump_json([item.model_dump(mode="json") for item in items]),
             feedback=feedback or "无",
         )
-        output = await self._curate_executor.execute(self._config.curate_agent_id, prompt)
+        if isinstance(self._curate_executor, MemoryAwareAgentStepExecutor):
+            output = await self._curate_executor.execute_with_memory(
+                self._config.curate_agent_id, prompt, memory_summaries
+            )
+        else:
+            output = await self._curate_executor.execute(self._config.curate_agent_id, prompt)
         records = _json_array(output)
         by_id = {item.id: item for item in items}
         curated: list[DigestItem] = []

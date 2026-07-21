@@ -17,7 +17,7 @@ async def test_preferences_default_then_round_trip(category_repo: MemoryCategory
     """Absent preferences use defaults and persisted values round-trip."""
     store = PreferenceStore(category_repo)
     assert await store.load() == DEFAULT_PREFERENCES
-    expected = UserPreferences(["ai"], ["blocked"], "18:30", 8)
+    expected = UserPreferences(["ai"], ["blocked"], "18:30", 8, blocked_topics=["web3"])
     await store.save(expected)
     assert await store.load() == expected
 
