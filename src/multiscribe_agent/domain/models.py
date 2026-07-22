@@ -141,6 +141,10 @@ class ToolDefinition(_DomainModel):
     description: str
     parameters: JsonObject = Field(default_factory=dict)
     is_builtin: bool = False
+    risk_level: Literal["low", "medium", "high"] = "low"
+    requires_approval: bool = False
+    read_only: bool = True
+    idempotent: bool = True
 
 
 class MCPConfig(_DomainModel):

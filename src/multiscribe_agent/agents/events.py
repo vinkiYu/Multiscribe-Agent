@@ -13,11 +13,17 @@ type AgentEventType = Literal[
     "tool_start",
     "tool_result",
     "tool_error",
+    "approval_required",
     "final_content",
     "error",
     "usage",
     "loop_detected",
     "budget_warning",
+    "budget_exhausted",
+    "context_pressure",
+    "context_compacted",
+    "context_degraded",
+    "context_budget_exhausted",
 ]
 
 
@@ -32,6 +38,7 @@ class AgentEvent:
         tool_start: ``tool_call`` and ``round``.
         tool_result: ``tool_call``, ``result``, and ``round``.
         tool_error: ``tool_call``, ``error``, and ``round``.
+        approval_required: redacted ``tool_call``, ``error``, and ``round``.
         usage: ``round`` plus ``input_tokens``, ``output_tokens``, and ``total_tokens``.
         error: ``message`` and optional ``round``.
         loop_detected: ``tool``, ``args_hash``, ``consecutive_repeats``, and ``round``.

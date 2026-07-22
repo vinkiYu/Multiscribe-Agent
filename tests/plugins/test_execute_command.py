@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import sys
+from pathlib import Path
 
 import pytest
 
@@ -14,16 +14,13 @@ from multiscribe_agent.plugins.builtin.tools.execute_command import (
 
 
 @pytest.mark.asyncio
-async def test_allowlisted_python_command_executes() -> None:
-    """An allowlisted single command returns bounded process output."""
-    result = await ExecuteCommandTool().handler(
-        {"command": f'"{sys.executable}" -c "print(\'safe-output\')"'}
-    )
+async def test_allowlisted_read_only_git_command_executes() -> None:
+    """A read-only git command executes without a shell."""
+    result = await ExecuteCommandTool(Path.cwd()).handler({"command": "git status --short"})
 
     assert isinstance(result, dict)
     assert result["returncode"] == 0
-    assert result["stdout"].strip() == "safe-output"
-    assert result["stderr"] == ""
+    assert isinstance(result["stdout"], str)
 
 
 @pytest.mark.asyncio
@@ -34,8 +31,12 @@ async def test_blocked_and_chained_commands_are_rejected() -> None:
         await tool.handler({"command": "rm file.txt"})
     with pytest.raises(ToolExecutionError, match="shell operators are not allowed"):
         await tool.handler({"command": "echo safe && rm file.txt"})
-    with pytest.raises(ToolExecutionError, match="requires approval"):
+    with pytest.raises(ToolExecutionError, match="command is not allowed"):
         await tool.handler({"command": "curl https://example.test"})
+    with pytest.raises(ToolExecutionError, match="command is not allowed"):
+        await tool.handler({"command": "python -c print(1)"})
+    with pytest.raises(ToolExecutionError, match="git subcommand is not allowed"):
+        await tool.handler({"command": "git push"})
 
 
 @pytest.mark.asyncio
@@ -43,26 +44,31 @@ async def test_invalid_working_directory_is_rejected() -> None:
     """A missing cwd fails before a subprocess is started."""
     with pytest.raises(ToolExecutionError, match="cwd must be an existing directory"):
         await ExecuteCommandTool().handler(
-            {"command": "echo safe", "cwd": "definitely-missing-directory"}
+            {"command": "git status", "cwd": "definitely-missing-directory"}
         )
 
 
 @pytest.mark.asyncio
 async def test_command_timeout_is_reported() -> None:
-    """A long-running allowlisted process is killed and reported as a tool error."""
-    command = f'"{sys.executable}" -c "__import__(\'time\').sleep(2)"'
-
-    with pytest.raises(ToolExecutionError, match="timed out after 1 seconds"):
-        await ExecuteCommandTool().handler({"command": command, "timeout": 1})
+    """Timeout values outside the declared safety boundary are rejected."""
+    with pytest.raises(ToolExecutionError, match="timeout must be between"):
+        await ExecuteCommandTool().handler({"command": "git status", "timeout": 121})
 
 
 @pytest.mark.asyncio
 async def test_command_output_is_truncated() -> None:
-    """Large stdout is capped and includes an explicit truncation marker."""
-    command = f'"{sys.executable}" -c "print(\'x\'*{OUTPUT_LIMIT + 100})"'
+    """The deterministic truncation helper caps large process output."""
+    output = ExecuteCommandTool._truncate("x" * (OUTPUT_LIMIT + 100))
+    assert len(output) < OUTPUT_LIMIT + 200
+    assert "[output truncated: original_chars=" in output
 
-    result = await ExecuteCommandTool().handler({"command": command})
 
-    assert isinstance(result, dict)
-    assert len(result["stdout"]) < OUTPUT_LIMIT + 200
-    assert "[output truncated: original_chars=" in result["stdout"]
+@pytest.mark.asyncio
+async def test_working_directory_cannot_escape_workspace(tmp_path) -> None:
+    """An existing directory outside the configured root is rejected."""
+    root = tmp_path / "workspace"
+    outside = tmp_path / "outside"
+    root.mkdir()
+    outside.mkdir()
+    with pytest.raises(ToolExecutionError, match="configured workspace"):
+        await ExecuteCommandTool(root).handler({"command": "git status", "cwd": str(outside)})

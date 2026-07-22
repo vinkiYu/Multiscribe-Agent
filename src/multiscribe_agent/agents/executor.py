@@ -5,17 +5,21 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from typing import Protocol
 from uuid import uuid4
 
 import structlog
 
-from multiscribe_agent.agents.context import HarnessContext
+from multiscribe_agent.agents.artifacts import InMemoryArtifactStore
+from multiscribe_agent.agents.context import ContextBudgetError, HarnessContext
+from multiscribe_agent.agents.context_provider import ContextProvider
 from multiscribe_agent.agents.events import AgentEvent, AgentEventType
 from multiscribe_agent.agents.prompt_service import PromptService
 from multiscribe_agent.agents.reflector import Reflector
-from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.agents.run_budget import BudgetExhaustedError, RunBudget
+from multiscribe_agent.agents.token_counter import ConservativeTokenCounter
+from multiscribe_agent.core.errors import ProviderError, ToolApprovalRequired
 from multiscribe_agent.domain.models import (
     AgentDefinition,
     AIResponse,
@@ -26,6 +30,7 @@ from multiscribe_agent.domain.models import (
 from multiscribe_agent.llm.provider import AIProvider
 from multiscribe_agent.observability.meter import get_metrics_registry
 from multiscribe_agent.observability.tracer import trace_span
+from multiscribe_agent.plugins.security import redact_data, redact_text
 
 type ProviderFactory = Callable[[AgentDefinition], AIProvider]
 type ToolExecutor = Callable[[ToolCall], Awaitable[object]]
@@ -44,7 +49,7 @@ class ToolRegistry(Protocol):
     def get_definitions(self, tool_ids: list[str]) -> list[ToolDefinition]:
         """Return definitions exposed to the current agent."""
 
-    async def execute(self, tool_call: ToolCall) -> object:
+    async def execute(self, tool_call: ToolCall, *, approval_token: str | None = None) -> object:
         """Execute one local tool call and return serializable output."""
 
 
@@ -61,6 +66,12 @@ class AgentExecutor:
         max_rounds: int = DEFAULT_MAX_ROUNDS,
         reflector_max_retries: int = DEFAULT_REFLECTOR_MAX_RETRIES,
         token_budget: int = 120_000,
+        max_input_tokens: int | None = None,
+        max_output_tokens: int | None = None,
+        max_total_tokens: int | None = None,
+        max_llm_calls: int | None = None,
+        max_tool_calls: int | None = None,
+        context_provider: ContextProvider | None = None,
     ) -> None:
         """Configure provider/tool boundaries and bounded retry behavior.
 
@@ -80,6 +91,12 @@ class AgentExecutor:
         self._max_rounds = max_rounds
         self._reflector_max_retries = reflector_max_retries
         self._token_budget = token_budget
+        self._max_input_tokens = max_input_tokens
+        self._max_output_tokens = max_output_tokens
+        self._max_total_tokens = max_total_tokens
+        self._max_llm_calls = max_llm_calls
+        self._max_tool_calls = max_tool_calls
+        self._context_provider = context_provider
 
     async def run(
         self,
@@ -88,6 +105,7 @@ class AgentExecutor:
         *,
         tools_override: ToolsOverride | None = None,
         memory_summaries: list[str] | None = None,
+        approval_tokens: Sequence[str] | None = None,
     ) -> AIResponse:
         """Collect an event stream and return its final provider-neutral response."""
         final_content = ""
@@ -98,6 +116,7 @@ class AgentExecutor:
             user_input,
             tools_override=tools_override,
             memory_summaries=memory_summaries,
+            approval_tokens=approval_tokens,
         ):
             if event.type == "final_content":
                 final_content = str(event.data["content"])
@@ -118,39 +137,116 @@ class AgentExecutor:
         *,
         tools_override: ToolsOverride | None = None,
         memory_summaries: list[str] | None = None,
+        approval_tokens: Sequence[str] | None = None,
     ) -> AsyncIterator[AgentEvent]:
         """Yield observable events for a bounded ReAct and reflection loop."""
         trace_id = uuid4().hex
         provider = self._provider_factory(agent_def)
-        tools, tool_executor = self._resolve_tools(agent_def, tools_override)
-        context = HarnessContext(
-            self._build_system_prompt(agent_def), token_budget=self._token_budget
+        tools, tool_executor = self._resolve_tools(agent_def, tools_override, approval_tokens or ())
+        token_counter = ConservativeTokenCounter()
+        run_budget = RunBudget(
+            max_context_tokens=self._token_budget,
+            max_input_tokens=self._max_input_tokens,
+            max_output_tokens=self._max_output_tokens,
+            max_total_tokens=self._max_total_tokens,
+            max_llm_calls=self._max_llm_calls,
+            max_tool_calls=self._max_tool_calls,
         )
+        context = HarnessContext(
+            self._build_system_prompt(agent_def),
+            token_budget=self._token_budget,
+            token_counter=token_counter,
+            artifact_store=InMemoryArtifactStore(),
+        )
+        if self._context_provider is not None:
+            try:
+                retrieved = await self._context_provider.retrieve(user_input, agent_id=agent_def.id)
+                for summary in retrieved.memories:
+                    context.inject_memory(summary)
+                context.inject_knowledge(retrieved.knowledge)
+                if any(reason.endswith(":degraded") for reason in retrieved.reasons):
+                    get_metrics_registry().record_context_event("degraded")
+                    yield self._event(
+                        "context_degraded",
+                        {"reasons": retrieved.reasons, "round": 0},
+                        trace_id,
+                    )
+            except Exception as exc:  # Context enrichment must not block the primary task.
+                get_metrics_registry().record_context_event("degraded")
+                log.warning(
+                    "agent_context_provider_degraded",
+                    agent_id=agent_def.id,
+                    trace_id=trace_id,
+                    error_type=type(exc).__name__,
+                )
+                yield self._event(
+                    "context_degraded",
+                    {"reasons": ["context_provider:degraded"], "round": 0},
+                    trace_id,
+                )
         for summary in memory_summaries or []:
             context.inject_memory(summary)
-        context.add_user(user_input, important=True)
+        try:
+            context.add_user(user_input, important=True)
+        except ContextBudgetError as exc:
+            yield self._context_budget_event(exc, 0, trace_id)
+            return
         reflection_retries = 0
         recent_tool_calls: list[tuple[str, str]] = []
 
         for round_number in range(1, self._max_rounds + 1):
-            if context.should_warn_budget(threshold=0.8):
+            try:
+                request_messages = context.build_messages()
+                estimate = token_counter.count_request(
+                    request_messages,
+                    tools or None,
+                    model=agent_def.model,
+                    provider=agent_def.provider_id,
+                )
+                run_budget.check_context(estimate.total)
+                run_budget.before_llm()
+            except ContextBudgetError as exc:
+                yield self._context_budget_event(exc, round_number, trace_id)
+                return
+            except BudgetExhaustedError as exc:
+                yield self._budget_event(exc, round_number, trace_id)
+                return
+            if estimate.total >= int(context.token_budget * 0.8):
                 yield self._event(
                     "budget_warning",
                     {
-                        "used_tokens": context.estimate_tokens(),
+                        "used_tokens": estimate.total,
                         "budget": context.token_budget,
-                        "remaining": context.estimated_tokens_remaining(),
+                        "remaining": max(0, context.token_budget - estimate.total),
                         "round": round_number,
                     },
+                    trace_id,
+                )
+                yield self._event(
+                    "context_pressure",
+                    {
+                        "tokens": estimate.total,
+                        "budget": context.token_budget,
+                        "partitions": estimate.partitions,
+                        "round": round_number,
+                    },
+                    trace_id,
+                )
+            if context.last_compaction:
+                get_metrics_registry().record_context_event("compacted")
+                yield self._event(
+                    "context_compacted",
+                    {**context.last_compaction, "round": round_number},
                     trace_id,
                 )
             yield self._event("round_start", {"round": round_number}, trace_id)
             content_parts: list[str] = []
             tool_calls: list[ToolCall] = []
+            round_usage: TokenUsage | None = None
             try:
                 started = time.monotonic()
                 with trace_span("llm.generate", {"agent_id": agent_def.id, "round": round_number}):
-                    async for response in provider.stream(context.build_messages(), tools or None):
+                    async for response in provider.stream(request_messages, tools or None):
                         if response.content:
                             content_parts.append(response.content)
                             yield self._event(
@@ -168,7 +264,17 @@ class AgentExecutor:
                                 },
                                 trace_id,
                             )
-                        context.add_usage(response.usage)
+                        if response.usage is not None:
+                            round_usage = response.usage
+                if round_usage is None:
+                    output_estimate = token_counter.count_text("".join(content_parts))
+                    round_usage = TokenUsage(
+                        input_tokens=estimate.total,
+                        output_tokens=output_estimate,
+                        total_tokens=estimate.total + output_estimate,
+                    )
+                context.add_usage(round_usage)
+                run_budget.after_llm(round_usage)
                 get_metrics_registry().record_llm_call(
                     context.usage_summary.total_tokens, time.monotonic() - started
                 )
@@ -180,6 +286,9 @@ class AgentExecutor:
                     error_type=type(exc).__name__,
                 )
                 yield self._event("error", {"message": str(exc), "round": round_number}, trace_id)
+                return
+            except BudgetExhaustedError as exc:
+                yield self._budget_event(exc, round_number, trace_id)
                 return
 
             content = "".join(content_parts)
@@ -222,15 +331,20 @@ class AgentExecutor:
                     {"tool_calls": self._dump_tool_calls(tool_calls), "round": round_number},
                     trace_id,
                 )
+                budget_stopped = False
                 async for tool_event in self._execute_tools(
                     tool_calls,
                     tools,
                     tool_executor,
                     context,
+                    run_budget,
                     round_number,
                     trace_id,
                 ):
                     yield tool_event
+                    budget_stopped = tool_event.type == "budget_exhausted"
+                if budget_stopped:
+                    return
                 continue
 
             if self._reflector is not None and reflection_retries < self._reflector_max_retries:
@@ -274,12 +388,20 @@ class AgentExecutor:
         tools: list[ToolDefinition],
         tool_executor: ToolExecutor | None,
         context: HarnessContext,
+        run_budget: RunBudget,
         round_number: int,
         trace_id: str,
     ) -> AsyncIterator[AgentEvent]:
         available_names = {tool.name for tool in tools}
         for tool_call in tool_calls:
-            dumped_call = tool_call.model_dump(mode="json")
+            try:
+                run_budget.before_tool()
+            except BudgetExhaustedError as exc:
+                yield self._budget_event(exc, round_number, trace_id)
+                return
+            dumped_call = redact_data(tool_call.model_dump(mode="json"))
+            if not isinstance(dumped_call, dict):
+                raise TypeError("redacted tool call must remain an object")
             yield self._event(
                 "tool_start",
                 {"tool_call": dumped_call, "round": round_number},
@@ -294,6 +416,17 @@ class AgentExecutor:
                     result = await tool_executor(tool_call)
                 get_metrics_registry().record_tool_call(tool_call.name)
                 serialized = self._serialize_tool_result(result)
+            except ToolApprovalRequired as exc:
+                error = redact_text(str(exc))
+                context.add_tool_result(
+                    tool_call.id, tool_call.name, "[tool blocked: operator approval required]"
+                )
+                yield self._event(
+                    "approval_required",
+                    {"tool_call": dumped_call, "error": error, "round": round_number},
+                    trace_id,
+                )
+                continue
             except Exception as exc:  # Tool plugins are an isolation boundary by design.
                 log.warning(
                     "agent_tool_error",
@@ -301,7 +434,7 @@ class AgentExecutor:
                     trace_id=trace_id,
                     error_type=type(exc).__name__,
                 )
-                error = str(exc)
+                error = redact_text(str(exc))
                 context.add_tool_result(tool_call.id, tool_call.name, f"[tool error] {error}")
                 yield self._event(
                     "tool_error",
@@ -309,6 +442,7 @@ class AgentExecutor:
                     trace_id,
                 )
                 continue
+            serialized = redact_text(serialized)
             context.add_tool_result(tool_call.id, tool_call.name, serialized)
             yield self._event(
                 "tool_result",
@@ -317,13 +451,29 @@ class AgentExecutor:
             )
 
     def _resolve_tools(
-        self, agent_def: AgentDefinition, tools_override: ToolsOverride | None
+        self,
+        agent_def: AgentDefinition,
+        tools_override: ToolsOverride | None,
+        approval_tokens: Sequence[str],
     ) -> tuple[list[ToolDefinition], ToolExecutor | None]:
         if tools_override is not None:
             return tools_override
         if self._tool_registry is None:
             return [], None
-        return self._tool_registry.get_definitions(agent_def.tool_ids), self._tool_registry.execute
+        registry = self._tool_registry
+
+        async def execute_with_approval(tool_call: ToolCall) -> object:
+            last_error: ToolApprovalRequired | None = None
+            for token in approval_tokens:
+                try:
+                    return await registry.execute(tool_call, approval_token=token)
+                except ToolApprovalRequired as exc:
+                    last_error = exc
+            if last_error is not None:
+                raise last_error
+            return await registry.execute(tool_call)
+
+        return registry.get_definitions(agent_def.tool_ids), execute_with_approval
 
     def _build_system_prompt(self, agent_def: AgentDefinition) -> str:
         from multiscribe_agent.skills.registry import get_skill_registry
@@ -356,7 +506,10 @@ class AgentExecutor:
 
     @staticmethod
     def _dump_tool_calls(tool_calls: list[ToolCall]) -> list[dict[str, object]]:
-        return [tool_call.model_dump(mode="json") for tool_call in tool_calls]
+        redacted = redact_data([tool_call.model_dump(mode="json") for tool_call in tool_calls])
+        if not isinstance(redacted, list):
+            raise TypeError("redacted tool calls must remain a list")
+        return [item for item in redacted if isinstance(item, dict)]
 
     @staticmethod
     def _tool_call_signature(tool_call: ToolCall) -> tuple[str, str]:
@@ -373,6 +526,38 @@ class AgentExecutor:
     @staticmethod
     def _event(event_type: AgentEventType, data: dict[str, object], trace_id: str) -> AgentEvent:
         return AgentEvent(type=event_type, data=data, trace_id=trace_id)
+
+    @staticmethod
+    def _budget_event(exc: BudgetExhaustedError, round_number: int, trace_id: str) -> AgentEvent:
+        get_metrics_registry().record_context_event("budget_exhausted")
+        exhausted = exc.exhausted
+        return AgentEvent(
+            type="budget_exhausted",
+            data={
+                "budget_type": exhausted.kind,
+                "limit": exhausted.limit,
+                "actual": exhausted.actual,
+                "round": round_number,
+            },
+            trace_id=trace_id,
+        )
+
+    @staticmethod
+    def _context_budget_event(
+        exc: ContextBudgetError, round_number: int, trace_id: str
+    ) -> AgentEvent:
+        get_metrics_registry().record_context_event("budget_exhausted")
+        return AgentEvent(
+            type="context_budget_exhausted",
+            data={
+                "budget_type": "context_tokens",
+                "limit": exc.budget,
+                "actual": exc.used,
+                "partitions": exc.partitions,
+                "round": round_number,
+            },
+            trace_id=trace_id,
+        )
 
     @staticmethod
     def _event_int(data: dict[str, object], key: str) -> int:

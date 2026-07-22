@@ -12,7 +12,8 @@ from sse_starlette.sse import EventSourceResponse
 from multiscribe_agent.api.deps import get_context
 from multiscribe_agent.api.security import get_current_user
 from multiscribe_agent.bootstrap import ServiceContext
-from multiscribe_agent.domain.models import AgentDefinition
+from multiscribe_agent.core.errors import ToolExecutionError
+from multiscribe_agent.domain.models import AgentDefinition, ToolCall
 
 router = APIRouter(prefix="/api/agents", tags=["agents"], dependencies=[Depends(get_current_user)])
 
@@ -36,6 +37,24 @@ async def save_agent(
     data = agent.model_dump(mode="json")
     await context.entities.save("agents", agent.id, data)
     return data
+
+
+@router.post("/tools/approve")
+async def approve_tool_call(
+    payload: dict[str, object], context: ServiceContext = Depends(get_context)
+) -> dict[str, object]:
+    """Approve one exact high-risk tool call for a short-lived rerun."""
+    if context.tools is None:
+        raise HTTPException(status_code=503, detail="tools unavailable")
+    try:
+        tool_call = ToolCall.model_validate(payload.get("tool_call"))
+        ttl = payload.get("ttl_seconds", 300)
+        if not isinstance(ttl, int) or isinstance(ttl, bool) or not 1 <= ttl <= 600:
+            raise ValueError("ttl_seconds must be between 1 and 600")
+        token = context.tools.approve(tool_call, ttl_seconds=ttl)
+    except (KeyError, ToolExecutionError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"approval_token": token, "expires_in": ttl}
 
 
 @router.delete("/{agent_id}")
@@ -62,11 +81,19 @@ async def run_agent(
     user_input = payload.get("input", "")
     if not isinstance(user_input, str):
         raise HTTPException(status_code=400, detail="input must be a string")
+    raw_tokens = payload.get("approval_tokens", [])
+    if not isinstance(raw_tokens, list) or not all(isinstance(item, str) for item in raw_tokens):
+        raise HTTPException(status_code=400, detail="approval_tokens must be a string array")
+    approval_tokens = [item for item in raw_tokens if isinstance(item, str)][:10]
 
     executor = context.agent_executor
 
     async def events() -> AsyncIterator[dict[str, str]]:
-        async for event in executor.stream(AgentDefinition.model_validate(raw), user_input):
+        async for event in executor.stream(
+            AgentDefinition.model_validate(raw),
+            user_input,
+            approval_tokens=approval_tokens,
+        ):
             yield {"event": event.type, "data": json.dumps(event.data)}
 
     return EventSourceResponse(events())

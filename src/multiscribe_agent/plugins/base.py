@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import structlog
 
@@ -79,6 +79,10 @@ class BaseTool(ABC):
     description: ClassVar[str]
     parameters: ClassVar[dict[str, object]]
     is_builtin: ClassVar[bool] = False
+    risk_level: ClassVar[Literal["low", "medium", "high"]] = "low"
+    requires_approval: ClassVar[bool] = False
+    read_only: ClassVar[bool] = True
+    idempotent: ClassVar[bool] = True
 
     @abstractmethod
     async def handler(self, args: Mapping[str, object]) -> object:

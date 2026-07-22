@@ -5,18 +5,34 @@ from __future__ import annotations
 import logging
 from collections.abc import MutableMapping
 from importlib import import_module
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Any, cast
 
 import structlog
 
 SENSITIVE_KEY_PARTS = ("token", "secret", "password", "key", "cookie", "auth", "webhook")
+DEFAULT_LOG_FILE = Path("logs/multiscribe-agent.log")
+LOG_FILE_MAX_BYTES = 10 * 1024 * 1024
+LOG_FILE_BACKUP_COUNT = 5
+FILE_HANDLER_NAME = "multiscribe-runtime-file"
 
 
-def configure_logging(log_level: str, *, json_output: bool = True) -> None:
-    """Configure structlog for JSON production output or readable development output."""
+def configure_logging(
+    log_level: str,
+    *,
+    json_output: bool = True,
+    log_file: str | Path | None = DEFAULT_LOG_FILE,
+) -> None:
+    """Configure structured console output and an optional rotating runtime log."""
+    level = getattr(logging, log_level.upper(), logging.INFO)
     logging.basicConfig(
-        level=getattr(logging, log_level.upper(), logging.INFO), format="%(message)s"
+        level=level,
+        format="%(message)s",
     )
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    _replace_file_handler(root_logger, log_file, level)
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer() if json_output else structlog.dev.ConsoleRenderer()
     )
@@ -29,11 +45,38 @@ def configure_logging(log_level: str, *, json_output: bool = True) -> None:
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             renderer,
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(logging, log_level.upper(), logging.INFO)
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
+
+def _replace_file_handler(
+    root_logger: logging.Logger,
+    log_file: str | Path | None,
+    level: int,
+) -> None:
+    """Replace the managed handler so reloads never duplicate file output."""
+    for handler in list(root_logger.handlers):
+        if handler.get_name() != FILE_HANDLER_NAME:
+            continue
+        root_logger.removeHandler(handler)
+        handler.close()
+    if log_file is None or not str(log_file).strip():
+        return
+
+    path = Path(log_file).expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handler = RotatingFileHandler(
+        path,
+        maxBytes=LOG_FILE_MAX_BYTES,
+        backupCount=LOG_FILE_BACKUP_COUNT,
+        encoding="utf-8",
+    )
+    handler.set_name(FILE_HANDLER_NAME)
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    root_logger.addHandler(handler)
 
 
 def _inject_trace_id(

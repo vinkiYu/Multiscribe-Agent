@@ -201,6 +201,10 @@ class SystemSettings(BaseSettings):
     )
     db_path: str = "data/database.sqlite"
     log_level: str = "INFO"
+    log_file: str = Field(
+        default="logs/multiscribe-agent.log",
+        validation_alias=AliasChoices("LOG_FILE", "MULTISCRIBE_LOG_FILE"),
+    )
     active_ai_provider_id: str = ""
     http_proxy: str = Field(
         default="",

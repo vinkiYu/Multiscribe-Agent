@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
 from multiscribe_agent.agents.executor import AgentExecutor
 from multiscribe_agent.agents.pipelines.daily_digest import DailyDigestConfig, DailyDigestPipeline
 from multiscribe_agent.agents.prompt_service import PromptService
@@ -37,6 +38,7 @@ from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_r
 from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
 from multiscribe_agent.observability.sql_audit import SqlAuditLogger
 from multiscribe_agent.observability.tracer import setup_tracer
+from multiscribe_agent.plugins.builtin.tools.execute_command import ExecuteCommandTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
@@ -131,6 +133,7 @@ class ServiceContext:
         self.source_data: SourceDataRepository | None = None
         self.ingestion: IngestionService | None = None
         self.publishing: PublishingService | None = None
+        self.tools: ToolRegistry | None = None
         self.agent_executor: AgentExecutor | None = None
         self.workflow_engine: WorkflowEngine | None = None
         self.scheduler: SchedulerService | None = None
@@ -187,6 +190,8 @@ class ServiceContext:
         adapters = AdapterRegistry.get_instance()
         publishers = PublisherRegistry.get_instance()
         tools = ToolRegistry.get_instance()
+        tools.register_tool(ExecuteCommandTool(Path.cwd()))
+        self.tools = tools
         self.ingestion = IngestionService(adapters, source_data, task_logs)
         options = {
             publisher.id: publisher.config
@@ -205,7 +210,15 @@ class ServiceContext:
             },
             options,
         )
-        executor = AgentExecutor(self._provider_for_agent, tools, PromptService())
+        executor = AgentExecutor(
+            self._provider_for_agent,
+            tools,
+            PromptService(),
+            context_provider=MemoryKnowledgeContextProvider(
+                self.memory_service,
+                self.kb_service,
+            ),
+        )
         self.agent_executor = executor
         self.workflow_engine = WorkflowEngine(
             _StoredAgentStepExecutor(entities, executor), entities

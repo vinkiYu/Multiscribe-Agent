@@ -42,10 +42,10 @@ async def test_budget_warning_is_non_blocking(agent_def) -> None:
         lambda _: provider,
         None,
         PromptService(),
-        token_budget=20,
+        token_budget=200,
     )
 
-    events = await _collect(executor.stream(agent_def, "a" * 200))
+    events = await _collect(executor.stream(agent_def, "a" * 1_000))
 
     assert any(event.type == "budget_warning" for event in events)
     assert events[-1].type == "final_content"

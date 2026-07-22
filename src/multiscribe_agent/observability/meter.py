@@ -30,6 +30,9 @@ class MetricsRegistry:
             "llm_calls",
             "llm_tokens",
             "tool_calls",
+            "context_compactions",
+            "context_degradations",
+            "context_budget_exhaustions",
         ):
             registry._counts[name] = 0
         for name in ("llm_latency", "publish_latency"):
@@ -47,6 +50,9 @@ class MetricsRegistry:
                         "llm_calls",
                         "llm_tokens",
                         "tool_calls",
+                        "context_compactions",
+                        "context_degradations",
+                        "context_budget_exhaustions",
                     )
                 }
                 registry._histograms = {
@@ -74,6 +80,17 @@ class MetricsRegistry:
         """Record one tool invocation; the name is reserved for future labels."""
         del tool_name
         self._record_counter("tool_calls")
+
+    def record_context_event(self, event: str) -> None:
+        """Record context lifecycle outcomes without retaining prompt content."""
+        names = {
+            "compacted": "context_compactions",
+            "degraded": "context_degradations",
+            "budget_exhausted": "context_budget_exhaustions",
+        }
+        name = names.get(event)
+        if name is not None:
+            self._record_counter(name)
 
     def render_prometheus(self) -> str:
         """Render a dependency-free Prometheus text exposition."""

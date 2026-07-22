@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import builtins
-import json
 from collections.abc import Mapping
 
+import structlog
+
+from multiscribe_agent.core.errors import ToolApprovalRequired
 from multiscribe_agent.domain.models import PluginMetadata, ToolCall, ToolDefinition
 from multiscribe_agent.plugins.base import (
     PLUGIN_API_VERSION,
@@ -14,6 +16,14 @@ from multiscribe_agent.plugins.base import (
     BaseStorageProvider,
     BaseTool,
 )
+from multiscribe_agent.plugins.security import (
+    ToolApprovalStore,
+    normalize_arguments,
+    tool_call_fingerprint,
+    validate_arguments,
+)
+
+log = structlog.get_logger(__name__)
 
 
 class IncompatiblePluginError(RuntimeError):
@@ -110,9 +120,10 @@ class StorageRegistry(_ClassRegistry[BaseStorageProvider]):
 class ToolRegistry:
     """Singleton registry with separate tool class and initialized instance stores."""
 
-    def __init__(self) -> None:
+    def __init__(self, approval_store: ToolApprovalStore | None = None) -> None:
         self._classes: dict[str, tuple[type[BaseTool], PluginMetadata]] = {}
         self._tools: dict[str, BaseTool] = {}
+        self._approval_store = approval_store or ToolApprovalStore()
 
     @classmethod
     def get_instance(cls) -> ToolRegistry:
@@ -143,8 +154,17 @@ class ToolRegistry:
         return self._tools[tool_id]
 
     async def call_tool(self, tool_id: str, args: Mapping[str, object]) -> object:
-        """Call an initialized tool by id."""
-        return await self.get_tool(tool_id).handler(args)
+        """Call a low-risk initialized tool by id through the secure boundary."""
+        return await self.execute(ToolCall(id="direct", name=tool_id, arguments=dict(args)))
+
+    def approve(self, tool_call: ToolCall, *, ttl_seconds: float = 300) -> str:
+        """Issue a one-time operator approval for an exact high-risk call."""
+        tool = self._find_tool(tool_call.name)
+        arguments = normalize_arguments(tool_call.arguments)
+        validate_arguments(arguments, tool.parameters)
+        if not tool.requires_approval:
+            raise ValueError(f"tool does not require approval: {tool.id}")
+        return self._approval_store.approve(tool_call, ttl_seconds=ttl_seconds)
 
     def get_all_tools(self) -> list[ToolDefinition]:
         """Return Agent-facing definitions for initialized tools."""
@@ -155,24 +175,27 @@ class ToolRegistry:
         definitions = {definition.id: definition for definition in self.get_all_tools()}
         return [definitions[tool_id] for tool_id in tool_ids if tool_id in definitions]
 
-    async def execute(self, tool_call: ToolCall) -> object:
+    async def execute(self, tool_call: ToolCall, *, approval_token: str | None = None) -> object:
         """Execute a P4 Harness tool call by exposed name or stable id."""
-        tool = next(
-            (
-                candidate
-                for candidate in self._tools.values()
-                if candidate.name == tool_call.name or candidate.id == tool_call.name
-            ),
-            None,
+        tool = self._find_tool(tool_call.name)
+        arguments = normalize_arguments(tool_call.arguments)
+        validate_arguments(arguments, tool.parameters)
+        fingerprint = tool_call_fingerprint(tool_call)[:16]
+        if tool.requires_approval and not self._approval_store.consume(tool_call, approval_token):
+            log.warning(
+                "tool_approval_required",
+                tool_id=tool.id,
+                risk_level=tool.risk_level,
+                call_fingerprint=fingerprint,
+            )
+            raise ToolApprovalRequired(f"operator approval required for tool: {tool.id}")
+        log.info(
+            "tool_execution_audit",
+            tool_id=tool.id,
+            risk_level=tool.risk_level,
+            approved=tool.requires_approval,
+            call_fingerprint=fingerprint,
         )
-        if tool is None:
-            raise KeyError(tool_call.name)
-        arguments = tool_call.arguments
-        if isinstance(arguments, str):
-            decoded = json.loads(arguments)
-            if not isinstance(decoded, dict):
-                raise ValueError("tool arguments must decode to an object")
-            arguments = decoded
         return await tool.handler(arguments)
 
     def list_metadata(self) -> list[PluginMetadata]:
@@ -184,6 +207,19 @@ class ToolRegistry:
         self._classes.clear()
         self._tools.clear()
 
+    def _find_tool(self, name: str) -> BaseTool:
+        tool = next(
+            (
+                candidate
+                for candidate in self._tools.values()
+                if candidate.name == name or candidate.id == name
+            ),
+            None,
+        )
+        if tool is None:
+            raise KeyError(name)
+        return tool
+
     @staticmethod
     def _to_definition(tool: BaseTool) -> ToolDefinition:
         return ToolDefinition(
@@ -192,4 +228,8 @@ class ToolRegistry:
             description=tool.description,
             parameters=tool.parameters,
             is_builtin=tool.is_builtin,
+            risk_level=tool.risk_level,
+            requires_approval=tool.requires_approval,
+            read_only=tool.read_only,
+            idempotent=tool.idempotent,
         )

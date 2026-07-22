@@ -21,6 +21,10 @@ class ToolExecutionError(MultiscribeError):
     """Raised when an agent tool cannot complete its operation."""
 
 
+class ToolApprovalRequired(ToolExecutionError):
+    """Raised when a high-risk tool call has no matching operator approval."""
+
+
 class WorkflowError(MultiscribeError):
     """Raised when workflow validation or execution fails."""
 

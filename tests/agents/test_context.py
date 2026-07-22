@@ -19,14 +19,14 @@ def test_add_inject_and_build_messages() -> None:
     messages = context.build_messages()
 
     assert [message.role for message in messages] == ["system", "user", "assistant", "tool"]
-    assert "[Memory]" in messages[0].content
-    assert "[Knowledge]" in messages[0].content
+    assert "[Memory Data]" in messages[0].content
+    assert "[Knowledge Data]" in messages[0].content
     assert messages[-1].tool_call_id == "call-1"
 
 
 def test_trim_preserves_first_recent_and_tool_integrity() -> None:
     """A small budget removes middle history without splitting a tool exchange."""
-    context = HarnessContext("system", token_budget=55)
+    context = HarnessContext("system", token_budget=70)
     context.add_user("first-anchor")
     context.add_assistant("middle-" + "x" * 100)
     context.add_user("recent-question")

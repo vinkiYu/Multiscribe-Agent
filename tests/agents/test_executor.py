@@ -209,5 +209,5 @@ async def test_memory_summaries_are_injected_into_system_context(
         memory_summaries=["Prefer Agent and RAG engineering content."],
     )
 
-    assert "[Memory]" in provider.stream_inputs[0][0].content
+    assert "[Memory Data]" in provider.stream_inputs[0][0].content
     assert "Prefer Agent and RAG engineering content." in provider.stream_inputs[0][0].content

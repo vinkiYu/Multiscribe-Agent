@@ -192,6 +192,7 @@ MultiscribeAgent 以 FastAPI 作为统一入口，由 `ServiceContext` 组合领
 | `JWT_SECRET` | - | JWT 签名密钥（建议生产环境随机生成） |
 | `DB_PATH` | - | SQLite 数据库路径（默认 `data/database.sqlite`） |
 | `LOG_LEVEL` | - | 日志级别（默认 `INFO`） |
+| `LOG_FILE` | - | 轮转运行日志路径（默认 `logs/multiscribe-agent.log`） |
 
 > `✅*` 至少填写一个 LLM Key 和一个推送端 Webhook
 

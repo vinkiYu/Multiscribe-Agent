@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import pytest
 
+from multiscribe_agent.core.errors import ToolApprovalRequired, ToolExecutionError
 from multiscribe_agent.domain.models import PluginMetadata, ToolCall
 from multiscribe_agent.plugins.base import BaseAdapter, BaseTool
 from multiscribe_agent.plugins.registry import AdapterRegistry, ToolRegistry
@@ -54,6 +55,18 @@ class EchoTool(BaseTool):
         return args["value"]
 
 
+class RiskyTool(EchoTool):
+    """Tool requiring an out-of-band approval grant."""
+
+    id: ClassVar[str] = "risky_tool"
+    name: ClassVar[str] = "risky_tool"
+    requires_approval: ClassVar[bool] = True
+    risk_level: ClassVar[Literal["high"]] = "high"
+    metadata: ClassVar[PluginMetadata] = PluginMetadata(
+        id=id, type="tool", name="Risky", description="Risky test tool."
+    )
+
+
 def test_class_registry_singleton_register_get_and_overwrite() -> None:
     """Registration exposes classes/metadata and replacement is idempotent."""
     registry = AdapterRegistry.get_instance()
@@ -89,3 +102,28 @@ async def test_tool_registry_dual_registration_and_call() -> None:
         )
         == "from harness"
     )
+
+
+@pytest.mark.asyncio
+async def test_registry_validates_schema_before_handler() -> None:
+    registry = ToolRegistry()
+    registry.register_tool(EchoTool())
+    with pytest.raises(ToolExecutionError, match="missing required"):
+        await registry.execute(ToolCall(id="bad", name="echo_tool", arguments={}))
+
+
+@pytest.mark.asyncio
+async def test_high_risk_approval_is_exact_and_one_time() -> None:
+    registry = ToolRegistry()
+    registry.register_tool(RiskyTool())
+    call = ToolCall(id="risk", name="risky_tool", arguments={"value": "approved"})
+    with pytest.raises(ToolApprovalRequired):
+        await registry.execute(call)
+
+    token = registry.approve(call)
+    changed = ToolCall(id="changed", name="risky_tool", arguments={"value": "different"})
+    with pytest.raises(ToolApprovalRequired):
+        await registry.execute(changed, approval_token=token)
+    assert await registry.execute(call, approval_token=token) == "approved"
+    with pytest.raises(ToolApprovalRequired):
+        await registry.execute(call, approval_token=token)

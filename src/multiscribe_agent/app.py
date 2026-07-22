@@ -53,7 +53,7 @@ def _mount_frontend(app: FastAPI) -> None:
 
 def create_app(settings: SystemSettings, context: ServiceContext | None = None) -> FastAPI:
     """Create the configured HTTP application and attach its service composition root."""
-    configure_logging(settings.log_level, json_output=True)
+    configure_logging(settings.log_level, json_output=True, log_file=settings.log_file)
     service_context = context or get_context()
 
     @asynccontextmanager

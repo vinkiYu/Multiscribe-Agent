@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import shlex
 from collections.abc import Mapping
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from multiscribe_agent.core.errors import ToolExecutionError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
 from multiscribe_agent.plugins.base import BaseTool
 
-ALLOWED = frozenset({"node", "npm", "npx", "git", "ls", "echo", "python", "pip", "uv"})
+ALLOWED = frozenset({"git"})
+ALLOWED_GIT_SUBCOMMANDS = frozenset({"branch", "diff", "log", "rev-parse", "show", "status"})
 BLOCKED = frozenset({"rm", "format", "mkfs", "dd", "shutdown"})
 SHELL_OPERATORS = ("&&", "||", ";", "|", "\n", "\r", ">", "<", "`")
 DEFAULT_TIMEOUT_SECONDS = 30
@@ -28,6 +28,10 @@ class ExecuteCommandTool(BaseTool):
     name: ClassVar[str] = "execute_command"
     description: ClassVar[str] = "Execute one restricted local development command."
     is_builtin: ClassVar[bool] = True
+    risk_level: ClassVar[Literal["high"]] = "high"
+    requires_approval: ClassVar[bool] = True
+    read_only: ClassVar[bool] = True
+    idempotent: ClassVar[bool] = True
     parameters: ClassVar[dict[str, object]] = {
         "type": "object",
         "properties": {
@@ -55,6 +59,9 @@ class ExecuteCommandTool(BaseTool):
         is_builtin=True,
     )
 
+    def __init__(self, workspace_root: Path | None = None) -> None:
+        self._workspace_root = (workspace_root or Path.cwd()).resolve()
+
     async def handler(self, args: Mapping[str, object]) -> object:
         """Run one safe command and return stdout, stderr, and exit status.
 
@@ -63,15 +70,14 @@ class ExecuteCommandTool(BaseTool):
                 execution times out, or the process cannot be started.
         """
         command = self._required_string(args, "command")
-        command_name = self._validate_command(command)
+        argv = self._validate_command(command)
+        command_name = Path(argv[0]).name.lower()
         cwd = await self._optional_cwd(args.get("cwd"))
         timeout = self._timeout(args.get("timeout"))
-        if command_name not in ALLOWED:
-            raise ToolExecutionError(f"command requires approval: {command_name}")
 
         try:
-            process = await asyncio.create_subprocess_shell(
-                command,
+            process = await asyncio.create_subprocess_exec(
+                *argv,
                 cwd=cwd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -91,11 +97,11 @@ class ExecuteCommandTool(BaseTool):
         }
 
     @staticmethod
-    def _validate_command(command: str) -> str:
+    def _validate_command(command: str) -> list[str]:
         if any(operator in command for operator in SHELL_OPERATORS):
             raise ToolExecutionError("shell operators are not allowed")
         try:
-            parts = shlex.split(command, posix=os.name != "nt")
+            parts = shlex.split(command, posix=True)
         except ValueError as exc:
             raise ToolExecutionError("command has invalid quoting") from exc
         if not parts:
@@ -107,7 +113,11 @@ class ExecuteCommandTool(BaseTool):
                 break
         if executable in BLOCKED:
             raise ToolExecutionError(f"blocked command: {executable}")
-        return executable
+        if executable not in ALLOWED:
+            raise ToolExecutionError(f"command is not allowed: {executable}")
+        if len(parts) < 2 or parts[1].casefold() not in ALLOWED_GIT_SUBCOMMANDS:
+            raise ToolExecutionError("git subcommand is not allowed")
+        return parts
 
     @staticmethod
     def _required_string(args: Mapping[str, object], key: str) -> str:
@@ -116,15 +126,16 @@ class ExecuteCommandTool(BaseTool):
             raise ToolExecutionError(f"{key} must be a non-empty string")
         return value.strip()
 
-    @staticmethod
-    async def _optional_cwd(value: object) -> str | None:
+    async def _optional_cwd(self, value: object) -> str:
         if value is None:
-            return None
+            return str(self._workspace_root)
         if not isinstance(value, str) or not value.strip():
             raise ToolExecutionError("cwd must be a non-empty string")
-        path = Path(value).expanduser()
+        path = Path(value).expanduser().resolve()
         if not await asyncio.to_thread(path.is_dir):
             raise ToolExecutionError("cwd must be an existing directory")
+        if not path.is_relative_to(self._workspace_root):
+            raise ToolExecutionError("cwd must stay within the configured workspace")
         return str(path)
 
     @staticmethod
