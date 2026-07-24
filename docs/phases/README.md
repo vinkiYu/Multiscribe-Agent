@@ -55,6 +55,8 @@
 | P29 | P2/P3 长期优化（大纲） | ⚪ 未开始 | — | P2 配置版本/暂停恢复/备份/热重载/密钥轮换/契约测试;P3 token 精度/流式工具/读副本/Jaeger UI;持续优化不设硬节点 |
 | P30 | 上下文窗口生产链路修复 | 🟢 已通过 | 2026-07-24 | tiktoken 主依赖(误差 0%)+CJK fallback(1.5,误差 15.8%);13 模型预置窗口+PROVIDER_CONTEXT_WINDOWS env 覆盖;curate 投影精简 dict(去 description 全文/metadata);MAX_SKILL_PROMPT_CHARS=4000;含上下文窗口闭环(AgentRunResult/结构化终止/Reflection 预算化);381 全量;验收7(精简比例<30%)在P30.1加固 |
 | P30.1 | digest curate 投影精简加固 | 🟢 已通过 | 2026-07-24 | summary 500→150字符+只留id/title/summary(去url/source/category);独立核实6场景全<30%(最严苛混合17.1%);386全量(+5测试);Codex已自提交 ba6e6e3 |
+| P31 | 每日资讯全链路 P0 修复 | ⚪ 未开始 | — | 基于全链路实现文档+独立核实4个P0:T1发布幂等键(sha256(date+targets+content)+publish_history查询);T2采集全失败保护(无历史→停止,有历史→继续但暴露fetched_counts);T3空候选拦截(_fanout检查items为空);T4 LLM输出硬契约(score 1-10范围/title回绑原记录/summary截断100字/score_reason保存) |
+| P32 | 上下文管理模块设计债清理 | 🟢 已通过 | 2026-07-24 | T1 resolve_token_counter按provider分派(OpenAI→tiktoken/Anthropic→CJK加权Counter/google,ollama→fallback);T2 ReadArtifactTool+ContextVar(store自动绑定async task,并发隔离);T3 ContextProvider补structlog.warning(脱敏query[:80]+msg[:200]);T4删checkpoint死字段;T5 id(message)架构约束注释;AnthropicCounter中文误差10.5%;392全量(+6测试) |
 
 **阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
 **阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
