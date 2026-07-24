@@ -266,13 +266,14 @@ def test_explicit_empty_targets_disable_default_publishers() -> None:
 
 
 def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidates() -> None:
-    """Curation receives only necessary fields and stays below 30% of the old prompt size."""
+    """Curation receives minimal fields and stays below 30% for mixed candidates."""
+    descriptions = ["长" * 1_500] * 20 + ["中" * 70] * 50 + ["短" * 35] * 30
     items = [
         UnifiedData(
             id=f"item-{index}",
             title=f"Title {index}",
             url=f"https://example.test/{index}",
-            description="中" * 3_000,
+            description=description,
             published_date="2026-07-17T08:00:00+00:00",
             source="RSS",
             category="technology",
@@ -281,7 +282,7 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
             ingestion_date="2026-07-17T08:01:00+00:00",
             adapter_name="rss",
         )
-        for index in range(100)
+        for index, description in enumerate(descriptions)
     ]
     projected = [_curate_item_dict(item) for item in items]
     new_prompt = CURATE_PROMPT.format(
@@ -297,8 +298,8 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         feedback="无",
     )
 
-    assert set(projected[0]) == {"id", "title", "summary", "url", "source", "category"}
-    assert len(str(projected[0]["summary"])) == 500
+    assert set(projected[0]) == {"id", "title", "summary"}
+    assert all(len(str(item["summary"])) <= 150 for item in projected)
     assert len(new_prompt) < len(old_prompt) * 0.30
 
 

@@ -33,7 +33,7 @@ from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 
-_CURATE_SUMMARY_CHAR_LIMIT = 500
+_CURATE_SUMMARY_CHAR_LIMIT = 150
 
 INGEST_AGENT_ID = "daily_digest_ingest"
 DEDUPE_AGENT_ID = "daily_digest_dedupe"
@@ -598,12 +598,14 @@ def _digest_item_dict(item: DigestItem) -> dict[str, object]:
 
 
 def _curate_item_dict(item: UnifiedData) -> dict[str, object]:
-    """Project normalized content to the bounded fields needed for curation."""
+    """Project normalized content to the minimal fields needed for curation scoring.
+
+    The model needs the ID for result mapping, the title for topic context, and a
+    bounded summary for ranking. URL, source, and category are recovered from the
+    original UnifiedData after curation through the existing ID lookup.
+    """
     return {
         "id": item.id,
         "title": item.title,
         "summary": item.description[:_CURATE_SUMMARY_CHAR_LIMIT],
-        "url": item.url,
-        "source": item.source,
-        "category": item.category,
     }
