@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from contextvars import ContextVar
 from dataclasses import dataclass
 
 
@@ -15,6 +16,11 @@ class Artifact:
     created_at: float
 
 
+_current_artifact_store: ContextVar[InMemoryArtifactStore | None] = ContextVar(
+    "current_artifact_store", default=None
+)
+
+
 class InMemoryArtifactStore:
     """Keep full results for one process with TTL and total-size bounds."""
 
@@ -22,6 +28,12 @@ class InMemoryArtifactStore:
         self._max_chars = max_chars
         self._ttl = ttl_seconds
         self._items: dict[str, Artifact] = {}
+        _current_artifact_store.set(self)
+
+    @classmethod
+    def current(cls) -> InMemoryArtifactStore | None:
+        """Return the store bound to the current Agent-run task, if any."""
+        return _current_artifact_store.get()
 
     def put(self, content: str, tool_call_id: str) -> str:
         self._purge()
@@ -38,6 +50,19 @@ class InMemoryArtifactStore:
         if item is None:
             return None
         return item.content[max(0, offset) : max(0, offset) + max(1, limit)]
+
+    def list_artifacts(self) -> list[dict[str, str | float | int]]:
+        """Return bounded artifact metadata without exposing their full contents."""
+        self._purge()
+        return [
+            {
+                "id": item.id,
+                "tool_call_id": item.tool_call_id,
+                "created_at": item.created_at,
+                "char_count": len(item.content),
+            }
+            for item in sorted(self._items.values(), key=lambda item: item.created_at)
+        ]
 
     def _purge(self) -> None:
         now = time.monotonic()

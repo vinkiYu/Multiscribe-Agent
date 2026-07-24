@@ -39,6 +39,7 @@ from multiscribe_agent.observability.optional import ObservabilityCapabilities, 
 from multiscribe_agent.observability.sql_audit import SqlAuditLogger
 from multiscribe_agent.observability.tracer import setup_tracer
 from multiscribe_agent.plugins.builtin.tools.execute_command import ExecuteCommandTool
+from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
@@ -204,6 +205,7 @@ class ServiceContext:
         publishers = PublisherRegistry.get_instance()
         tools = ToolRegistry.get_instance()
         tools.register_tool(ExecuteCommandTool(Path.cwd()))
+        tools.register_tool(ReadArtifactTool())
         self.tools = tools
         self.ingestion = IngestionService(adapters, source_data, task_logs)
         options = {

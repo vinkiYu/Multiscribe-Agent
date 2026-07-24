@@ -15,8 +15,6 @@ class ConversationCheckpoint:
     completed_actions: list[str] = field(default_factory=list)
     key_evidence: list[str] = field(default_factory=list)
     open_items: list[str] = field(default_factory=list)
-    failed_attempts: list[str] = field(default_factory=list)
-    next_actions: list[str] = field(default_factory=list)
 
     @classmethod
     def from_groups(cls, groups: list[list[AIMessage]]) -> ConversationCheckpoint:
@@ -47,8 +45,6 @@ class ConversationCheckpoint:
             ("Completed actions", self.completed_actions),
             ("Key evidence", self.key_evidence),
             ("Open items", self.open_items),
-            ("Failed attempts", self.failed_attempts),
-            ("Next actions", self.next_actions),
         ):
             if value:
                 first, *remaining = value

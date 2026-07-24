@@ -5,8 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
+import structlog
+
 from multiscribe_agent.knowledge.kb_service import KBService
 from multiscribe_agent.memory.memory_service import MemoryService
+
+log = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,14 +50,26 @@ class MemoryKnowledgeContextProvider:
                 entries = await self._memory.search_entries(query, self._top_k)
                 memories = self._bounded([entry.content for entry in entries])
                 reasons.extend("memory:fts" for _ in memories)
-            except Exception:  # Retrieval is an optional enhancement boundary.
+            except Exception as exc:  # Retrieval is an optional enhancement boundary.
+                log.warning(
+                    "context_provider_memory_degraded",
+                    query_prefix=query[:80],
+                    error_type=type(exc).__name__,
+                    error_message=str(exc)[:200],
+                )
                 reasons.append("memory:degraded")
         if self._knowledge is not None:
             try:
                 hits = await self._knowledge.search(query, top_k=self._top_k)
                 knowledge = self._bounded([hit.content for hit in hits])
                 reasons.extend("knowledge:hybrid" for _ in knowledge)
-            except Exception:  # Retrieval is an optional enhancement boundary.
+            except Exception as exc:  # Retrieval is an optional enhancement boundary.
+                log.warning(
+                    "context_provider_knowledge_degraded",
+                    query_prefix=query[:80],
+                    error_type=type(exc).__name__,
+                    error_message=str(exc)[:200],
+                )
                 reasons.append("knowledge:degraded")
         return RetrievedContext(memories, knowledge, reasons)
 

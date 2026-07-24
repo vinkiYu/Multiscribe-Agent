@@ -83,6 +83,9 @@ class HarnessContext:
         self._memory: list[str] = []
         self._knowledge: list[str] = []
         self._usage = TokenUsage(input_tokens=0, output_tokens=0, total_tokens=0)
+        # This id(message) index is valid only during this in-process object lifetime.
+        # Checkpoint/resume must replace it with a stable sequence or UUID before
+        # persisting message-level priority state across process boundaries.
         self._message_priorities: dict[int, ContextPriority] = {}
         self._goal_message_id: int | None = None
         self._conversation_summary = ""

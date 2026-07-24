@@ -6,6 +6,7 @@ import tiktoken
 
 import multiscribe_agent.agents.token_counter as token_counter_module
 from multiscribe_agent.agents.token_counter import (
+    AnthropicTokenCounter,
     ConservativeTokenCounter,
     TiktokenCounter,
     resolve_token_counter,
@@ -34,6 +35,23 @@ def test_fallback_chinese_estimation_is_within_twenty_percent() -> None:
 def test_resolve_token_counter_prefers_tiktoken() -> None:
     """Normal deployments select precise counting."""
     assert isinstance(resolve_token_counter("openai", "gpt-4o"), TiktokenCounter)
+
+
+def test_resolve_token_counter_dispatches_by_provider_type_or_configured_id() -> None:
+    """Configured provider IDs retain the correct provider-aware counter."""
+    assert isinstance(
+        resolve_token_counter("default-anthropic", "claude-sonnet-4-5"), AnthropicTokenCounter
+    )
+    assert isinstance(resolve_token_counter("google", "gemini-2.0-flash"), ConservativeTokenCounter)
+
+
+def test_anthropic_mixed_language_estimate_stays_close_to_tiktoken_reference() -> None:
+    """The Claude fallback avoids a large mixed-language estimation bias."""
+    sample = f"{CHINESE_SAMPLE}。 Agent tooling and retrieval quality improved in production."
+    expected = len(tiktoken.encoding_for_model("gpt-4o").encode(sample))
+    estimated = AnthropicTokenCounter().count_text(sample)
+
+    assert abs(estimated - expected) / expected < 0.30
 
 
 def test_resolve_token_counter_falls_back_when_tiktoken_is_unavailable(monkeypatch) -> None:

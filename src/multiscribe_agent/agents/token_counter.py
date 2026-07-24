@@ -80,6 +80,56 @@ class ConservativeTokenCounter:
         return TokenEstimate(total=sum(partitions.values()), partitions=partitions)
 
 
+class AnthropicTokenCounter:
+    """Conservatively estimate Claude tokens without a public tokenizer.
+
+    Claude does not expose a supported public tokenizer. Weighting CJK and
+    non-CJK characters separately avoids the systematic underestimation a
+    single character ratio causes for mixed-language prompts.
+    """
+
+    def count_text(self, text: str) -> int:
+        """Estimate one text payload with a CJK-aware weighted heuristic."""
+        cjk_chars = sum("\u4e00" <= character <= "\u9fff" for character in text)
+        non_cjk_chars = len(text) - cjk_chars
+        return max(1, math.ceil(cjk_chars / 1.8 + non_cjk_chars / 4.0))
+
+    def count_request(
+        self,
+        messages: list[AIMessage],
+        tools: list[ToolDefinition] | None = None,
+        *,
+        provider: str | None = None,
+        model: str | None = None,
+    ) -> TokenEstimate:
+        """Count messages and schemas in stable partitions using the heuristic."""
+        del provider, model
+        partitions: dict[str, int] = {}
+        for message in messages:
+            payload = message.content
+            if message.tool_calls:
+                payload += json.dumps(
+                    [call.model_dump(mode="json") for call in message.tool_calls],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            partition = "system" if message.role == "system" else "history"
+            partitions[partition] = partitions.get(partition, 0) + self.count_text(payload)
+        if tools:
+            schema = json.dumps(
+                [tool.model_dump(mode="json") for tool in tools],
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            partitions["tool_schema"] = self.count_text(schema)
+        return TokenEstimate(
+            total=sum(partitions.values()),
+            partitions=partitions,
+            degraded=True,
+            reason="anthropic_tokenizer_unavailable",
+        )
+
+
 class TiktokenCounter:
     """Count tokens with a model-aware tiktoken encoding."""
 
@@ -136,9 +186,13 @@ class TiktokenCounter:
 
 
 def resolve_token_counter(provider: str | None, model: str | None) -> TokenCounter:
-    """Return precise tiktoken counting, falling back conservatively if unavailable."""
-    del provider
-    try:
-        return TiktokenCounter(model)
-    except ImportError:
-        return ConservativeTokenCounter(chars_per_token=1.5)
+    """Return the most suitable counter for a provider type or configured ID."""
+    normalized_provider = (provider or "").casefold()
+    if "openai" in normalized_provider:
+        try:
+            return TiktokenCounter(model)
+        except ImportError:
+            return ConservativeTokenCounter(chars_per_token=1.5)
+    if "anthropic" in normalized_provider:
+        return AnthropicTokenCounter()
+    return ConservativeTokenCounter(chars_per_token=1.5)

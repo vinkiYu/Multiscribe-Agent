@@ -73,6 +73,8 @@ def test_checkpoint_retains_goal_decision_and_tool_evidence() -> None:
     rendered = checkpoint.render()
     assert "Current goal: Do not include financing news" in rendered
     assert "Assistant conclusion: Use only technical sources" in rendered
+    assert not hasattr(checkpoint, "failed_attempts")
+    assert not hasattr(checkpoint, "next_actions")
 
 
 class _ContextProvider:
