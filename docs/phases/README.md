@@ -53,7 +53,8 @@
 | P27 | 安全加固与可观测性补全 | 🟢 已通过 | 2026-07-20 | P1-5 db.py 慢查询计时+metrics;P1-6 alerts.py(threshold/window/ratio)+alert_rules.yaml;P1-11 sql_audit.py(DROP/UNION/-- 检测+writer ContextVar 防递归);P1-12 csrf.py double-submit cookie;8 测试;325 全量 |
 | P28 | 数据层与插件生态 | 🟢 已通过 | 2026-07-20 | P1-7 connection_pool.py(N read+1 write WAL);P1-8 text_tokenize.py jieba+降级;P1-9 PluginMetadata.api_version+registry 拒绝不兼容;P1-10 sandbox.py subprocess JSON;P1-13 pytest-cov 88%(阈值 75%);P1-14 tests/perf 3 benchmark;白名单偏差(domain/models vs plugins/base)已诚实标注;325 全量 |
 | P29 | P2/P3 长期优化（大纲） | ⚪ 未开始 | — | P2 配置版本/暂停恢复/备份/热重载/密钥轮换/契约测试;P3 token 精度/流式工具/读副本/Jaeger UI;持续优化不设硬节点 |
-| P30 | 上下文窗口生产链路修复 | 🟢 已通过 | 2026-07-24 | tiktoken 主依赖(误差 0%)+CJK fallback(1.5,误差 15.8%);13 模型预置窗口+PROVIDER_CONTEXT_WINDOWS env 覆盖;curate 投影精简 dict(去 description 全文/metadata);MAX_SKILL_PROMPT_CHARS=4000;含上下文窗口闭环(AgentRunResult/结构化终止/Reflection 预算化);381 全量;验收7样本依赖(短描述19%/长描述50%)已在 commit 诚实标注 |
+| P30 | 上下文窗口生产链路修复 | 🟢 已通过 | 2026-07-24 | tiktoken 主依赖(误差 0%)+CJK fallback(1.5,误差 15.8%);13 模型预置窗口+PROVIDER_CONTEXT_WINDOWS env 覆盖;curate 投影精简 dict(去 description 全文/metadata);MAX_SKILL_PROMPT_CHARS=4000;含上下文窗口闭环(AgentRunResult/结构化终止/Reflection 预算化);381 全量;验收7(精简比例<30%)在P30.1加固 |
+| P30.1 | digest curate 投影精简加固 | 🟢 已通过 | 2026-07-24 | summary 500→150字符+只留id/title/summary(去url/source/category);独立核实6场景全<30%(最严苛混合17.1%);386全量(+5测试);Codex已自提交 ba6e6e3 |
 
 **阶段一完成里程碑**：P14.1 ✅ P14.2 ✅ P14.3 ✅ P15.1 ✅ P15.2 ✅ P15.3 ✅ P15.4 ✅ → 阶段一完成。
 **阶段二完成里程碑**：P16 ✅ P16.1 ✅ P17 ✅ P18 ✅ P19 ✅ → 阶段二完成。
