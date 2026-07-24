@@ -89,6 +89,15 @@ class AIResponse(_DomainModel):
     raw: JsonObject | None = None
 
 
+class AgentRunResult(_DomainModel):
+    """Structured terminal result shared by direct and workflow Agent callers."""
+
+    status: Literal["success", "budget_exhausted", "context_budget_exhausted", "error"]
+    content: str
+    usage: TokenUsage | None = None
+    terminal_data: JsonObject | None = None
+
+
 class AgentDefinition(_DomainModel):
     """Declarative configuration for an executable agent."""
 
@@ -99,6 +108,7 @@ class AgentDefinition(_DomainModel):
     provider_id: str
     model: str
     temperature: float = 0.7
+    max_output_tokens: int | None = Field(default=None, ge=1)
     tool_ids: list[str] = Field(default_factory=list)
     skill_ids: list[str] = Field(default_factory=list)
     mcp_server_ids: list[str] = Field(default_factory=list)

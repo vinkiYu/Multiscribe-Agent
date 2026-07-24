@@ -33,6 +33,8 @@ from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 
+_CURATE_SUMMARY_CHAR_LIMIT = 500
+
 INGEST_AGENT_ID = "daily_digest_ingest"
 DEDUPE_AGENT_ID = "daily_digest_dedupe"
 OVERVIEW_AGENT_ID = "daily_digest_overview"
@@ -382,7 +384,7 @@ class _DailyDigestStepExecutor:
         else:
             items = items[: self._config.curate_candidate_limit]
         prompt = CURATE_PROMPT.format(
-            items=_dump_json([item.model_dump(mode="json") for item in items]),
+            items=_dump_json([_curate_item_dict(item) for item in items]),
             feedback=feedback or "无",
         )
         if isinstance(self._curate_executor, MemoryAwareAgentStepExecutor):
@@ -592,4 +594,16 @@ def _digest_item_dict(item: DigestItem) -> dict[str, object]:
         "url": item.url,
         "source": item.source,
         "score": item.score,
+    }
+
+
+def _curate_item_dict(item: UnifiedData) -> dict[str, object]:
+    """Project normalized content to the bounded fields needed for curation."""
+    return {
+        "id": item.id,
+        "title": item.title,
+        "summary": item.description[:_CURATE_SUMMARY_CHAR_LIMIT],
+        "url": item.url,
+        "source": item.source,
+        "category": item.category,
     }

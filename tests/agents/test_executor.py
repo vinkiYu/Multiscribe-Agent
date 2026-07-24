@@ -8,11 +8,19 @@ import pytest
 from conftest import FakeProvider, FakeTool
 
 from multiscribe_agent.agents.events import AgentEvent
-from multiscribe_agent.agents.executor import AgentExecutor
+from multiscribe_agent.agents.executor import MAX_SKILL_PROMPT_CHARS, AgentExecutor
 from multiscribe_agent.agents.prompt_service import PromptService
-from multiscribe_agent.agents.reflector import Reflection
-from multiscribe_agent.domain.models import AgentDefinition, AIResponse, TokenUsage, ToolCall
+from multiscribe_agent.agents.reflector import Reflection, Reflector
+from multiscribe_agent.domain.models import (
+    AgentDefinition,
+    AIResponse,
+    SkillEntry,
+    SkillFrontmatter,
+    TokenUsage,
+    ToolCall,
+)
 from multiscribe_agent.llm.provider import AIProvider
+from multiscribe_agent.skills.registry import get_skill_registry
 
 
 async def collect(events: AsyncIterator[AgentEvent]) -> list[AgentEvent]:
@@ -25,6 +33,7 @@ def make_executor(
     *,
     reflector: object | None = None,
     max_rounds: int = 5,
+    max_llm_calls: int | None = None,
 ) -> AgentExecutor:
     """Create an executor around one deterministic provider."""
     return AgentExecutor(
@@ -33,6 +42,7 @@ def make_executor(
         PromptService(),
         reflector=reflector,
         max_rounds=max_rounds,
+        max_llm_calls=max_llm_calls,
     )
 
 
@@ -142,9 +152,16 @@ class FailingOnceReflector:
     def __init__(self) -> None:
         self.calls = 0
 
-    async def assess(self, task: str, output: str, provider: AIProvider) -> Reflection:
+    async def assess(
+        self,
+        task: str,
+        output: str,
+        provider: AIProvider,
+        *,
+        max_output_tokens: int | None = None,
+    ) -> Reflection:
         """Return fail once, then pass."""
-        del task, output, provider
+        del task, output, provider, max_output_tokens
         self.calls += 1
         return Reflection(
             quality="fail",
@@ -173,6 +190,77 @@ async def test_reflector_failure_triggers_visible_retry(agent_def: AgentDefiniti
     assert events[-1].type == "final_content"
     assert events[-1].data["content"] == "improved final"
     assert "Add concrete evidence." in provider.stream_inputs[1][-1].content
+
+
+@pytest.mark.asyncio
+async def test_reflection_usage_and_output_limit_are_in_run_budget(
+    agent_def: AgentDefinition,
+) -> None:
+    provider = FakeProvider(
+        streamed_rounds=[
+            [
+                AIResponse(
+                    content="draft",
+                    usage=TokenUsage(input_tokens=4, output_tokens=2, total_tokens=6),
+                )
+            ]
+        ],
+        generated_responses=[
+            AIResponse(
+                content='{"quality":"pass","score":9,"feedback":"ok"}',
+                usage=TokenUsage(input_tokens=7, output_tokens=3, total_tokens=10),
+            )
+        ],
+    )
+    executor = make_executor(provider, reflector=Reflector())
+
+    result = await executor.run_result(agent_def, "write answer")
+
+    assert result.status == "success"
+    assert result.usage == TokenUsage(input_tokens=11, output_tokens=5, total_tokens=16)
+    assert provider.generate_output_limits == [512]
+
+
+@pytest.mark.asyncio
+async def test_reflection_is_skipped_when_llm_call_budget_is_exhausted(
+    agent_def: AgentDefinition,
+) -> None:
+    provider = FakeProvider(
+        streamed_rounds=[[AIResponse(content="best available")]],
+        generated_responses=[AIResponse(content='{"quality":"pass","score":9,"feedback":"ok"}')],
+    )
+    executor = make_executor(provider, reflector=Reflector(), max_llm_calls=1)
+
+    result = await executor.run_result(agent_def, "write answer")
+
+    assert result.status == "budget_exhausted"
+    assert result.content == "best available"
+    assert provider.generate_inputs == []
+
+
+@pytest.mark.asyncio
+async def test_invalid_reflection_response_is_conservatively_charged(
+    agent_def: AgentDefinition,
+) -> None:
+    provider = FakeProvider(
+        streamed_rounds=[
+            [
+                AIResponse(
+                    content="best available",
+                    usage=TokenUsage(input_tokens=2, output_tokens=1, total_tokens=3),
+                )
+            ]
+        ],
+        generated_responses=[AIResponse(content="invalid reflection")],
+    )
+    executor = make_executor(provider, reflector=Reflector())
+
+    result = await executor.run_result(agent_def, "write answer")
+
+    assert result.status == "error"
+    assert result.usage is not None
+    assert result.usage.input_tokens > 2
+    assert result.usage.output_tokens == 513
 
 
 @pytest.mark.asyncio
@@ -211,3 +299,35 @@ async def test_memory_summaries_are_injected_into_system_context(
 
     assert "[Memory Data]" in provider.stream_inputs[0][0].content
     assert "Prefer Agent and RAG engineering content." in provider.stream_inputs[0][0].content
+
+
+def test_skill_prompt_total_chars_are_capped(agent_def: AgentDefinition) -> None:
+    """Five large skills cannot consume more than the fixed system-prompt allowance."""
+    registry = get_skill_registry()
+    registry.clear()
+    skill_ids = [f"large-skill-{index}" for index in range(5)]
+    try:
+        for skill_id in skill_ids:
+            registry.register(
+                SkillEntry(
+                    id=skill_id,
+                    name=skill_id,
+                    description="Large instruction bundle",
+                    instructions="x" * 1_500,
+                    is_builtin=True,
+                    frontmatter=SkillFrontmatter(
+                        name=skill_id,
+                        description="Large instruction bundle",
+                    ),
+                )
+            )
+        configured = agent_def.model_copy(update={"skill_ids": skill_ids})
+        executor = make_executor(FakeProvider([[AIResponse(content="unused")]]))
+
+        system_prompt = executor._build_system_prompt(configured)
+        skill_prompt = system_prompt.split("## Available Skills\n\n", maxsplit=1)[1].rstrip("\n")
+
+        assert len(skill_prompt) <= MAX_SKILL_PROMPT_CHARS
+        assert "...[truncated]" in skill_prompt
+    finally:
+        registry.clear()

@@ -13,7 +13,7 @@ from multiscribe_agent.agents.reflector import Reflector
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
-from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
@@ -103,7 +103,7 @@ class _StoredAgentStepExecutor:
         raw = await self._agents.get("agents", agent_id)
         if raw is None:
             raise LookupError(f"agent not found: {agent_id}")
-        return (await self._executor.run(AgentDefinition.model_validate(raw), user_input)).content
+        return await self._execute_definition(AgentDefinition.model_validate(raw), user_input)
 
     async def execute_with_memory(
         self, agent_id: str, user_input: str, memory_summaries: list[str]
@@ -112,13 +112,26 @@ class _StoredAgentStepExecutor:
         raw = await self._agents.get("agents", agent_id)
         if raw is None:
             raise LookupError(f"agent not found: {agent_id}")
-        return (
-            await self._executor.run(
-                AgentDefinition.model_validate(raw),
-                user_input,
-                memory_summaries=memory_summaries,
+        return await self._execute_definition(
+            AgentDefinition.model_validate(raw), user_input, memory_summaries
+        )
+
+    async def _execute_definition(
+        self,
+        definition: AgentDefinition,
+        user_input: str,
+        memory_summaries: list[str] | None = None,
+    ) -> str:
+        result = await self._executor.run_result(
+            definition, user_input, memory_summaries=memory_summaries
+        )
+        if result.status != "success":
+            raise AgentStepTerminalError(
+                result.status,
+                result.content,
+                result.terminal_data,
             )
-        ).content
+        return result.content
 
 
 # 负责装配配置、Agent、工作流、采集服务和发布服务,保证 API、CLI、调度任务复用同一套运行时依赖

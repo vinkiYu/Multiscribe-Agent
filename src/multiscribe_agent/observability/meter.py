@@ -33,6 +33,9 @@ class MetricsRegistry:
             "context_compactions",
             "context_degradations",
             "context_budget_exhaustions",
+            "provider_context_rejections",
+            "provider_context_retries",
+            "provider_context_retry_success",
         ):
             registry._counts[name] = 0
         for name in ("llm_latency", "publish_latency"):
@@ -53,6 +56,9 @@ class MetricsRegistry:
                         "context_compactions",
                         "context_degradations",
                         "context_budget_exhaustions",
+                        "provider_context_rejections",
+                        "provider_context_retries",
+                        "provider_context_retry_success",
                     )
                 }
                 registry._histograms = {
@@ -87,6 +93,17 @@ class MetricsRegistry:
             "compacted": "context_compactions",
             "degraded": "context_degradations",
             "budget_exhausted": "context_budget_exhaustions",
+        }
+        name = names.get(event)
+        if name is not None:
+            self._record_counter(name)
+
+    def record_provider_context_event(self, event: str) -> None:
+        """Record provider window rejection and bounded compensation outcomes."""
+        names = {
+            "rejected": "provider_context_rejections",
+            "retry": "provider_context_retries",
+            "retry_success": "provider_context_retry_success",
         }
         name = names.get(event)
         if name is not None:

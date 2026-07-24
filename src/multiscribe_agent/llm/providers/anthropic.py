@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
+from typing import cast
 
+import httpx
 import structlog
+from anthropic import AnthropicError
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -15,6 +18,7 @@ from multiscribe_agent.domain.models import AIMessage, AIResponse, ToolCall, Too
 from multiscribe_agent.llm.provider import (
     from_lc_message,
     merge_tool_call_deltas,
+    normalize_provider_error,
     to_lc_bindable_tools,
     to_lc_messages,
 )
@@ -41,6 +45,7 @@ class AnthropicProvider:
         if not config.api_key:
             raise ProviderError(f"no api key configured for provider {config.id}")
         self._config = config
+        self._model = model
         self._llm: BaseChatModel = ChatAnthropic(
             model=model,
             api_key=config.api_key,
@@ -54,9 +59,10 @@ class AnthropicProvider:
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AIResponse:
         """Generate one complete Anthropic response with a bounded wait time."""
-        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        model = self._model_for_call(tools, max_output_tokens)
         try:
             response = await asyncio.wait_for(
                 model.ainvoke(to_lc_messages(messages, system_instruction)),
@@ -65,13 +71,13 @@ class AnthropicProvider:
         except TimeoutError as exc:
             log.warning("anthropic_request_timeout", provider_id=self._config.id)
             raise ProviderError("Anthropic request timed out") from exc
-        except OSError as exc:
+        except (AnthropicError, httpx.HTTPError, OSError) as exc:
             log.warning(
                 "anthropic_request_failed",
                 provider_id=self._config.id,
                 error_type=type(exc).__name__,
             )
-            raise ProviderError("Anthropic request failed") from exc
+            raise normalize_provider_error(exc, "Anthropic") from exc
         return from_lc_message(response)
 
     async def list_models(self) -> list[str]:
@@ -83,9 +89,10 @@ class AnthropicProvider:
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[AIResponse]:
         """Stream response chunks and accumulate fragmented tool-call arguments."""
-        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        model = self._model_for_call(tools, max_output_tokens)
         accumulated_calls: list[ToolCall] = []
         try:
             async with asyncio.timeout(REQUEST_TIMEOUT_SECONDS):
@@ -98,10 +105,26 @@ class AnthropicProvider:
         except TimeoutError as exc:
             log.warning("anthropic_stream_timeout", provider_id=self._config.id)
             raise ProviderError("Anthropic stream timed out") from exc
-        except OSError as exc:
+        except (AnthropicError, httpx.HTTPError, OSError) as exc:
             log.warning(
                 "anthropic_stream_failed",
                 provider_id=self._config.id,
                 error_type=type(exc).__name__,
             )
-            raise ProviderError("Anthropic stream failed") from exc
+            raise normalize_provider_error(exc, "Anthropic") from exc
+
+    @property
+    def context_window_tokens(self) -> int:
+        return self._config.model_context_window(self._model)
+
+    @property
+    def default_output_tokens(self) -> int:
+        return self._config.model_output_tokens(self._model)
+
+    def _model_for_call(
+        self, tools: list[ToolDefinition] | None, max_output_tokens: int | None
+    ) -> BaseChatModel:
+        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        if max_output_tokens:
+            return cast(BaseChatModel, model.bind(max_tokens=max_output_tokens))
+        return cast(BaseChatModel, model)

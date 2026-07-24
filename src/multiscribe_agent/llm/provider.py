@@ -17,7 +17,7 @@ from langchain_core.messages import (
 )
 
 from multiscribe_agent.config import ProviderConfig
-from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.errors import ProviderContextLengthError, ProviderError
 from multiscribe_agent.domain.models import (
     AIMessage,
     AIResponse,
@@ -36,6 +36,7 @@ class AIProvider(Protocol):
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AIResponse:
         """Generate one complete response from a fixed provider model."""
 
@@ -44,8 +45,17 @@ class AIProvider(Protocol):
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[AIResponse]:
         """Yield response deltas from a fixed provider model."""
+
+    @property
+    def context_window_tokens(self) -> int:
+        """Return the configured context window for the fixed model."""
+
+    @property
+    def default_output_tokens(self) -> int:
+        """Return the configured default output allowance for the fixed model."""
 
     async def list_models(self) -> list[str]:
         """Return the locally configured models without making a network request."""
@@ -222,6 +232,45 @@ def create_provider(
     if config.type in {"google", "ollama"}:
         raise NotImplementedError(f"{config.type} provider is deferred to P18")
     raise ProviderError(f"unknown provider type: {config.type}")
+
+
+def is_context_length_error(exc: BaseException) -> bool:
+    """Classify provider and compatible-proxy context-window rejections."""
+    current: BaseException | None = exc
+    fragments: list[str] = []
+    status_codes: set[int] = set()
+    while current is not None:
+        fragments.append(str(current).lower())
+        status = getattr(current, "status_code", None)
+        if isinstance(status, int):
+            status_codes.add(status)
+        response = getattr(current, "response", None)
+        response_status = getattr(response, "status_code", None)
+        if isinstance(response_status, int):
+            status_codes.add(response_status)
+        current = current.__cause__ or current.__context__
+    text = " ".join(fragments)
+    markers = (
+        "context_length_exceeded",
+        "context length exceeded",
+        "maximum context length",
+        "prompt is too long",
+        "request too large",
+        "too many tokens",
+        "context window",
+    )
+    return (
+        413 in status_codes
+        or (400 in status_codes and any(marker in text for marker in markers))
+        or any(marker in text for marker in markers)
+    )
+
+
+def normalize_provider_error(exc: BaseException, provider_name: str) -> ProviderError:
+    """Return a safe provider exception while retaining context-window semantics."""
+    if is_context_length_error(exc):
+        return ProviderContextLengthError(f"{provider_name} context length exceeded")
+    return ProviderError(f"{provider_name} request failed")
 
 
 def _to_lc_tool_call(tool_call: ToolCall) -> dict[str, object]:

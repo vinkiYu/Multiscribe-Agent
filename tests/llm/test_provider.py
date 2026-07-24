@@ -13,12 +13,14 @@ from langchain_core.messages import (
 )
 
 from multiscribe_agent.config import ProviderConfig
-from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.errors import ProviderContextLengthError, ProviderError
 from multiscribe_agent.domain.models import AIMessage, ToolCall, ToolDefinition
 from multiscribe_agent.llm.provider import (
     create_provider,
     from_lc_message,
+    is_context_length_error,
     merge_tool_call_deltas,
+    normalize_provider_error,
     normalize_tools,
     to_lc_bindable_tools,
     to_lc_messages,
@@ -157,3 +159,25 @@ def test_create_provider_marks_optional_providers_as_deferred() -> None:
 
     with pytest.raises(NotImplementedError, match="deferred to P18"):
         create_provider(google_config)
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "context_length_exceeded",
+        "maximum context length is 128000 tokens",
+        "prompt is too long",
+    ],
+)
+def test_context_length_errors_are_classified_for_compatible_endpoints(message: str) -> None:
+    error = RuntimeError(message)
+
+    assert is_context_length_error(error)
+    assert isinstance(normalize_provider_error(error, "Proxy"), ProviderContextLengthError)
+
+
+def test_unrelated_provider_error_is_not_misclassified() -> None:
+    error = RuntimeError("invalid api key")
+
+    assert not is_context_length_error(error)
+    assert type(normalize_provider_error(error, "Proxy")) is ProviderError

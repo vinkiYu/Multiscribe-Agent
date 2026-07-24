@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
+from typing import cast
 
 import httpx
 import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
+from openai import OpenAIError
 
 from multiscribe_agent.config import ProviderConfig
 from multiscribe_agent.core.errors import ProviderError
@@ -16,6 +18,7 @@ from multiscribe_agent.domain.models import AIMessage, AIResponse, ToolCall, Too
 from multiscribe_agent.llm.provider import (
     from_lc_message,
     merge_tool_call_deltas,
+    normalize_provider_error,
     to_lc_bindable_tools,
     to_lc_messages,
 )
@@ -42,6 +45,7 @@ class OpenAIProvider:
         if not config.api_key:
             raise ProviderError(f"no api key configured for provider {config.id}")
         self._config = config
+        self._model = model
         self._http_client = httpx.AsyncClient(proxy=proxy) if proxy else None
         self._llm: BaseChatModel = ChatOpenAI(
             model=model,
@@ -56,9 +60,10 @@ class OpenAIProvider:
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AIResponse:
         """Generate one complete OpenAI response with a bounded wait time."""
-        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        model = self._model_for_call(tools, max_output_tokens)
         try:
             response = await asyncio.wait_for(
                 model.ainvoke(to_lc_messages(messages, system_instruction)),
@@ -67,11 +72,11 @@ class OpenAIProvider:
         except TimeoutError as exc:
             log.warning("openai_request_timeout", provider_id=self._config.id)
             raise ProviderError("OpenAI request timed out") from exc
-        except (httpx.HTTPError, OSError) as exc:
+        except (httpx.HTTPError, OpenAIError, OSError) as exc:
             log.warning(
                 "openai_request_failed", provider_id=self._config.id, error_type=type(exc).__name__
             )
-            raise ProviderError("OpenAI request failed") from exc
+            raise normalize_provider_error(exc, "OpenAI") from exc
         return from_lc_message(response)
 
     async def list_models(self) -> list[str]:
@@ -83,9 +88,10 @@ class OpenAIProvider:
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[AIResponse]:
         """Stream response chunks and accumulate fragmented tool-call arguments."""
-        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        model = self._model_for_call(tools, max_output_tokens)
         accumulated_calls: list[ToolCall] = []
         try:
             async with asyncio.timeout(REQUEST_TIMEOUT_SECONDS):
@@ -98,8 +104,24 @@ class OpenAIProvider:
         except TimeoutError as exc:
             log.warning("openai_stream_timeout", provider_id=self._config.id)
             raise ProviderError("OpenAI stream timed out") from exc
-        except (httpx.HTTPError, OSError) as exc:
+        except (httpx.HTTPError, OpenAIError, OSError) as exc:
             log.warning(
                 "openai_stream_failed", provider_id=self._config.id, error_type=type(exc).__name__
             )
-            raise ProviderError("OpenAI stream failed") from exc
+            raise normalize_provider_error(exc, "OpenAI") from exc
+
+    @property
+    def context_window_tokens(self) -> int:
+        return self._config.model_context_window(self._model)
+
+    @property
+    def default_output_tokens(self) -> int:
+        return self._config.model_output_tokens(self._model)
+
+    def _model_for_call(
+        self, tools: list[ToolDefinition] | None, max_output_tokens: int | None
+    ) -> BaseChatModel:
+        model = self._llm.bind_tools(to_lc_bindable_tools(tools)) if tools else self._llm
+        if max_output_tokens:
+            return cast(BaseChatModel, model.bind(max_tokens=max_output_tokens))
+        return cast(BaseChatModel, model)

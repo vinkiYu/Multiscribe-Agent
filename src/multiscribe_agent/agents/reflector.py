@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Literal, cast
 
-from multiscribe_agent.domain.models import AIMessage
+from multiscribe_agent.domain.models import AIMessage, TokenUsage
 from multiscribe_agent.llm.provider import AIProvider
 
 REFLECTOR_INSTRUCTION = """Assess whether the output satisfies the task.
@@ -23,17 +23,26 @@ class Reflection:
     score: float
     feedback: str
     should_retry: bool
+    usage: TokenUsage | None = None
 
 
 class Reflector:
     """Ask an LLM to assess an output and produce actionable feedback."""
 
-    async def assess(self, task: str, output: str, provider: AIProvider) -> Reflection:
+    async def assess(
+        self,
+        task: str,
+        output: str,
+        provider: AIProvider,
+        *,
+        max_output_tokens: int | None = None,
+    ) -> Reflection:
         """Return a validated reflection whose retry flag follows its quality."""
         prompt = f"Task:\n{task}\n\nOutput:\n{output}"
         response = await provider.generate(
             [AIMessage(role="user", content=prompt)],
             system_instruction=REFLECTOR_INSTRUCTION,
+            max_output_tokens=max_output_tokens,
         )
         try:
             payload = json.loads(response.content)
@@ -58,4 +67,5 @@ class Reflector:
             score=float(score),
             feedback=feedback,
             should_retry=typed_quality == "fail",
+            usage=response.usage,
         )

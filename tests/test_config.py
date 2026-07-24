@@ -1,6 +1,6 @@
 """Tests for default, environment, and persistent settings layers."""
 
-from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
+from multiscribe_agent.config import ConfigService, ProviderConfig, SystemSettings, get_settings
 
 
 def test_get_settings_defaults(monkeypatch) -> None:
@@ -82,3 +82,46 @@ async def test_config_service_applies_persistent_overrides(monkeypatch) -> None:
 
     assert settings.log_level == "WARNING"
     assert settings.selection_fetch_days == 5
+
+
+def test_default_providers_have_known_model_windows_and_output_limits() -> None:
+    """Bundled models use explicit production limits instead of compatibility fallbacks."""
+    settings = SystemSettings(_env_file=None)
+    openai = next(provider for provider in settings.ai_providers if provider.type == "openai")
+    anthropic = next(provider for provider in settings.ai_providers if provider.type == "anthropic")
+    ollama = next(provider for provider in settings.ai_providers if provider.type == "ollama")
+
+    assert openai.context_window_tokens["gpt-4o"] == 128_000
+    assert openai.default_output_tokens["gpt-4o"] == 16_384
+    assert anthropic.context_window_tokens["claude-sonnet-4-5"] == 200_000
+    assert ollama.context_window_tokens["qwen2.5"] == 32_768
+
+
+def test_environment_overrides_provider_model_limits(monkeypatch) -> None:
+    """JSON environment mappings override matching configured model limits."""
+    monkeypatch.setenv("PROVIDER_CONTEXT_WINDOWS", '{"gpt-4o": 64000}')
+    monkeypatch.setenv("PROVIDER_OUTPUT_TOKENS", '{"gpt-4o": 2048}')
+
+    settings = SystemSettings(_env_file=None)
+    openai = next(provider for provider in settings.ai_providers if provider.type == "openai")
+
+    assert openai.context_window_tokens["gpt-4o"] == 64_000
+    assert openai.default_output_tokens["gpt-4o"] == 2_048
+
+
+def test_environment_overrides_custom_configured_model(monkeypatch) -> None:
+    """Unknown relay models can declare their real window without a code change."""
+    monkeypatch.setenv("PROVIDER_CONTEXT_WINDOWS", '{"custom-model": 32000}')
+    settings = SystemSettings(
+        _env_file=None,
+        ai_providers=[
+            ProviderConfig(
+                id="relay",
+                name="Relay",
+                type="openai",
+                models=["custom-model"],
+            )
+        ],
+    )
+
+    assert settings.ai_providers[0].context_window_tokens["custom-model"] == 32_000

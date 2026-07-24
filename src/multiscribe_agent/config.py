@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Any, Literal, cast
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -9,6 +10,32 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from multiscribe_agent.core.errors import ConfigError
 from multiscribe_agent.domain.ports import KvRepository as KvRepositoryPort
+
+_KNOWN_MODEL_WINDOWS: dict[str, int] = {
+    "gpt-4o": 128_000,
+    "gpt-4o-mini": 128_000,
+    "gpt-4.1": 1_047_576,
+    "o3-mini": 200_000,
+    "claude-sonnet-4-5": 200_000,
+    "claude-opus-4-1": 200_000,
+    "claude-3-5-haiku-latest": 200_000,
+    "gemini-2.0-flash": 1_048_576,
+    "gemini-2.5-pro": 1_048_576,
+    "gemini-1.5-pro": 2_097_152,
+    "llama3.1": 128_000,
+    "qwen2.5": 32_768,
+    "deepseek-r1": 64_000,
+}
+
+_KNOWN_MODEL_OUTPUT_TOKENS: dict[str, int] = {
+    "gpt-4o": 16_384,
+    "gpt-4o-mini": 16_384,
+    "gpt-4.1": 32_768,
+    "o3-mini": 100_000,
+    "claude-sonnet-4-5": 8_192,
+    "claude-opus-4-1": 8_192,
+    "claude-3-5-haiku-latest": 8_192,
+}
 
 
 class ProviderConfig(BaseModel):
@@ -30,6 +57,23 @@ class ProviderConfig(BaseModel):
     base_url: str = ""
     use_proxy: bool = False
     models: list[str] = Field(default_factory=list)
+    context_window_tokens: dict[str, int] = Field(default_factory=dict)
+    default_output_tokens: dict[str, int] = Field(default_factory=dict)
+
+    @field_validator("context_window_tokens", "default_output_tokens")
+    @classmethod
+    def _validate_model_token_limits(cls, value: dict[str, int]) -> dict[str, int]:
+        if any(limit <= 0 for limit in value.values()):
+            raise ValueError("model token limits must be positive")
+        return value
+
+    def model_context_window(self, model: str) -> int:
+        """Return the configured model window, falling back to the compatibility default."""
+        return self.context_window_tokens.get(model, 128_000)
+
+    def model_output_tokens(self, model: str) -> int:
+        """Return the configured output reserve, falling back to the compatibility default."""
+        return self.default_output_tokens.get(model, 4_096)
 
 
 class AdapterConfig(BaseModel):
@@ -99,31 +143,51 @@ class RateLimitConfig(BaseModel):
 
 
 def _default_ai_providers() -> list[ProviderConfig]:
+    def configured_provider(
+        provider_id: str,
+        name: str,
+        provider_type: Literal["openai", "anthropic", "google", "ollama"],
+        models: list[str],
+        *,
+        base_url: str = "",
+    ) -> ProviderConfig:
+        return ProviderConfig(
+            id=provider_id,
+            name=name,
+            type=provider_type,
+            base_url=base_url,
+            models=models,
+            context_window_tokens={model: _KNOWN_MODEL_WINDOWS[model] for model in models},
+            default_output_tokens={
+                model: _KNOWN_MODEL_OUTPUT_TOKENS.get(model, 4_096) for model in models
+            },
+        )
+
     return [
-        ProviderConfig(
-            id="default-google",
-            name="Google Gemini",
-            type="google",
-            models=["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-pro"],
+        configured_provider(
+            "default-google",
+            "Google Gemini",
+            "google",
+            ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-pro"],
         ),
-        ProviderConfig(
-            id="default-anthropic",
-            name="Anthropic",
-            type="anthropic",
-            models=["claude-sonnet-4-5", "claude-opus-4-1", "claude-3-5-haiku-latest"],
+        configured_provider(
+            "default-anthropic",
+            "Anthropic",
+            "anthropic",
+            ["claude-sonnet-4-5", "claude-opus-4-1", "claude-3-5-haiku-latest"],
         ),
-        ProviderConfig(
-            id="default-openai",
-            name="OpenAI",
-            type="openai",
-            models=["gpt-4o", "gpt-4o-mini", "gpt-4.1", "o3-mini"],
+        configured_provider(
+            "default-openai",
+            "OpenAI",
+            "openai",
+            ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "o3-mini"],
         ),
-        ProviderConfig(
-            id="default-ollama",
-            name="Ollama",
-            type="ollama",
+        configured_provider(
+            "default-ollama",
+            "Ollama",
+            "ollama",
+            ["llama3.1", "qwen2.5", "deepseek-r1"],
             base_url="http://localhost:11434",
-            models=["llama3.1", "qwen2.5", "deepseek-r1"],
         ),
     ]
 
@@ -206,6 +270,18 @@ class SystemSettings(BaseSettings):
         validation_alias=AliasChoices("LOG_FILE", "MULTISCRIBE_LOG_FILE"),
     )
     active_ai_provider_id: str = ""
+    provider_context_windows: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "PROVIDER_CONTEXT_WINDOWS", "MULTISCRIBE_PROVIDER_CONTEXT_WINDOWS"
+        ),
+    )
+    provider_output_tokens: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "PROVIDER_OUTPUT_TOKENS", "MULTISCRIBE_PROVIDER_OUTPUT_TOKENS"
+        ),
+    )
     http_proxy: str = Field(
         default="",
         validation_alias=AliasChoices("HTTP_PROXY", "MULTISCRIBE_HTTP_PROXY"),
@@ -316,6 +392,15 @@ class SystemSettings(BaseSettings):
             if api_base_url:
                 provider.base_url = api_base_url
 
+        context_overrides = self._model_token_overrides(self.provider_context_windows)
+        output_overrides = self._model_token_overrides(self.provider_output_tokens)
+        for provider in self.ai_providers:
+            for model in provider.models:
+                if model in context_overrides:
+                    provider.context_window_tokens[model] = context_overrides[model]
+                if model in output_overrides:
+                    provider.default_output_tokens[model] = output_overrides[model]
+
         for publisher in self.publishers:
             if publisher.id == "feishu_bot":
                 if self.feishu_webhook:
@@ -327,6 +412,28 @@ class SystemSettings(BaseSettings):
                 publisher.config["webhook"] = self.wecom_webhook
                 publisher.enabled = True
         return self
+
+    @staticmethod
+    def _model_token_overrides(raw_value: str) -> dict[str, int]:
+        """Parse positive per-model token overrides from an optional JSON object."""
+        if not raw_value:
+            return {}
+        try:
+            decoded = json.loads(raw_value)
+        except json.JSONDecodeError:
+            return {}
+        if not isinstance(decoded, dict):
+            return {}
+        overrides: dict[str, int] = {}
+        for model, limit in decoded.items():
+            if (
+                isinstance(model, str)
+                and isinstance(limit, int)
+                and not isinstance(limit, bool)
+                and limit > 0
+            ):
+                overrides[model] = limit
+        return overrides
 
 
 DEFAULT_SETTINGS = SystemSettings.model_construct()

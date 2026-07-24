@@ -34,6 +34,7 @@ dependencies = [
     "selectolax>=0.3.0",
     "structlog>=24.1",
     "sqlite-vec>=0.1",
+    "tiktoken>=0.7",
     "uvicorn[standard]>=0.30",
 ]
 

@@ -11,7 +11,7 @@ from multiscribe_agent.agents.workflow.events import WorkflowEvent
 from multiscribe_agent.agents.workflow.graph import build_graph, topological_levels
 from multiscribe_agent.agents.workflow.loop_node import execute_loop_step
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
-from multiscribe_agent.core.errors import WorkflowError
+from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
 from multiscribe_agent.domain.models import WorkflowDefinition, WorkflowStep
 
 DEFAULT_WORKFLOW_TIMEOUT_SECONDS = 300.0
@@ -50,7 +50,7 @@ class WorkflowEngine:
         final = input_data
         async for event in self.stream(workflow_id, input_data, date=date, timeout=timeout):
             if event.type == "workflow_error":
-                raise WorkflowError(str(event.data["message"]))
+                raise WorkflowError(str(event.data["message"]), event.data)
             if event.type == "step_complete":
                 outputs[str(event.data["step_id"])] = event.data["output"]
             if event.type == "workflow_complete":
@@ -107,10 +107,19 @@ class WorkflowEngine:
                 )
                 for (step, _), outcome in zip(executions, outcomes, strict=True):
                     if isinstance(outcome, BaseException):
-                        yield WorkflowEvent(
-                            "step_error", {"step_id": step.id, "message": str(outcome)}, trace_id
-                        )
-                        yield WorkflowEvent("workflow_error", {"message": str(outcome)}, trace_id)
+                        terminal_data: dict[str, object] = {}
+                        if isinstance(outcome, AgentStepTerminalError):
+                            terminal_data = {
+                                "terminal_type": outcome.terminal_type,
+                                "terminal_data": outcome.terminal_data,
+                            }
+                        error_data = {
+                            "step_id": step.id,
+                            "message": str(outcome),
+                            **terminal_data,
+                        }
+                        yield WorkflowEvent("step_error", error_data, trace_id)
+                        yield WorkflowEvent("workflow_error", error_data, trace_id)
                         return
                     output, loop_history = outcome
                     results[step.id] = output

@@ -37,6 +37,7 @@ repos:
           - sqlite-vec>=0.1
           - selectolax>=0.3.0
           - structlog>=24.1
+          - tiktoken>=0.7
           - types-defusedxml>=0.7.0.20260504
           - types-click
           - uvicorn[standard]>=0.30

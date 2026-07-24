@@ -42,10 +42,14 @@ async def test_budget_warning_is_non_blocking(agent_def) -> None:
         lambda _: provider,
         None,
         PromptService(),
-        token_budget=200,
+        token_budget=12_000,
     )
 
-    events = await _collect(executor.stream(agent_def, "a" * 1_000))
+    events = await _collect(executor.stream(agent_def, "a" * 50_000))
 
-    assert any(event.type == "budget_warning" for event in events)
+    warning = next(event for event in events if event.type == "budget_warning")
+    assert warning.data["used_tokens"] + warning.data["remaining"] == warning.data["budget"]
+    assert warning.data["request_tokens"] == (
+        warning.data["used_tokens"] + warning.data["tool_schema_tokens"]
+    )
     assert events[-1].type == "final_content"

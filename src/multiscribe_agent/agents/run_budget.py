@@ -97,6 +97,12 @@ class RunBudget:
                 return BudgetLimit(kind, limit, actual)
         return None
 
+    def remaining_output_tokens(self) -> int | None:
+        """Return remaining cumulative output capacity when it is bounded."""
+        if self.max_output_tokens is None:
+            return None
+        return max(0, self.max_output_tokens - self.output_tokens)
+
     @staticmethod
     def _check(kind: BudgetKind, limit: int | None, actual: int) -> None:
         if limit is not None and actual > limit:

@@ -43,6 +43,9 @@ class AgentEvent:
         error: ``message`` and optional ``round``.
         loop_detected: ``tool``, ``args_hash``, ``consecutive_repeats``, and ``round``.
         budget_warning: ``used_tokens``, ``budget``, ``remaining``, and ``round``.
+        context_pressure/context_compacted: token partitions plus model-window budget metadata.
+        context_budget_exhausted: actual/effective tokens, partitions, compaction stages,
+            retry count, and an actionable message.
     """
 
     type: AgentEventType

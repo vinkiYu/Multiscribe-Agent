@@ -28,16 +28,19 @@ class FakeProvider:
         self.generated_responses = list(generated_responses or [])
         self.stream_inputs: list[list[AIMessage]] = []
         self.generate_inputs: list[list[AIMessage]] = []
+        self.generate_output_limits: list[int | None] = []
 
     async def generate(
         self,
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AIResponse:
         """Return the next configured non-streaming response."""
         del tools, system_instruction
         self.generate_inputs.append(messages)
+        self.generate_output_limits.append(max_output_tokens)
         if not self.generated_responses:
             raise AssertionError("no fake generated response configured")
         return self.generated_responses.pop(0)
@@ -47,9 +50,10 @@ class FakeProvider:
         messages: list[AIMessage],
         tools: list[ToolDefinition] | None = None,
         system_instruction: str | None = None,
+        max_output_tokens: int | None = None,
     ) -> AsyncIterator[AIResponse]:
         """Yield the next configured response round."""
-        del tools, system_instruction
+        del tools, system_instruction, max_output_tokens
         self.stream_inputs.append(messages)
         if not self.streamed_rounds:
             raise AssertionError("no fake stream round configured")

@@ -26,7 +26,7 @@ def test_add_inject_and_build_messages() -> None:
 
 def test_trim_preserves_first_recent_and_tool_integrity() -> None:
     """A small budget removes middle history without splitting a tool exchange."""
-    context = HarnessContext("system", token_budget=70)
+    context = HarnessContext("system", token_budget=180)
     context.add_user("first-anchor")
     context.add_assistant("middle-" + "x" * 100)
     context.add_user("recent-question")

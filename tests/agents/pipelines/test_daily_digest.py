@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -10,11 +11,13 @@ import pytest
 from multiscribe_agent.agents.pipelines.daily_digest import (
     DailyDigestConfig,
     DailyDigestPipeline,
+    _curate_item_dict,
     build_daily_digest_workflow,
     register_daily_digest_executor,
 )
-from multiscribe_agent.core.errors import WorkflowError
-from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData
+from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT
+from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
+from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData, UnifiedData
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
@@ -75,6 +78,20 @@ class MemoryAwareFakeCurator(FakeCurator):
     ) -> str:
         self.memory_summaries = memory_summaries
         return await self.execute(agent_id, user_input)
+
+
+class TerminalOverviewCurator(FakeCurator):
+    """Fail the overview Agent with a structured context-budget terminal state."""
+
+    async def execute(self, agent_id: str, user_input: str) -> str:
+        if len(self.inputs) == 2:
+            self.inputs.append(user_input)
+            raise AgentStepTerminalError(
+                "context_budget_exhausted",
+                "overview context exhausted",
+                {"actual": 2_000, "limit": 1_000},
+            )
+        return await super().execute(agent_id, user_input)
 
 
 class FakeMemoryService:
@@ -248,6 +265,43 @@ def test_explicit_empty_targets_disable_default_publishers() -> None:
     assert default.targets == ["feishu_bot", "wecom_bot"]
 
 
+def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidates() -> None:
+    """Curation receives only necessary fields and stays below 30% of the old prompt size."""
+    items = [
+        UnifiedData(
+            id=f"item-{index}",
+            title=f"Title {index}",
+            url=f"https://example.test/{index}",
+            description="中" * 3_000,
+            published_date="2026-07-17T08:00:00+00:00",
+            source="RSS",
+            category="technology",
+            author="Author",
+            metadata={"raw": "metadata" * 100},
+            ingestion_date="2026-07-17T08:01:00+00:00",
+            adapter_name="rss",
+        )
+        for index in range(100)
+    ]
+    projected = [_curate_item_dict(item) for item in items]
+    new_prompt = CURATE_PROMPT.format(
+        items=json.dumps(projected, ensure_ascii=False, separators=(",", ":")),
+        feedback="无",
+    )
+    old_prompt = CURATE_PROMPT.format(
+        items=json.dumps(
+            [item.model_dump(mode="json") for item in items],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ),
+        feedback="无",
+    )
+
+    assert set(projected[0]) == {"id", "title", "summary", "url", "source", "category"}
+    assert len(str(projected[0]["summary"])) == 500
+    assert len(new_prompt) < len(old_prompt) * 0.30
+
+
 @pytest.mark.asyncio
 async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() -> None:
     """Mocked pipeline retries curation, sorts selected entries, and isolates a target error."""
@@ -283,6 +337,21 @@ async def test_stream_exposes_loop_iteration_and_invalid_json_becomes_workflow_e
     invalid_pipeline, _, _ = _pipeline(["not JSON"])
     with pytest.raises(WorkflowError, match="valid JSON"):
         await invalid_pipeline.run(run_date="2026-07-17")
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_does_not_publish_agent_budget_error_as_overview() -> None:
+    curator = TerminalOverviewCurator([_curation_json(), _curation_json()])
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json()],
+        curator=curator,
+    )
+
+    with pytest.raises(WorkflowError) as captured:
+        await pipeline.run(run_date="2026-07-17")
+
+    assert captured.value.details["terminal_type"] == "context_budget_exhausted"
+    assert GoodPublisher.received == []
 
 
 @pytest.mark.asyncio

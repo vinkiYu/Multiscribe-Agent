@@ -7,7 +7,7 @@ import pytest
 
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor
-from multiscribe_agent.core.errors import WorkflowError
+from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
 from multiscribe_agent.domain.models import WorkflowDefinition, WorkflowStep
 
 
@@ -53,6 +53,18 @@ class ParallelExecutor(FakeExecutor):
             return await super().execute(agent_id, user_input)
         finally:
             self.active -= 1
+
+
+class TerminalExecutor(FakeExecutor):
+    """Raise one structured Agent terminal state before a downstream step can run."""
+
+    async def execute(self, agent_id: str, user_input: str) -> str:
+        self.inputs.append((agent_id, user_input))
+        raise AgentStepTerminalError(
+            "context_budget_exhausted",
+            "context exhausted",
+            {"actual": 2_000, "limit": 1_000},
+        )
 
 
 def _workflow(workflow_id: str, *steps: WorkflowStep) -> WorkflowDefinition:
@@ -133,6 +145,29 @@ async def test_empty_output_halts_downstream_execution() -> None:
         await WorkflowEngine(executor, MemoryWorkflowStore(workflow)).run("empty", "start")
 
     assert executor.inputs == [("a", "start")]
+
+
+@pytest.mark.asyncio
+async def test_agent_terminal_state_stops_downstream_and_preserves_details() -> None:
+    workflow = _workflow("terminal", _agent("a", "a", next_step_id="b"), _agent("b", "b"))
+    executor = TerminalExecutor({"a": lambda value: value, "b": lambda value: value})
+    engine = WorkflowEngine(executor, MemoryWorkflowStore(workflow))
+
+    events = [event async for event in engine.stream("terminal", "start")]
+
+    assert executor.inputs == [("a", "start")]
+    assert [event.type for event in events] == [
+        "workflow_start",
+        "step_start",
+        "step_error",
+        "workflow_error",
+    ]
+    assert events[-1].data["terminal_type"] == "context_budget_exhausted"
+    assert events[-1].data["terminal_data"] == {"actual": 2_000, "limit": 1_000}
+
+    with pytest.raises(WorkflowError) as captured:
+        await engine.run("terminal", "start")
+    assert captured.value.details["terminal_type"] == "context_budget_exhausted"
 
 
 @pytest.mark.asyncio

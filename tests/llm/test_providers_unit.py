@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
+import httpx
 import pytest
 from conftest import FakeChatModel
 from langchain_core.messages import AIMessage as LCAIMessage
 from langchain_core.messages import AIMessageChunk
 
 from multiscribe_agent.config import ProviderConfig
-from multiscribe_agent.core.errors import ProviderError
+from multiscribe_agent.core.errors import ProviderContextLengthError, ProviderError
 from multiscribe_agent.domain.models import AIMessage, ToolCall, ToolDefinition
 from multiscribe_agent.llm.providers.anthropic import AnthropicProvider
 from multiscribe_agent.llm.providers.openai import OpenAIProvider
@@ -44,7 +45,9 @@ async def test_openai_generate_uses_mock_model_and_normalizes_tools(
     monkeypatch.setattr("multiscribe_agent.llm.providers.openai.ChatOpenAI", lambda **_: fake_model)
     provider = OpenAIProvider(openai_config, "gpt-test", 0.7)
 
-    response = await provider.generate(user_message, [weather_tool], "be brief")
+    response = await provider.generate(
+        user_message, [weather_tool], "be brief", max_output_tokens=321
+    )
 
     assert response.content == "I will check."
     assert response.tool_calls == [
@@ -52,6 +55,7 @@ async def test_openai_generate_uses_mock_model_and_normalizes_tools(
     ]
     assert fake_model.bound_tools is not None
     assert fake_model.bound_tools[0]["parameters"] == weather_tool.parameters
+    assert fake_model.bound_kwargs["max_tokens"] == 321
 
 
 @pytest.mark.asyncio
@@ -103,10 +107,13 @@ async def test_anthropic_generate_uses_mock_model(
     )
     provider = AnthropicProvider(anthropic_config, "claude-test", 0.7)
 
-    response = await provider.generate(user_message, system_instruction="system prompt")
+    response = await provider.generate(
+        user_message, system_instruction="system prompt", max_output_tokens=654
+    )
 
     assert response.content == "Anthropic response"
     assert fake_model.invocations
+    assert fake_model.bound_kwargs["max_tokens"] == 654
 
 
 @pytest.mark.asyncio
@@ -142,3 +149,38 @@ def test_provider_requires_api_key(
 
     with pytest.raises(ProviderError, match="no api key configured"):
         provider_class(config, "test-model", 0.7)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("provider_name", ["openai", "anthropic"])
+async def test_provider_context_error_is_normalized_for_native_and_proxy_endpoints(
+    monkeypatch: pytest.MonkeyPatch,
+    provider_name: str,
+) -> None:
+    fake_model = FakeChatModel()
+    request = httpx.Request("POST", "https://proxy.example.test/v1/chat/completions")
+    response = httpx.Response(400, request=request)
+    fake_model.error = httpx.HTTPStatusError(
+        "context_length_exceeded", request=request, response=response
+    )
+    config = ProviderConfig(
+        id="proxy",
+        name="Proxy",
+        type=provider_name,
+        api_key="test-key",
+        base_url="https://proxy.example.test/v1",
+        models=["proxy-model"],
+    )
+    if provider_name == "openai":
+        monkeypatch.setattr(
+            "multiscribe_agent.llm.providers.openai.ChatOpenAI", lambda **_: fake_model
+        )
+        provider = OpenAIProvider(config, "proxy-model", 0.2)
+    else:
+        monkeypatch.setattr(
+            "multiscribe_agent.llm.providers.anthropic.ChatAnthropic", lambda **_: fake_model
+        )
+        provider = AnthropicProvider(config, "proxy-model", 0.2)
+
+    with pytest.raises(ProviderContextLengthError):
+        await provider.generate([AIMessage(role="user", content="too long")])

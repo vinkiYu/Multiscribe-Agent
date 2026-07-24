@@ -17,6 +17,10 @@ class ProviderError(MultiscribeError):
     """Raised when an AI provider request or response fails."""
 
 
+class ProviderContextLengthError(ProviderError):
+    """Raised when a provider rejects a request because its context is too large."""
+
+
 class ToolExecutionError(MultiscribeError):
     """Raised when an agent tool cannot complete its operation."""
 
@@ -27,6 +31,21 @@ class ToolApprovalRequired(ToolExecutionError):
 
 class WorkflowError(MultiscribeError):
     """Raised when workflow validation or execution fails."""
+
+    def __init__(self, message: str, details: dict[str, object] | None = None) -> None:
+        self.details = dict(details or {})
+        super().__init__(message)
+
+
+class AgentStepTerminalError(WorkflowError):
+    """Propagate a structured Agent terminal state through a workflow boundary."""
+
+    def __init__(
+        self, terminal_type: str, message: str, terminal_data: dict[str, object] | None = None
+    ) -> None:
+        self.terminal_type = terminal_type
+        self.terminal_data = dict(terminal_data or {})
+        super().__init__(message, {"terminal_type": terminal_type, **self.terminal_data})
 
 
 class PublisherError(MultiscribeError):

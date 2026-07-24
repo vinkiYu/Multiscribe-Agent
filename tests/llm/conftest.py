@@ -21,6 +21,13 @@ class FakeChatModel:
         self.chunks: list[LCAIMessage] = []
         self.bound_tools: list[dict[str, object]] | None = None
         self.invocations: list[list[object]] = []
+        self.bound_kwargs: dict[str, object] = {}
+        self.error: Exception | None = None
+
+    def bind(self, **kwargs: object) -> FakeChatModel:
+        """Record per-call model arguments and return this model."""
+        self.bound_kwargs.update(kwargs)
+        return self
 
     def bind_tools(self, tools: list[dict[str, object]]) -> FakeChatModel:
         """Record bound tools and return this model like LangChain does."""
@@ -30,11 +37,15 @@ class FakeChatModel:
     async def ainvoke(self, messages: list[object]) -> LCAIMessage:
         """Return the configured response without a network call."""
         self.invocations.append(messages)
+        if self.error is not None:
+            raise self.error
         return self.response
 
     async def astream(self, messages: list[object]) -> AsyncIterator[LCAIMessage]:
         """Yield configured chunks without a network call."""
         self.invocations.append(messages)
+        if self.error is not None:
+            raise self.error
         for chunk in self.chunks:
             yield chunk
 

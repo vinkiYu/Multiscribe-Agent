@@ -45,3 +45,15 @@ def test_process_metrics_registry_can_be_replaced() -> None:
     registry = MetricsRegistry.create(_caps())
     set_metrics_registry(registry)
     assert get_metrics_registry() is registry
+
+
+def test_provider_context_retry_metrics_are_exposed() -> None:
+    registry = MetricsRegistry.create(_caps())
+    registry.record_provider_context_event("rejected")
+    registry.record_provider_context_event("retry")
+    registry.record_provider_context_event("retry_success")
+
+    text = registry.render_prometheus()
+    assert "multiscribe_provider_context_rejections_total 1" in text
+    assert "multiscribe_provider_context_retries_total 1" in text
+    assert "multiscribe_provider_context_retry_success_total 1" in text

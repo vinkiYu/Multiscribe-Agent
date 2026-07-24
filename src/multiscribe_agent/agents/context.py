@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from enum import StrEnum
 
 from multiscribe_agent.agents.artifacts import InMemoryArtifactStore
 from multiscribe_agent.agents.checkpoint import ConversationCheckpoint
@@ -25,11 +26,26 @@ UNTRUSTED_CONTEXT_POLICY = (
 class ContextBudgetError(RuntimeError):
     """Raised when protected context cannot fit without dropping safety or the current goal."""
 
-    def __init__(self, used: int, budget: int, partitions: dict[str, int]) -> None:
+    def __init__(
+        self,
+        used: int,
+        budget: int,
+        partitions: dict[str, int],
+        compaction_stages: list[str] | None = None,
+    ) -> None:
         self.used = used
         self.budget = budget
         self.partitions = partitions
+        self.compaction_stages = list(compaction_stages or [])
         super().__init__(f"context_budget_unresolvable: used={used} budget={budget}")
+
+
+class ContextPriority(StrEnum):
+    """Retention priority for context entries during compaction."""
+
+    NORMAL = "normal"
+    IMPORTANT = "important"
+    REQUIRED = "required"
 
 
 class HarnessContext:
@@ -61,20 +77,28 @@ class HarnessContext:
         self.system_prompt = system_prompt
         self.token_budget = token_budget
         self.tool_result_limit = tool_result_limit
-        self.token_counter = token_counter or ConservativeTokenCounter(chars_per_token=4.0)
+        self.token_counter = token_counter or ConservativeTokenCounter(chars_per_token=1.5)
         self.artifact_store = artifact_store
         self.messages: list[AIMessage] = []
         self._memory: list[str] = []
         self._knowledge: list[str] = []
         self._usage = TokenUsage(input_tokens=0, output_tokens=0, total_tokens=0)
-        self._important_message_ids: set[int] = set()
+        self._message_priorities: dict[int, ContextPriority] = {}
+        self._goal_message_id: int | None = None
         self._conversation_summary = ""
         self._last_compaction: dict[str, object] | None = None
+        self._compaction_stages: list[str] = []
 
-    def add_user(self, message: str, *, important: bool = False) -> None:
+    def add_user(
+        self,
+        message: str,
+        *,
+        important: bool = False,
+        priority: ContextPriority | None = None,
+    ) -> None:
         """Append a user message and trim the context when necessary."""
         entry = AIMessage(role="user", content=self._maybe_truncate_user_message(message))
-        self._append_message(entry, important)
+        self._append_message(entry, priority or self._legacy_priority(important))
         self.trim_if_needed()
 
     def add_assistant(
@@ -83,14 +107,21 @@ class HarnessContext:
         tool_calls: list[ToolCall] | None = None,
         *,
         important: bool = False,
+        priority: ContextPriority | None = None,
     ) -> None:
         """Append an assistant message, including any requested tool calls."""
         entry = AIMessage(role="assistant", content=message, tool_calls=tool_calls or None)
-        self._append_message(entry, important)
+        self._append_message(entry, priority or self._legacy_priority(important))
         self.trim_if_needed()
 
     def add_tool_result(
-        self, tool_call_id: str, name: str, content: str, *, important: bool = False
+        self,
+        tool_call_id: str,
+        name: str,
+        content: str,
+        *,
+        important: bool = False,
+        priority: ContextPriority | None = None,
     ) -> None:
         """Append a tool result after compressing oversized content."""
         entry = AIMessage(
@@ -99,7 +130,7 @@ class HarnessContext:
             tool_call_id=tool_call_id,
             name=name,
         )
-        self._append_message(entry, important)
+        self._append_message(entry, priority or self._legacy_priority(important))
         self.trim_if_needed()
 
     def inject_memory(self, summary: str) -> None:
@@ -142,6 +173,28 @@ class HarnessContext:
     def last_compaction(self) -> dict[str, object] | None:
         return dict(self._last_compaction) if self._last_compaction else None
 
+    @property
+    def compaction_stages(self) -> list[str]:
+        return list(self._compaction_stages)
+
+    def apply_aggressive_budget(self, token_budget: int) -> None:
+        """Lower the budget and exhaust deterministic compaction before a retry."""
+        if token_budget <= 0:
+            raise ValueError("token_budget must be positive")
+        self.token_budget = token_budget
+        self._record_stage("provider_retry_budget_reduction")
+        self.trim_if_needed()
+        if self.estimate_tokens(self.build_messages(trim=False)) > self.token_budget:
+            self._replace_old_tool_results()
+            self.trim_if_needed()
+        self._assert_resolved()
+
+    def mark_current_round_consumed(self) -> None:
+        """Make previously required round evidence compressible after the model consumed it."""
+        for message_id, priority in list(self._message_priorities.items()):
+            if priority == ContextPriority.REQUIRED and message_id != self._goal_message_id:
+                self._message_priorities[message_id] = ContextPriority.IMPORTANT
+
     def should_warn_budget(self, threshold: float = USER_MESSAGE_BUDGET_RATIO) -> bool:
         """Return whether the untrimmed context has reached a budget threshold."""
         if self.token_budget <= 0:
@@ -166,6 +219,17 @@ class HarnessContext:
         if before <= self.token_budget:
             return
 
+        self._shrink_optional_context()
+        if self.estimate_tokens(self.build_messages(trim=False)) <= self.token_budget:
+            self._last_compaction = {
+                "before_tokens": before,
+                "after_tokens": self.estimate_tokens(self.build_messages(trim=False)),
+                "discarded_groups": 0,
+                "strategy": "optional_context_degradation",
+                "compaction_stage": self._compaction_stages[-1],
+            }
+            return
+
         groups = self._message_groups()
         if len(groups) <= 2:
             self._shrink_optional_context()
@@ -178,12 +242,21 @@ class HarnessContext:
             self._shrink_optional_context()
             return
 
-        selected_indexes = {0}
+        selected_indexes: set[int] = {0}
         used = self._estimate_group(groups[0])
-        for index, group in enumerate(groups[1:], start=1):
-            if self._is_important_group(group):
+        for index, group in enumerate(groups):
+            if index not in selected_indexes and self._is_required_group(group):
                 selected_indexes.add(index)
                 used += self._estimate_group(group)
+
+        for index in range(len(groups) - 1, -1, -1):
+            group = groups[index]
+            if index in selected_indexes or not self._is_important_group(group):
+                continue
+            group_tokens = self._estimate_group(group)
+            if used + group_tokens <= message_budget:
+                selected_indexes.add(index)
+                used += group_tokens
 
         for index in range(len(groups) - 1, 0, -1):
             if index in selected_indexes:
@@ -201,6 +274,7 @@ class HarnessContext:
                 self._summarize_groups(discarded),
                 summary_budget,
             )
+        reflection_merged = any(self._is_important_group(group) for group in discarded)
 
         self.messages = [
             message
@@ -209,13 +283,20 @@ class HarnessContext:
             for message in group
         ]
         retained_ids = {id(message) for message in self.messages}
-        self._important_message_ids.intersection_update(retained_ids)
+        self._message_priorities = {
+            key: value for key, value in self._message_priorities.items() if key in retained_ids
+        }
+        if discarded:
+            self._record_stage("conversation_checkpoint")
+        if reflection_merged:
+            self._record_stage("reflection_feedback_merged")
         self._shrink_optional_context()
         self._last_compaction = {
             "before_tokens": before,
             "after_tokens": self.estimate_tokens(self.build_messages(trim=False)),
             "discarded_groups": len(discarded),
             "strategy": "checkpoint_and_priority_groups",
+            "compaction_stage": self._compaction_stages[-1] if self._compaction_stages else "none",
         }
 
     def build_messages(self, *, trim: bool = True) -> list[AIMessage]:
@@ -226,11 +307,13 @@ class HarnessContext:
         copied_messages = [message.model_copy(deep=True) for message in self.messages]
         return [self._system_message(), *copied_messages]
 
-    def _system_message(self, *, include_summary: bool = True) -> AIMessage:
+    def _system_message(
+        self, *, include_summary: bool = True, include_optional: bool = True
+    ) -> AIMessage:
         sections = [self.system_prompt.strip(), "[Security Policy]\n" + UNTRUSTED_CONTEXT_POLICY]
-        if self._memory:
+        if include_optional and self._memory:
             sections.append("[Memory Data]\n" + self._encode_untrusted(self._memory))
-        if self._knowledge:
+        if include_optional and self._knowledge:
             sections.append("[Knowledge Data]\n" + self._encode_untrusted(self._knowledge))
         if include_summary and self._conversation_summary:
             sections.append("[Conversation Summary]\n" + self._conversation_summary)
@@ -242,11 +325,17 @@ class HarnessContext:
         """Serialize external context as data so delimiters inside it cannot escape the section."""
         return json.dumps(values, ensure_ascii=False, indent=2)
 
-    def _append_message(self, message: AIMessage, important: bool) -> None:
+    def _append_message(self, message: AIMessage, priority: ContextPriority) -> None:
         """Append one message and retain a stable priority marker when requested."""
         self.messages.append(message)
-        if important:
-            self._important_message_ids.add(id(message))
+        if priority != ContextPriority.NORMAL:
+            self._message_priorities[id(message)] = priority
+        if (
+            message.role == "user"
+            and priority == ContextPriority.REQUIRED
+            and self._goal_message_id is None
+        ):
+            self._goal_message_id = id(message)
 
     def _message_groups(self) -> list[list[AIMessage]]:
         groups: list[list[AIMessage]] = []
@@ -345,7 +434,16 @@ class HarnessContext:
         return min(MAX_SUMMARY_TOKENS, max(64, self.token_budget // 10))
 
     def _is_important_group(self, group: list[AIMessage]) -> bool:
-        return any(id(message) in self._important_message_ids for message in group)
+        return any(
+            self._message_priorities.get(id(message)) == ContextPriority.IMPORTANT
+            for message in group
+        )
+
+    def _is_required_group(self, group: list[AIMessage]) -> bool:
+        return any(
+            self._message_priorities.get(id(message)) == ContextPriority.REQUIRED
+            for message in group
+        )
 
     def _summarize_groups(self, groups: list[list[AIMessage]]) -> str:
         checkpoint = ConversationCheckpoint.from_groups(groups).render()
@@ -379,21 +477,60 @@ class HarnessContext:
         while self.estimate_tokens(self.build_messages(trim=False)) > self.token_budget:
             if self._knowledge:
                 self._knowledge.pop()
+                self._record_stage("knowledge_removed")
             elif self._memory:
                 self._memory.pop()
+                self._record_stage("memory_removed")
             elif self._conversation_summary:
-                self._conversation_summary = self._merge_summary(
-                    "", self._conversation_summary, max(16, self._summary_budget_tokens() // 2)
+                previous_summary = self._conversation_summary
+                current_tokens = max(1, self._estimate_text(self._conversation_summary))
+                minimum_tokens = min(64, max(16, self._summary_budget_tokens()))
+                target_tokens = max(
+                    minimum_tokens,
+                    min(self._summary_budget_tokens() // 2, current_tokens // 2),
                 )
-                if len(self._conversation_summary) <= 80:
-                    self._conversation_summary = ""
+                compressed_summary = self._merge_summary("", previous_summary, target_tokens)
+                if not compressed_summary or compressed_summary == previous_summary:
+                    break
+                self._conversation_summary = compressed_summary
+                self._record_stage("conversation_summary_compressed")
             else:
                 break
 
     def _assert_resolved(self) -> None:
         used = self.estimate_tokens(self.build_messages(trim=False))
         if used > self.token_budget:
-            raise ContextBudgetError(used, self.token_budget, self.partition_tokens())
+            raise ContextBudgetError(
+                used, self.token_budget, self.partition_tokens(), self._compaction_stages
+            )
+
+    def _replace_old_tool_results(self) -> None:
+        tool_indexes = [
+            index for index, message in enumerate(self.messages) if message.role == "tool"
+        ]
+        for index in tool_indexes[:-1]:
+            message = self.messages[index]
+            if "artifact_ref=" in message.content:
+                continue
+            artifact_ref = (
+                self.artifact_store.put(message.content, message.tool_call_id or "")
+                if self.artifact_store is not None
+                else "unavailable"
+            )
+            summary = self._summary_excerpt(message.content)
+            message.content = (
+                f"[tool_result_ref tool={message.name or 'tool'} artifact_ref={artifact_ref}]\n"
+                f"Summary: {summary}"
+            )
+            self._record_stage("tool_results_referenced")
+
+    def _record_stage(self, stage: str) -> None:
+        if not self._compaction_stages or self._compaction_stages[-1] != stage:
+            self._compaction_stages.append(stage)
+
+    @staticmethod
+    def _legacy_priority(important: bool) -> ContextPriority:
+        return ContextPriority.IMPORTANT if important else ContextPriority.NORMAL
 
     @staticmethod
     def _summary_excerpt(content: str) -> str:
@@ -404,28 +541,35 @@ class HarnessContext:
         tail = SUMMARY_ENTRY_CHAR_LIMIT - head
         return f"{normalized[:head]} ... {normalized[-tail:]}"
 
-    @staticmethod
-    def _merge_summary(existing: str, incoming: str, budget_tokens: int) -> str:
+    def _merge_summary(self, existing: str, incoming: str, budget_tokens: int) -> str:
         combined = "\n".join(part for part in (existing, incoming) if part)
-        char_limit = max(1, budget_tokens * 4 - MESSAGE_OVERHEAD_TOKENS)
-        if len(combined) <= char_limit:
+        if self.token_counter.count_text(combined) <= budget_tokens:
             return combined
         marker = "\n[older conversation summary compacted]\n"
-        available = max(0, char_limit - len(marker))
-        head_length = available // 2
-        tail_length = available - head_length
-        return combined[:head_length] + marker + combined[-tail_length:]
+        low = 0
+        high = len(combined)
+        best = marker if self.token_counter.count_text(marker) <= budget_tokens else ""
+        while low <= high:
+            retained = (low + high) // 2
+            head_length = retained * 4 // 5
+            tail_length = retained - head_length
+            tail = combined[-tail_length:] if tail_length else ""
+            candidate = combined[:head_length] + marker + tail
+            if self.token_counter.count_text(candidate) <= budget_tokens:
+                best = candidate
+                low = retained + 1
+            else:
+                high = retained - 1
+        return best
 
     def _maybe_truncate_user_message(self, message: str) -> str:
         """Keep one user message within the share of the budget reserved for it."""
-        system = self._system_message(include_summary=False)
+        system = self._system_message(include_summary=False, include_optional=False)
         original = AIMessage(role="user", content=message)
-        estimated = self.token_counter.count_request([original]).total
         if self.token_counter.count_request([system, original]).total <= self.token_budget:
             return message
 
-        message_budget = max(1, int(self.token_budget * USER_MESSAGE_BUDGET_RATIO))
-        marker = f"[Truncated]\n[original_tokens={estimated}; message_budget={message_budget}]"
+        marker = "[Truncated]"
         low = 0
         high = len(message)
         best = marker
@@ -442,24 +586,18 @@ class HarnessContext:
                 low = retained + 1
             else:
                 high = retained - 1
+        if best == marker and message:
+            edge_length = min(16, max(1, len(message) // 2))
+            tail = message[-edge_length:] if len(message) > edge_length else ""
+            best = f"{message[:edge_length]}\n{marker}\n{tail}"
         return best
 
-    @staticmethod
-    def _estimate_group(group: list[AIMessage]) -> int:
-        return sum(HarnessContext._estimate_message(message) for message in group)
+    def _estimate_group(self, group: list[AIMessage]) -> int:
+        return self.token_counter.count_request(group).total
 
-    @staticmethod
-    def _estimate_message(message: AIMessage) -> int:
-        estimate = HarnessContext._estimate_text(message.content)
-        if message.tool_calls:
-            tool_payload = json.dumps(
-                [tool_call.model_dump(mode="json") for tool_call in message.tool_calls],
-                ensure_ascii=False,
-            )
-            estimate += (len(tool_payload) + 3) // 4
-        return max(1, estimate)
+    def _estimate_message(self, message: AIMessage) -> int:
+        return self.token_counter.count_request([message]).total
 
-    @staticmethod
-    def _estimate_text(text: str) -> int:
-        """Estimate tokens for raw text using the four-characters heuristic."""
-        return (len(text) + MESSAGE_OVERHEAD_TOKENS + 3) // 4
+    def _estimate_text(self, text: str) -> int:
+        """Count raw text with the same counter used for provider requests."""
+        return self.token_counter.count_text(text)
