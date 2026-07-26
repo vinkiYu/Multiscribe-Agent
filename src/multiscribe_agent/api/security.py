@@ -21,8 +21,14 @@ def create_access_token(
     subject: str, role: str, expires_hours: int, settings: SystemSettings
 ) -> str:
     """Create a signed bearer token, using a development fallback only outside production."""
-    expires_at = datetime.now(UTC) + timedelta(hours=expires_hours)
-    payload: dict[str, object] = {"sub": subject, "role": role, "exp": expires_at}
+    issued_at = datetime.now(UTC)
+    expires_at = issued_at + timedelta(hours=expires_hours)
+    payload: dict[str, object] = {
+        "sub": subject,
+        "role": role,
+        "iat": issued_at,
+        "exp": expires_at,
+    }
     if not settings.system_password:
         payload["must_change_password"] = True
     return str(jwt.encode(payload, _secret(settings), algorithm=ALGORITHM))

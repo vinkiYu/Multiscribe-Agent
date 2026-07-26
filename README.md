@@ -1,233 +1,150 @@
-# MultiscribeAgent
+# Multiscribe
 
-一个面向资讯采集、AI 筛选、摘要生成和多渠道发布的 Agent 应用平台。系统支持 RSS、GitHub Trending、Follow、AI Search 等内容源接入，通过可配置 Agent 和自研 DAG 工作流完成`采集 → 去重 → AI 精选 → 摘要生成 → 多渠道发布`的自动化闭环，并提供知识库、记忆、MCP、Interop、调度和评估能力。将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚为个性化日报，通过可视化工作台或自动调度发布至飞书、企微、公众号、小红书、钉钉等渠道。
+> 自动采集、筛选、整理并发布重要信息的 AI 工作台。
 
-<p align="center">
-  <img src="docs/pic/宣传页.png" alt="MultiscribeAgent 宣传页" width="100%">
-</p>
+Multiscribe 将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚到一个可自部署的平台。它能通过可配置的 Agent 和工作流完成采集、去重、AI 精选、中文摘要生成、日报归档及多渠道发布，并提供控制台、任务记录、知识库、记忆与插件扩展能力。
 
-<p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+"></a>
-  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white" alt="FastAPI"></a>
-  <a href="https://www.langchain.com/"><img src="https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white" alt="LangChain"></a>
-  <a href="https://langchain-ai.github.io/langgraph/"><img src="https://img.shields.io/badge/LangGraph-1C3C3C?logo=langchain&logoColor=white" alt="LangGraph"></a>
-  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=111827" alt="React"></a>
-  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite"></a>
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS"></a>
-</p>
+![每日资讯页面](docs/pic/daily-news.png)
 
-<p align="center">
-  <a href="https://www.sqlite.org/"><img src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite"></a>
-  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
-  <a href="https://opentelemetry.io/"><img src="https://img.shields.io/badge/OpenTelemetry-000000?logo=opentelemetry&logoColor=white" alt="OpenTelemetry"></a>
-  <a href="https://prometheus.io/"><img src="https://img.shields.io/badge/Prometheus-E6522C?logo=prometheus&logoColor=white" alt="Prometheus"></a>
-  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-111827?logo=anthropic&logoColor=white" alt="Model Context Protocol"></a>
-  <a href="https://github.com/vinkiYu/Multiscribe-Agent"><img src="https://img.shields.io/github/stars/vinkiYu/Multiscribe-Agent?style=flat&logo=github" alt="GitHub Stars"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-65B32E" alt="GPL-3.0"></a>
-</p>
+## 主要能力
 
+- **多源采集**：支持 RSS、GitHub Trending、AI Search 和 Follow OPML；默认覆盖 Hugging Face、OpenAI、Google AI、AWS ML、arXiv、Simon Willison 和 GitHub Blog。
+- **每日 AI 资讯**：首页固定预览最近 6 期，日报页保留历史归档；每期默认精选 12 条资讯。
+- **四大板块**：产品与功能更新、前沿研究、行业展望与社会影响、开源 TOP 项目，按主题阅读而非混排。
+- **时效与去重**：RSS 等内容源优先近 2 天，内容不足时只回退至近 7 天；GitHub Trending 以当天快照入选；同一 URL 不会在同一批日报重复出现。
+- **中文阅读体验**：日报标题、摘要、栏目和概览均以中文呈现；自动清理 RSS 摘要中的 HTML。
+- **图片预览**：优先使用采集内容的图片，必要时读取文章 `og:image` / `twitter:image`；没有图片时不展示空白占位。
+- **工作流与发布**：通过声明式 Agent 和 DAG 编排采集、筛选、摘要与发布，可接入飞书、企业微信、钉钉、公众号和小红书等渠道。
+- **可扩展架构**：Adapter、Publisher、Tool、Skill 四类插件，支持 MCP / Interop 集成、知识库、记忆和可观测性。
 
-**核心能力**：声明式 Agent、DAG 工作流、Loop 自评、插件生态、知识库与记忆系统、MCP / Interop、全链路可观测性。
+## 界面
 
----
+### 官网日报预览
 
-**🌐 语言**: [简体中文](./README.md) · [English](./README.en.md)
+官网会自动读取最近六期 AI 日报，每期可直接进入对应的归档内容。
 
----
+![官网首页](docs/pic/homepage-digest.png)
 
-## 🔥 核心特性
+### 每日资讯
 
-| 特性 | 说明 |
-|---|---|
-| 🗞️ **多源采集** | RSS / GitHub Trending / AI 搜索（Perplexity / Phind）/ Follow OPML 导入 |
-| 🤖 **AI 智能精选** | 基于 LLM 评分 + Loop 自评，自动从海量条目中选出最有价值的 Top-N |
-| 📡 **多端推送** | 飞书机器人 · 企微机器人 · 微信公众号 · 小红书 · 钉钉 |
-| 🧩 **插件化架构** | 适配器（Adapter）× 发布器（Publisher）× 工具（Tool）× 技能（Skill）四类插件热插拔 |
-| ⚙️ **声明式配置** | 零代码，`.env` 配置即可驱动完整流水线 |
-| 🐳 **一键部署** | Docker Compose，一行命令起服务 |
-| 🧠 **知识库 + 记忆** | 历史内容去重（RAG） · 用户偏好记忆 · 跨任务上下文复用 |
-| 📊 **评估框架** | LLM-as-Judge，量化摘要质量 / 推荐相关性 / 流程稳定性 |
-| 🔗 **MCP 扩展** | 外部 MCP 客户端（Claude Desktop / Cursor）可直接调用采集与推送能力 |
+日报页面采用归档、正文、目录三栏布局。正文按四个主题分区，右侧目录会随文章内容提供跳转，窄屏时自动收敛为单列阅读。
 
-## 🖥️ 控制台预览
+![每日资讯页面](docs/pic/daily-news.png)
 
-管理后台将采集、筛选、生成、发布、知识库、记忆、插件与任务运行记录汇总到一个工作区。
+## 快速开始
 
-<p align="center">
-  <img src="docs/pic/控制台.png" alt="MultiscribeAgent 控制台" width="100%">
-</p>
-
----
-
-## 🚀 快速上手
-
-### 前置要求
+### 环境要求
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
-- 至少 1 个 LLM API Key（OpenAI / Anthropic / Google）
-- 至少 1 个推送端 Webhook（飞书 / 企微 / 公众号 / 小红书 / 钉钉）
+- Node.js 20+（仅开发前端时需要）
+- 至少一个 LLM Provider 的 API Key（OpenAI、Anthropic、Google 等）
 
-### 安装
+### 本地运行
 
 ```bash
-# 克隆项目
 git clone https://github.com/vinkiYu/Multiscribe-Agent.git
 cd Multiscribe-Agent
 
-# 安装依赖
 uv sync --extra dev
-
-# 创建环境配置
 cp .env.example .env
 mkdir data
+
+# 启动 API 与静态页面服务
+uv run python -m multiscribe_agent serve --host 127.0.0.1 --port 8000
 ```
 
-### 配置 `.env`
-
-```dotenv
-# ========== LLM 配置 ==========
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_API_BASE_URL=https://your-relay.com/v1   # 使用中转 API 时填写
-
-# 代理（可选，使用中转时填写）
-HTTP_PROXY=http://127.0.0.1:7892
-
-# ========== 推送端配置 ==========
-FEISHU_WEBHOOK=https://open.feishu.cn/open-apis/bot/v2/hook/your-hook-id
-FEISHU_SECRET=your-signing-secret               # 可选，飞书加签密钥
-WECOM_WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key
-```
-
-### 运行首次采集推送
+开发前端时，在另一个终端运行：
 
 ```bash
-uv run python -m multiscribe_agent digest
+cd frontend
+npm install
+npm run dev
 ```
 
-默认使用 BBC News RSS 源，精选 Top-5 条目推送到飞书和企微机器人（取决于 `.env` 配置）。
+打开以下页面：
 
----
+| 页面 | 地址 |
+| --- | --- |
+| 官网 | `http://127.0.0.1:5173/` |
+| 每日资讯 | `http://127.0.0.1:5173/daily-news.html` |
+| 控制台 | `http://127.0.0.1:5173/console.html` |
+| API 文档 | `http://127.0.0.1:8000/docs` |
 
-## 📖 进阶用法
-
-### 指定 RSS 源与推送目标
-
-```bash
-uv run python -m multiscribe_agent digest \
-  --adapter rss \
-  --rss-url https://hnews.dev/rss \
-  --top-n 5 \
-  --target feishu_bot,wecom_bot
-```
-
-### 启动 API 服务（Web 控制台）
-
-```bash
-uv run python -m multiscribe_agent serve --host 0.0.0.0 --port 8000
-```
-
-访问 `http://localhost:8000` 进入管理后台。
+Windows 下也可使用 `scripts/start-multiscribe.bat` 启动本地服务。
 
 ### Docker 部署
 
 ```bash
-docker compose up --build
+cp .env.example .env
+docker compose up -d --build
 ```
 
-API 服务在 `http://localhost:8000` 可用。
+容器启动后访问 `http://127.0.0.1:8000`。请先在 `.env` 填入模型与发布渠道所需的凭证。
 
-### API 认证
+## 生成每日资讯
+
+执行日报时会调用已配置的模型与网络内容源。为仅生成归档、不发送到外部 Webhook，可显式传入空发布目标：
 
 ```bash
-# 获取 JWT
-curl -X POST http://127.0.0.1:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"password":"your-password"}'
-
-# 调用受保护接口
-curl http://127.0.0.1:8000/api/dashboard/stats \
-  -H "Authorization: Bearer <access_token>"
+uv run python -m multiscribe_agent digest --targets "[]"
 ```
 
----
+默认日报任务会自动升级历史默认数量：保存的 `top_n=5` 或 `top_n=10` 会调整为 12；其他数值视为用户自定义并保持不变。
 
-## 🧭 架构设计
+## 关键配置
 
-MultiscribeAgent 以 FastAPI 作为统一入口，由 `ServiceContext` 组合领域服务；Agent Harness、DAG 工作流与 Loop 自评负责执行编排，插件生态承载采集、发布和工具扩展，SQLite、知识库、记忆与可观测性贯穿整条内容生产链路。
+复制 `.env.example` 为 `.env` 后按需调整：
 
-### 核心运行链路
+| 配置 | 说明 |
+| --- | --- |
+| `DEFAULT_DIGEST_TOP_N=12` | 每期日报默认精选数量，建议保持在 10-15 条。 |
+| `DEFAULT_RSS_FEEDS` | 默认 RSS 列表；已保存的自定义列表不会被覆盖。 |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` 等 | LLM Provider 凭证。 |
+| `DATABASE_URL` | SQLite 数据库路径。 |
+| `FEISHU_WEBHOOK` / `WECOM_WEBHOOK` 等 | 对应发布渠道的 Webhook。 |
+| `LOG_LEVEL` | 日志级别。 |
 
-<p align="center">
-  <img src="docs/pic/核心架构.png" alt="MultiscribeAgent 核心架构" width="100%">
-</p>
+默认 RSS 包含：Hugging Face Blog、OpenAI News、Google AI Blog、AWS Machine Learning Blog、arXiv cs.AI、arXiv cs.CL、Simon Willison Atom 和 GitHub Blog。
 
-### 完整组件架构
+## API
 
-<details>
-  <summary>展开查看完整架构图</summary>
-  <br>
-  <img src="docs/pic/架构图.png" alt="MultiscribeAgent 完整组件架构" width="100%">
-</details>
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api/daily-news?limit=6` | 获取最近日报归档列表与最新一期内容。 |
+| `GET /api/daily-news?date=YYYY-MM-DD` | 获取指定日期的完整日报。 |
+| `GET /docs` | FastAPI 交互式 API 文档。 |
 
----
+每日资讯 API 返回标题、中文摘要、来源、发布日期、评分、所属板块、标签与可用图片地址，前端可直接用于归档和专题展示。
 
-## ⚙️ 配置参考
-| 变量 | 必填 | 说明 |
-|---|:---:|---|
-| `OPENAI_API_KEY` | ✅* | OpenAI API Key（使用 OpenAI 时必填） |
-| `ANTHROPIC_API_KEY` | ✅* | Anthropic API Key（使用 Anthropic 时必填） |
-| `GOOGLE_API_KEY` | ✅* | Google API Key（使用 Gemini 时必填） |
-| `OPENAI_API_BASE_URL` | - | 中转 API 端点（如 `https://your-relay.com/v1`） |
-| `ANTHROPIC_API_BASE_URL` | - | Anthropic 中转端点 |
-| `HTTP_PROXY` | - | HTTP 代理（如 `http://127.0.0.1:7892`） |
-| `FEISHU_WEBHOOK` | ✅* | 飞书机器人 Webhook URL |
-| `FEISHU_SECRET` | - | 飞书加签密钥 |
-| `WECOM_WEBHOOK` | ✅* | 企微机器人 Webhook URL |
-| `DEFAULT_CURATION_PROVIDER_ID` | - | 默认 Provider ID（默认 `default-openai`） |
-| `DEFAULT_CURATION_MODEL` | - | 默认模型名（如 `gpt-5.4-mini`） |
-| `DEFAULT_DIGEST_TARGETS` | - | 默认推送目标（逗号分隔，如 `feishu_bot,wecom_bot`） |
-| `DEFAULT_DIGEST_TOP_N` | - | 每次精选条数（默认 5） |
-| `SYSTEM_PASSWORD` | - | API 管理密码（开发默认 `admin123`） |
-| `JWT_SECRET` | - | JWT 签名密钥（建议生产环境随机生成） |
-| `DB_PATH` | - | SQLite 数据库路径（默认 `data/database.sqlite`） |
-| `LOG_LEVEL` | - | 日志级别（默认 `INFO`） |
-| `LOG_FILE` | - | 轮转运行日志路径（默认 `logs/multiscribe-agent.log`） |
-
-> `✅*` 至少填写一个 LLM Key 和一个推送端 Webhook
-
----
-
-## 🌐 多语言
-
-- [简体中文](README.md)
-- [English](README.en.md)
-
----
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
+## 开发与验证
 
 ```bash
-# 克隆并安装开发依赖
-git clone https://github.com/vinkiYu/Multiscribe-Agent.git
-cd Multiscribe-Agent
-uv sync --extra dev
+# 后端测试
+uv run pytest tests/agents/pipelines/test_daily_digest.py tests/test_daily_news_archive.py -q
 
-# 质量门检查
-uv run ruff check .
-uv run mypy src
-uv run pytest -q
+# 静态检查
+uv run ruff check src/multiscribe_agent
+
+# 前端构建
+cd frontend
+npm run build
 ```
 
----
+## 项目结构
 
-## 📄 许可证
+```text
+src/multiscribe_agent/
+  agents/              Agent 与日报流水线
+  api/                 FastAPI 路由与认证
+  core/                日报归档等核心模型
+  infra/               数据库与仓储
+  plugins/             采集器、发布器和扩展
+frontend/
+  src/                 官网、控制台与每日资讯界面
+tests/                 后端与 API 测试
+```
 
-GPL-3.0-only — 详见 [LICENSE](LICENSE)
+## 许可证
 
----
-
-
-*⭐ 如果这个项目对你有帮助，请给我们一个 Star！*
+本项目基于 [GPL-3.0](LICENSE) 许可证开源。

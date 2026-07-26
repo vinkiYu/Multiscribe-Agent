@@ -14,6 +14,7 @@ from defusedxml.common import DefusedXmlException
 from multiscribe_agent.core.errors import AdapterError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata, UnifiedData
 from multiscribe_agent.plugins.base import BaseAdapter
+from multiscribe_agent.plugins.builtin.adapters.rss import RSSAdapter
 
 UNKNOWN_PUBLISHED_DATE = "1970-01-01T00:00:00+00:00"
 log = structlog.get_logger(__name__)
@@ -42,8 +43,48 @@ class FollowAdapter(BaseAdapter):
                 type="text",
                 help_text="Optional category for feeds without an OPML category.",
             ),
+            ConfigField(
+                key="fetch_articles",
+                label="Fetch subscribed articles",
+                type="boolean",
+                default=False,
+                help_text=(
+                    "Fetch recent entries from each OPML subscription instead of "
+                    "importing feed URLs."
+                ),
+            ),
+            ConfigField(
+                key="max_feeds",
+                label="Maximum feeds",
+                type="number",
+                default=12,
+                help_text="Bound the number of OPML subscriptions fetched in one run.",
+            ),
+            ConfigField(
+                key="max_items_per_feed",
+                label="Maximum items per feed",
+                type="number",
+                default=8,
+                help_text="Bound entries retained from each Follow subscription.",
+            ),
         ],
     )
+
+    async def fetch_and_transform(self, config: Mapping[str, object]) -> list[UnifiedData]:
+        """Optionally expand OPML subscriptions into their current feed entries.
+
+        The original import mode remains available for managing subscriptions. Daily
+        digest schedules set ``fetch_articles`` so Follow contributes real articles
+        rather than only feed URLs.
+        """
+        try:
+            raw = await self.fetch(config)
+        except Exception as exc:
+            log.warning("follow_opml_fetch_failed", error_type=type(exc).__name__)
+            return []
+        if config.get("fetch_articles") is not True:
+            return self.transform(raw, config)
+        return await self._fetch_subscription_articles(raw, config)
 
     async def fetch(self, config: Mapping[str, object]) -> object:
         """Read one non-empty OPML file without blocking the event loop.
@@ -97,6 +138,44 @@ class FollowAdapter(BaseAdapter):
                 items.append(item)
         return items
 
+    async def _fetch_subscription_articles(
+        self, raw: object, config: Mapping[str, object]
+    ) -> list[UnifiedData]:
+        """Fetch a bounded set of RSS/Atom feeds listed in one Follow OPML export."""
+        if not isinstance(raw, str) or not raw.strip():
+            return []
+        try:
+            root = ElementTree.fromstring(raw)
+        except (DefusedXmlException, ElementTree.ParseError):
+            log.warning("follow_opml_parse_failed", adapter_id=self.metadata.id)
+            return []
+
+        max_feeds = self._positive_integer(config, "max_feeds", 12)
+        max_items = self._positive_integer(config, "max_items_per_feed", 8)
+        source_tag = self._optional_text(config.get("source_tag")) or "Follow"
+        feed_configs: list[dict[str, object]] = []
+        for outline in root.iter():
+            if self._local_name(outline.tag) != "outline":
+                continue
+            url = self._optional_text(outline.attrib.get("xmlUrl"))
+            if url is None:
+                continue
+            title = (
+                self._optional_text(outline.attrib.get("text"))
+                or self._optional_text(outline.attrib.get("title"))
+                or "Follow"
+            )
+            category = self._optional_text(outline.attrib.get("category")) or source_tag
+            feed_configs.append({"rss_url": url, "source_name": title, "category": category})
+            if len(feed_configs) >= max_feeds:
+                break
+
+        adapter = RSSAdapter()
+        batches = await asyncio.gather(
+            *(adapter.fetch_and_transform(feed_config) for feed_config in feed_configs)
+        )
+        return [item for batch in batches for item in batch[:max_items]]
+
     @staticmethod
     def _to_unified_data(
         attributes: Mapping[str, str], source_tag: str | None
@@ -135,6 +214,13 @@ class FollowAdapter(BaseAdapter):
         value = FollowAdapter._optional_text(config.get(key))
         if value is None:
             raise AdapterError(f"Follow adapter requires config['{key}']")
+        return value
+
+    @staticmethod
+    def _positive_integer(config: Mapping[str, object], key: str, default: int) -> int:
+        value = config.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise AdapterError(f"Follow adapter config '{key}' must be a positive integer")
         return value
 
     @staticmethod

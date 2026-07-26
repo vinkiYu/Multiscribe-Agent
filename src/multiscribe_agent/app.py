@@ -19,6 +19,7 @@ from multiscribe_agent.api.routes import (
     agents,
     ai_v1,
     auth,
+    daily_news,
     dashboard,
     digest,
     knowledge,
@@ -28,7 +29,11 @@ from multiscribe_agent.api.routes import (
     publish_history,
     schedules,
     skills,
+    sources,
     workflows,
+)
+from multiscribe_agent.api.routes import (
+    settings as settings_routes,
 )
 from multiscribe_agent.bootstrap import ServiceContext, get_context
 from multiscribe_agent.config import SystemSettings
@@ -122,12 +127,15 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         auth.router,
         ai_v1.router,
         metrics.router,
+        daily_news.router,
         dashboard.router,
         digest.router,
         knowledge.router,
         memory.router,
         mcp.router,
         publish_history.router,
+        sources.router,
+        settings_routes.router,
         skills.router,
         agents.router,
         workflows.router,

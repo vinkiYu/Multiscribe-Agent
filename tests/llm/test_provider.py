@@ -134,6 +134,14 @@ def test_create_provider_rejects_missing_model(openai_config: ProviderConfig) ->
         create_provider(openai_config)
 
 
+def test_create_provider_rejects_disabled_provider(openai_config: ProviderConfig) -> None:
+    """A disabled provider must not be selected by an Agent."""
+    openai_config.enabled = False
+
+    with pytest.raises(ProviderError, match="provider openai-test is disabled"):
+        create_provider(openai_config)
+
+
 def test_create_provider_rejects_unknown_type() -> None:
     """Unexpected provider types produce the domain-specific configuration error."""
     unknown_config = ProviderConfig.model_construct(

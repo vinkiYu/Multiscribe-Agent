@@ -38,6 +38,7 @@ from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_r
 from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
 from multiscribe_agent.observability.sql_audit import SqlAuditLogger
 from multiscribe_agent.observability.tracer import setup_tracer
+from multiscribe_agent.plugins.builtin.adapters.ai_search import AISearchAdapter
 from multiscribe_agent.plugins.builtin.tools.execute_command import ExecuteCommandTool
 from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTool
 from multiscribe_agent.plugins.discovery import scan_and_register
@@ -62,9 +63,22 @@ from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
-DEFAULT_CURATION_AGENT_PROMPT = (
+DEFAULT_DAILY_AI_NEWS_TASK_ID = "daily-ai-news"
+_LEGACY_DAILY_AI_NEWS_TOP_N = frozenset({5, 10})
+_DEFAULT_DAILY_AI_NEWS_TOP_N = 12
+_LEGACY_DAILY_AI_NEWS_RSS_URLS = [
+    "https://huggingface.co/blog/feed.xml",
+    "https://openai.com/news/rss.xml",
+    "https://www.deeplearning.ai/the-batch/rss/",
+]
+_LEGACY_DEFAULT_CURATION_AGENT_PROMPT = (
     "You are a news curation assistant. Select the five most useful items from the input "
     "and return a JSON array whose entries contain id, title, summary, and score from 0 to 10."
+)
+DEFAULT_CURATION_AGENT_PROMPT = (
+    "You are a news curation assistant. Follow the task-specific selection count and section "
+    "coverage requirements, then return a JSON array containing id, title, summary, score, "
+    "score_reason, and section."
 )
 
 
@@ -195,7 +209,10 @@ class ServiceContext:
         task_logs = TaskLogRepository(self.db)
         source_data = SourceDataRepository(self.db)
         kv = KvRepository(self.db)
-        self.config_service = ConfigService(kv)
+        # Keep explicitly supplied runtime settings (notably a test or deployment
+        # database path) as the base layer when reload rebuilds the service graph.
+        self.config_service = ConfigService(kv, base_settings=self.settings)
+        self.settings = await self.config_service.get_settings_with_overrides()
         await self._init_kb()
         await self._init_memory()
         await self._init_skills()
@@ -207,7 +224,13 @@ class ServiceContext:
         tools.register_tool(ExecuteCommandTool(Path.cwd()))
         tools.register_tool(ReadArtifactTool())
         self.tools = tools
-        self.ingestion = IngestionService(adapters, source_data, task_logs)
+        default_provider = self._provider_for_default()
+        runtime_adapters = (
+            {"ai_search": AISearchAdapter(default_provider)} if default_provider is not None else {}
+        )
+        self.ingestion = IngestionService(
+            adapters, source_data, task_logs, runtime_adapters=runtime_adapters
+        )
         options = {
             publisher.id: publisher.config
             for publisher in self.settings.publishers
@@ -245,6 +268,7 @@ class ServiceContext:
         self.task_logs = task_logs
         self.source_data = source_data
         await self._bootstrap_default_curation_agent(entities)
+        await self._bootstrap_daily_ai_news_schedule(entities)
         await self.scheduler.start()
         self._initialized = True
 
@@ -390,15 +414,112 @@ class ServiceContext:
                 "agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json")
             )
             return
+
         existing = AgentDefinition.model_validate(raw)
         if (
             existing.model != definition.model
             or existing.temperature != definition.temperature
             or existing.provider_id != definition.provider_id
+            or existing.system_prompt == _LEGACY_DEFAULT_CURATION_AGENT_PROMPT
         ):
             await entities.save(
                 "agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json")
             )
+
+    async def _bootstrap_daily_ai_news_schedule(self, entities: EntityJsonRepository) -> None:
+        """Create or update the default multi-source AI-news schedule."""
+        raw = await entities.get("schedules", DEFAULT_DAILY_AI_NEWS_TASK_ID)
+        targets = self._daily_ai_news_targets()
+        if raw is not None:
+            existing = ScheduleTask.model_validate(raw)
+            existing_targets = existing.config.get("targets", [])
+            normalized_targets = (
+                [target for target in existing_targets if isinstance(target, str)]
+                if isinstance(existing_targets, list)
+                else []
+            )
+            merged_targets = list(dict.fromkeys([*normalized_targets, *targets]))
+            updated_config = dict(existing.config)
+            if merged_targets != normalized_targets:
+                updated_config["targets"] = merged_targets
+            if existing.config.get("top_n") in _LEGACY_DAILY_AI_NEWS_TOP_N:
+                updated_config["top_n"] = _DEFAULT_DAILY_AI_NEWS_TOP_N
+            if "resolve_article_images" not in existing.config:
+                updated_config["resolve_article_images"] = True
+            if self._uses_legacy_daily_news_rss_urls(existing.config):
+                adapter_configs = existing.config.get("adapter_configs")
+                if isinstance(adapter_configs, dict):
+                    updated_adapter_configs = dict(adapter_configs)
+                    rss_config = adapter_configs.get("rss")
+                    if isinstance(rss_config, dict):
+                        updated_adapter_configs["rss"] = {
+                            **rss_config,
+                            "rss_urls": self.settings.daily_ai_news_rss_urls,
+                        }
+                        updated_config["adapter_configs"] = updated_adapter_configs
+            if updated_config != existing.config:
+                await entities.save(
+                    "schedules",
+                    existing.id,
+                    existing.model_copy(update={"config": updated_config}).model_dump(mode="json"),
+                )
+            return
+        follow_opml_path = self.settings.daily_ai_news_follow_opml_path.strip()
+        task = ScheduleTask(
+            id=DEFAULT_DAILY_AI_NEWS_TASK_ID,
+            name="每日 AI 资讯日报",
+            task_type="daily_digest",
+            cron=self.settings.daily_ai_news_cron,
+            enabled=True,
+            config={
+                "curate_agent_id": DEFAULT_CURATION_AGENT_ID,
+                "adapter_ids": ["rss", "github_trending", "follow_opml", "ai_search"],
+                "adapter_configs": {
+                    "rss": {"rss_urls": self.settings.daily_ai_news_rss_urls},
+                    "github_trending": {"max_items": 20},
+                    "follow_opml": {
+                        "enabled": bool(follow_opml_path),
+                        "opml_path": follow_opml_path,
+                        "fetch_articles": True,
+                        "max_feeds": 12,
+                        "max_items_per_feed": 8,
+                        "source_tag": "AI",
+                    },
+                    "ai_search": {
+                        "enabled": self._provider_for_default() is not None,
+                        "provider": "perplexity",
+                        "query": self.settings.daily_ai_news_search_query,
+                        "max_items": 12,
+                        "recency_days": 2,
+                    },
+                },
+                "fetch_days": self.settings.default_digest_fetch_days,
+                "top_n": self.settings.default_digest_top_n,
+                "resolve_article_images": True,
+                "targets": targets,
+            },
+        )
+        await entities.save("schedules", task.id, task.model_dump(mode="json"))
+
+    @staticmethod
+    def _uses_legacy_daily_news_rss_urls(config: dict[str, object]) -> bool:
+        """Detect exactly the historical built-in RSS list before replacing it."""
+        adapter_configs = config.get("adapter_configs")
+        if not isinstance(adapter_configs, dict):
+            return False
+        rss_config = adapter_configs.get("rss")
+        if not isinstance(rss_config, dict):
+            return False
+        raw_urls = rss_config.get("rss_urls")
+        return raw_urls == _LEGACY_DAILY_AI_NEWS_RSS_URLS
+
+    def _daily_ai_news_targets(self) -> list[str]:
+        """Enable Feishu delivery for the default task only when it is configured."""
+        return [
+            "feishu_bot"
+            for publisher in self.settings.publishers
+            if publisher.id == "feishu_bot" and publisher.enabled
+        ]
 
     def _require_initialized(self) -> None:
         """Raise an explicit runtime error when context users skipped initialization."""

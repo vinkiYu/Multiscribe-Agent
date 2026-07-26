@@ -8,7 +8,7 @@ from multiscribe_agent.config import SystemSettings
 
 
 def test_frontend_index_is_served_at_root(tmp_path) -> None:
-    """The production frontend bundle is available from the API origin."""
+    """The production marketing site remains available from the API origin."""
     settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend.sqlite"))
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
@@ -16,7 +16,31 @@ def test_frontend_index_is_served_at_root(tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert "<title>Multiscribe</title>" in response.text
+    assert "<title>Multiscribe · 智能采集" in response.text
+
+
+def test_frontend_console_is_served_as_a_second_entry(tmp_path) -> None:
+    """The built React console is reachable without replacing the marketing home page."""
+    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-console.sqlite"))
+    context = ServiceContext(settings)
+    with TestClient(create_app(settings, context)) as client:
+        response = client.get("/console.html")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<title>控制台 | Multiscribe</title>" in response.text
+
+
+def test_frontend_login_is_served_before_console_access(tmp_path) -> None:
+    """The login page is available as the public authentication entry."""
+    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-login.sqlite"))
+    context = ServiceContext(settings)
+    with TestClient(create_app(settings, context)) as client:
+        response = client.get("/login.html")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "<title>登录 | Multiscribe</title>" in response.text
 
 
 def test_frontend_assets_do_not_override_api_routes(tmp_path) -> None:
@@ -33,7 +57,7 @@ def test_frontend_assets_do_not_override_api_routes(tmp_path) -> None:
 def test_frontend_css_uses_browser_compatible_content_type(tmp_path) -> None:
     """Windows MIME defaults must not cause Chromium to reject the stylesheet."""
     assets_dir = Path(__file__).resolve().parents[2] / "frontend" / "dist" / "assets"
-    css_path = next(assets_dir.glob("index-*.css"))
+    css_path = next(assets_dir.glob("*.css"))
     settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-css.sqlite"))
     context = ServiceContext(settings)
 

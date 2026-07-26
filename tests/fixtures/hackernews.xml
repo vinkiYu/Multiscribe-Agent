@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>Hacker News</title>
     <link>https://news.ycombinator.com/</link>
@@ -13,6 +13,8 @@
       <author>fixture-author</author>
       <category>engineering</category>
       <category>python</category>
+      <enclosure url="https://cdn.example.test/story-1001.jpg" type="image/jpeg" />
+      <media:content url="https://cdn.example.test/story-1001.mp4" type="video/mp4" />
     </item>
   </channel>
 </rss>

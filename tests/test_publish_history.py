@@ -14,6 +14,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.infra.db import init_db
 
@@ -156,9 +157,13 @@ async def test_pipeline_fanout_persists_each_target_outcome() -> None:
 
         await executor._fanout(serialized_inputs)
         records = await history.query(db, limit=10)
+        archived = await DailyDigestArchive().get(db, "2026-07-19")
 
         assert {record.publisher_id for record in records} == {"feishu_bot", "wecom_bot"}
         assert {record.status for record in records} == {"success", "error"}
+        assert archived is not None
+        assert [item.title for item in archived.items] == ["News"]
+        assert archived.summary == "Digest overview"
         error_record = next(record for record in records if record.status == "error")
         assert error_record.error_message == "delivery failed"
     finally:

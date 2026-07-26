@@ -18,11 +18,11 @@ class LoginRequest(BaseModel):
 
 @router.post("/api/login")
 async def login(payload: LoginRequest, request: Request) -> dict[str, object]:
-    """Validate the local password and issue a short-lived administrator token."""
+    """Validate the local password and issue a configurable local administrator token."""
     settings = request.app.state.settings
     if not verify_login_password(payload.password, settings):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
-    token = create_access_token("admin", "admin", 24, settings)
+    token = create_access_token("admin", "admin", settings.console_session_hours, settings)
     return {
         "access_token": token,
         "token_type": "bearer",

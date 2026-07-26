@@ -20,7 +20,7 @@ from multiscribe_agent.eval.dataset import load_dataset
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.mcp.server import run_sse_server, run_stdio_server
 
-DEFAULT_RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
+DEFAULT_RSS_URL = "https://huggingface.co/blog/feed.xml"
 
 
 @click.group()

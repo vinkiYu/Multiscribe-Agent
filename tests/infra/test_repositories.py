@@ -66,15 +66,31 @@ async def test_source_data_batch_deduplication_filtering_and_fts(db: Database) -
 
     assert await repository.save_batch([first, second], "rss-adapter") == 2
     assert await repository.save_batch([duplicate], "rss-adapter") == 0
+    await db.execute(
+        "UPDATE source_data SET fetched_at = ? WHERE id = ?",
+        ("2026-07-16T12:00:00+00:00", "item-1"),
+    )
 
     filtered = await repository.query({"source": "rss", "limit": 10, "offset": 0})
     searched = await repository.search_fts("intelligence", limit=10)
     ranged = await repository.get_by_date_range("2026-07-16", "2026-07-16")
+    published = await repository.get_by_date_range(
+        "2026-07-16", "2026-07-16", query_field="published_date"
+    )
+    fetched = await repository.get_by_date_range(
+        "2026-07-16T00:00:00+00:00",
+        "2026-07-16T23:59:59+00:00",
+        query_field="fetched_at",
+    )
 
     assert [item.id for item in filtered] == ["item-1"]
     assert [item.id for item in searched] == ["item-1"]
     assert "<mark>intelligence</mark>" in searched[0].description.lower()
     assert {item.id for item in ranged} == {"item-1", "item-2"}
+    assert {item.id for item in published} == {"item-1", "item-2"}
+    assert [item.id for item in fetched] == ["item-1"]
+    refreshed = await repository.query({"source": "rss", "limit": 10, "offset": 0})
+    assert refreshed[0].title == "Artificial intelligence duplicate"
 
 
 async def test_task_log_crud_with_field_whitelist(db: Database) -> None:

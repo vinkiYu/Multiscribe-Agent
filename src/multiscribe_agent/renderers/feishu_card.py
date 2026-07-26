@@ -14,6 +14,11 @@ class DigestItem:
     url: str
     source: str
     score: float | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    published_at: str | None = None
+    section: str = "产品与功能更新"
+    tags: tuple[str, ...] = ()
 
 
 def render_digest_card(

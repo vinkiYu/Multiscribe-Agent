@@ -42,6 +42,9 @@ async def test_fetch_transform_and_fetch_and_transform() -> None:
     assert item.category == "technology"
     assert item.published_date == "2026-07-16T08:30:00+00:00"
     assert item.metadata["tags"] == ["engineering", "python"]
+    assert item.metadata["image_url"] == "https://cdn.example.test/story-1001.jpg"
+    assert item.metadata["video_url"] == "https://cdn.example.test/story-1001.mp4"
+    assert item.metadata["feed_url"] == RSS_URL
 
     with respx.mock:
         respx.get(RSS_URL).mock(
@@ -70,6 +73,21 @@ async def test_network_failure_returns_empty_from_template_method() -> None:
         items = await RSSAdapter().fetch_and_transform({"rss_url": RSS_URL})
 
     assert items == []
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_transform_flattens_multiple_configured_feeds() -> None:
+    """A scheduled RSS source can aggregate feeds while isolating a failed URL."""
+    second_url = "https://feeds.example.test/second.xml"
+    with respx.mock:
+        respx.get(RSS_URL).mock(
+            return_value=httpx.Response(200, text=fixture_text("hackernews.xml"))
+        )
+        respx.get(second_url).mock(side_effect=httpx.ConnectError("offline"))
+
+        items = await RSSAdapter().fetch_and_transform({"rss_urls": [RSS_URL, second_url]})
+
+    assert [item.id for item in items] == ["hn-1001"]
 
 
 def test_rss_adapter_is_discovered() -> None:

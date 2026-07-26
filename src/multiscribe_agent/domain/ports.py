@@ -58,8 +58,10 @@ class SourceDataRepository(Protocol):
         """Run a full-text search and return ranked content."""
         ...
 
-    async def get_by_date_range(self, start: str, end: str) -> list[SourceData]:
-        """Return content whose configured date field is within the range."""
+    async def get_by_date_range(
+        self, start: str, end: str, query_field: str = "ingestion_date"
+    ) -> list[SourceData]:
+        """Return content whose selected persisted date field is within the range."""
         ...
 
 

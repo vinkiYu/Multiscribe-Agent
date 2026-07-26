@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import httpx
 import pytest
+import respx
 
 from multiscribe_agent.core.errors import AdapterError
 from multiscribe_agent.plugins.builtin.adapters.follow import FollowAdapter
@@ -129,6 +131,37 @@ async def test_fetch_rejects_missing_empty_and_invalid_config(tmp_path: Path) ->
         await adapter.fetch({"opml_path": str(tmp_path / "missing.opml")})
     with pytest.raises(AdapterError, match="empty"):
         await adapter.fetch({"opml_path": str(empty_file)})
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_transform_reads_articles_from_configured_opml_feeds(
+    tmp_path: Path,
+) -> None:
+    """Daily mode turns Follow subscriptions into bounded normalized articles."""
+    opml_file = tmp_path / "feeds.opml"
+    opml_file.write_text(SAMPLE_OPML, encoding="utf-8")
+    feed_url = "https://hnrss.org/frontpage"
+    feed_xml = (
+        "<rss><channel><title>Hacker News</title><item><guid>hn-1</guid>"
+        "<title>AI repo</title><link>https://example.test/ai</link>"
+        "<description>AI update</description></item></channel></rss>"
+    )
+
+    with respx.mock:
+        respx.get(feed_url).mock(return_value=httpx.Response(200, text=feed_xml))
+        respx.get("https://example.test/python.xml").mock(side_effect=httpx.ConnectError("offline"))
+        items = await FollowAdapter().fetch_and_transform(
+            {
+                "opml_path": str(opml_file),
+                "fetch_articles": True,
+                "max_feeds": 2,
+                "max_items_per_feed": 1,
+                "source_tag": "AI",
+            }
+        )
+
+    assert [item.id for item in items] == ["hn-1"]
+    assert items[0].source == "Hacker News"
 
 
 def test_follow_adapter_is_discovered() -> None:

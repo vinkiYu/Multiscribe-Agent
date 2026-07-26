@@ -53,6 +53,7 @@ class ProviderConfig(BaseModel):
     id: str
     name: str
     type: Literal["openai", "anthropic", "google", "ollama"]
+    enabled: bool = True
     api_key: str = ""
     base_url: str = ""
     use_proxy: bool = False
@@ -168,25 +169,25 @@ def _default_ai_providers() -> list[ProviderConfig]:
             "default-google",
             "Google Gemini",
             "google",
-            ["gemini-2.0-flash", "gemini-2.5-pro", "gemini-1.5-pro"],
+            ["gemini-2.0-flash"],
         ),
         configured_provider(
             "default-anthropic",
             "Anthropic",
             "anthropic",
-            ["claude-sonnet-4-5", "claude-opus-4-1", "claude-3-5-haiku-latest"],
+            ["claude-sonnet-4-5"],
         ),
         configured_provider(
             "default-openai",
             "OpenAI",
             "openai",
-            ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "o3-mini"],
+            ["gpt-4o"],
         ),
         configured_provider(
             "default-ollama",
             "Ollama",
             "ollama",
-            ["llama3.1", "qwen2.5", "deepseek-r1"],
+            ["qwen2.5"],
             base_url="http://localhost:11434",
         ),
     ]
@@ -229,6 +230,14 @@ class SystemSettings(BaseSettings):
 
     system_password: str = ""
     jwt_secret: str = ""
+    console_session_hours: int = Field(
+        default=24 * 7,
+        ge=1,
+        le=24 * 365,
+        validation_alias=AliasChoices(
+            "CONSOLE_SESSION_HOURS", "MULTISCRIBE_CONSOLE_SESSION_HOURS"
+        ),
+    )
     openai_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("OPENAI_API_KEY", "MULTISCRIBE_OPENAI_API_KEY"),
@@ -311,7 +320,7 @@ class SystemSettings(BaseSettings):
         ),
     )
     default_digest_top_n: int = Field(
-        default=5,
+        default=12,
         validation_alias=AliasChoices("DEFAULT_DIGEST_TOP_N", "MULTISCRIBE_DEFAULT_DIGEST_TOP_N"),
     )
     default_digest_fetch_days: int = Field(
@@ -324,6 +333,38 @@ class SystemSettings(BaseSettings):
         default_factory=lambda: ["rss-adapter"],
         validation_alias=AliasChoices(
             "DEFAULT_DIGEST_ADAPTER_IDS", "MULTISCRIBE_DEFAULT_DIGEST_ADAPTER_IDS"
+        ),
+    )
+    daily_ai_news_cron: str = Field(
+        default="0 9 * * *",
+        validation_alias=AliasChoices("DAILY_AI_NEWS_CRON", "MULTISCRIBE_DAILY_AI_NEWS_CRON"),
+    )
+    daily_ai_news_rss_urls: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: [
+            "https://huggingface.co/blog/feed.xml",
+            "https://openai.com/news/rss.xml",
+            "https://blog.google/technology/ai/rss/",
+            "https://aws.amazon.com/blogs/machine-learning/feed/",
+            "https://export.arxiv.org/rss/cs.AI",
+            "https://export.arxiv.org/rss/cs.CL",
+            "https://simonwillison.net/atom/everything/",
+            "https://github.blog/feed/",
+        ],
+        validation_alias=AliasChoices(
+            "DAILY_AI_NEWS_RSS_URLS", "MULTISCRIBE_DAILY_AI_NEWS_RSS_URLS"
+        ),
+    )
+    daily_ai_news_follow_opml_path: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "DAILY_AI_NEWS_FOLLOW_OPML_PATH",
+            "MULTISCRIBE_DAILY_AI_NEWS_FOLLOW_OPML_PATH",
+        ),
+    )
+    daily_ai_news_search_query: str = Field(
+        default="latest artificial intelligence, LLM, Agent, RAG, and open source AI news",
+        validation_alias=AliasChoices(
+            "DAILY_AI_NEWS_SEARCH_QUERY", "MULTISCRIBE_DAILY_AI_NEWS_SEARCH_QUERY"
         ),
     )
     memory_importance_threshold: int = Field(default=5, ge=0, le=10)
@@ -364,7 +405,12 @@ class SystemSettings(BaseSettings):
         "/api/ai/v1/",
     )
 
-    @field_validator("default_digest_targets", "default_digest_adapter_ids", mode="before")
+    @field_validator(
+        "default_digest_targets",
+        "default_digest_adapter_ids",
+        "daily_ai_news_rss_urls",
+        mode="before",
+    )
     @classmethod
     def _parse_csv_settings(cls, value: object) -> object:
         """Accept comma-separated dotenv values for the two list-based MVP defaults."""
@@ -442,12 +488,19 @@ DEFAULT_SETTINGS = SystemSettings.model_construct()
 class ConfigService:
     """Compose default, environment, and persistent configuration layers."""
 
-    def __init__(self, kv_repository: KvRepositoryPort | None = None) -> None:
-        """Create a service with an optional persistent settings repository."""
+    def __init__(
+        self,
+        kv_repository: KvRepositoryPort | None = None,
+        base_settings: SystemSettings | None = None,
+    ) -> None:
+        """Create a service with optional persistence and a stable runtime base."""
         self._kv_repository = kv_repository
+        self._base_settings = base_settings
 
     def get_settings(self) -> SystemSettings:
         """Load defaults and apply dotenv or process-environment values."""
+        if self._base_settings is not None:
+            return SystemSettings.model_validate(self._base_settings.model_dump(mode="python"))
         return SystemSettings()
 
     async def load_overrides(self) -> dict[str, Any]:

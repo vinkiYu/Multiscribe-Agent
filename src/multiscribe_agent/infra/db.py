@@ -356,6 +356,27 @@ class Database:
             """,
         )
 
+    async def migrate_daily_digest_archives(self) -> None:
+        """Create the public daily digest archive used by the reading page."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_digest_archives (
+                digest_date TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                items TEXT NOT NULL DEFAULT '[]',
+                total_scanned INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_daily_digest_archives_updated
+            ON daily_digest_archives(updated_at DESC)
+            """
+        )
+
     async def migrate_kb(self) -> bool:
         """Create durable KB indexes and enable sqlite-vec when its optional extension exists."""
         await self.connection.executescript(
@@ -705,6 +726,7 @@ async def init_db(
         )
     await init_schema(database)
     await database.migrate_publish_history()
+    await database.migrate_daily_digest_archives()
     await database.migrate_kb()
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)

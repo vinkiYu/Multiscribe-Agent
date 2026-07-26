@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import asyncio
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import ClassVar
+from urllib.parse import urlparse
 
 import feedparser  # type: ignore[import-untyped]  # feedparser does not publish type stubs.
 import httpx
@@ -36,6 +38,12 @@ class RSSAdapter(BaseAdapter):
                 scope="item",
             ),
             ConfigField(
+                key="rss_urls",
+                label="Feed URLs",
+                type="textarea",
+                help_text="Optional list of feed URLs for a multi-source run.",
+            ),
+            ConfigField(
                 key="source_name",
                 label="Source name",
                 type="text",
@@ -55,13 +63,33 @@ class RSSAdapter(BaseAdapter):
         proxy_value = config.get("proxy")
         proxy = proxy_value if isinstance(proxy_value, str) and proxy_value else None
         try:
-            async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS, proxy=proxy) as client:
+            async with httpx.AsyncClient(
+                timeout=REQUEST_TIMEOUT_SECONDS,
+                proxy=proxy,
+                follow_redirects=True,
+            ) as client:
                 response = await client.get(url)
                 response.raise_for_status()
         except httpx.HTTPError as exc:
             log.warning("rss_fetch_failed", error_type=type(exc).__name__)
             raise AdapterError("RSS feed request failed") from exc
         return response.text
+
+    async def fetch_and_transform(self, config: Mapping[str, object]) -> list[UnifiedData]:
+        """Fetch one compatible feed or flatten a configured list of feeds.
+
+        ``rss_url`` remains the single-feed API. ``rss_urls`` is intentionally
+        handled here so each feed retains its own parsed title and one failed
+        source cannot discard the other sources in the daily digest.
+        """
+        urls = self._configured_urls(config)
+        fetch_one = super().fetch_and_transform
+        if len(urls) == 1:
+            return await fetch_one({**config, "rss_url": urls[0]})
+
+        batches = [fetch_one({**config, "rss_url": url}) for url in urls]
+        results = await asyncio.gather(*batches)
+        return [item for batch in results for item in batch]
 
     def transform(
         self, raw: object, config: Mapping[str, object] | None = None
@@ -83,6 +111,9 @@ class RSSAdapter(BaseAdapter):
         for entry in entries:
             item = self._to_unified_data(entry, source, category)
             if item is not None:
+                feed_url = self._optional_string(settings.get("rss_url"))
+                if feed_url is not None:
+                    item.metadata["feed_url"] = feed_url
                 items.append(item)
         return items
 
@@ -99,6 +130,13 @@ class RSSAdapter(BaseAdapter):
         url = self._string_value(self._mapping_value(entry, "link")) or identifier
         summary = self._string_value(self._mapping_value(entry, "summary")) or ""
         author = self._string_value(self._mapping_value(entry, "author"))
+        metadata: dict[str, object] = {"tags": self._tags(entry)}
+        image_url = self._media_url(entry, "image")
+        video_url = self._media_url(entry, "video")
+        if image_url is not None:
+            metadata["image_url"] = image_url
+        if video_url is not None:
+            metadata["video_url"] = video_url
         return UnifiedData(
             id=identifier,
             title=title,
@@ -108,8 +146,33 @@ class RSSAdapter(BaseAdapter):
             source=source,
             category=category,
             author=author,
-            metadata={"tags": self._tags(entry)},
+            metadata=metadata,
         )
+
+    def _media_url(self, entry: object, media_type: str) -> str | None:
+        """Extract the first safe image or video URL from standard feed extensions."""
+        media_keys = ("media_thumbnail", "media_content", "enclosures", "links", "image")
+        for key in media_keys:
+            values = self._mapping_value(entry, key)
+            candidates = values if isinstance(values, list) else [values]
+            for candidate in candidates:
+                if not isinstance(candidate, Mapping):
+                    continue
+                item = candidate
+                raw_url = self._first_non_empty(item.get("url"), item.get("href"))
+                if raw_url is None or not self._is_http_url(raw_url):
+                    continue
+                raw_kind = self._first_non_empty(item.get("type"), item.get("medium")) or ""
+                if key in {"media_thumbnail", "image"} and media_type == "image":
+                    return raw_url
+                normalized_kind = raw_kind.casefold()
+                if normalized_kind.startswith(f"{media_type}/") or normalized_kind == media_type:
+                    return raw_url
+        return None
+
+    @staticmethod
+    def _is_http_url(value: str) -> bool:
+        return urlparse(value).scheme in {"http", "https"}
 
     def _published_date(self, entry: object) -> str:
         parsed = self._mapping_value(entry, "published_parsed") or self._mapping_value(
@@ -168,6 +231,19 @@ class RSSAdapter(BaseAdapter):
         if value is None:
             raise AdapterError(f"RSS config requires {key}")
         return value
+
+    def _configured_urls(self, config: Mapping[str, object]) -> list[str]:
+        """Validate either the legacy URL field or a non-empty URL list."""
+        raw_urls = config.get("rss_urls")
+        if raw_urls is None:
+            return [self._required_string(config, "rss_url")]
+        if isinstance(raw_urls, str) or not isinstance(raw_urls, Sequence):
+            raise AdapterError("RSS config 'rss_urls' must be a list of URLs")
+        urls = [self._optional_string(value) for value in raw_urls]
+        normalized = [url for url in urls if url is not None]
+        if not normalized:
+            raise AdapterError("RSS config 'rss_urls' must contain at least one URL")
+        return normalized
 
     @staticmethod
     def _optional_string(value: object | None) -> str | None:

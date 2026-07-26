@@ -11,14 +11,18 @@ import pytest
 from multiscribe_agent.agents.pipelines.daily_digest import (
     DailyDigestConfig,
     DailyDigestPipeline,
+    _article_preview_image,
     _curate_item_dict,
+    _prioritize_digest_sections,
+    _supplement_curated_items,
     build_daily_digest_workflow,
     register_daily_digest_executor,
 )
-from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT
+from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
 from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData, UnifiedData
 from multiscribe_agent.memory.preference_store import UserPreferences
+from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
@@ -42,14 +46,21 @@ class FakeIngestionService:
 class FakeSourceDataRepository:
     """Return deterministic recent source records to the pipeline."""
 
-    def __init__(self, entries: list[SourceData]) -> None:
+    def __init__(
+        self,
+        entries: list[SourceData],
+        entries_by_field: dict[str, list[SourceData]] | None = None,
+    ) -> None:
         self._entries = entries
-        self.ranges: list[tuple[str, str]] = []
+        self._entries_by_field = entries_by_field or {}
+        self.ranges: list[tuple[str, str, str]] = []
 
-    async def get_by_date_range(self, start: str, end: str) -> list[SourceData]:
+    async def get_by_date_range(
+        self, start: str, end: str, query_field: str = "ingestion_date"
+    ) -> list[SourceData]:
         """Record query bounds and return the configured records."""
-        self.ranges.append((start, end))
-        return self._entries
+        self.ranges.append((start, end, query_field))
+        return self._entries_by_field.get(query_field, self._entries)
 
 
 class FakeCurator:
@@ -183,6 +194,11 @@ def _source(item_id: str, url: str, title: str) -> SourceData:
         fetched_at="2026-07-17T08:01:00+00:00",
         ingestion_date="2026-07-17T08:01:00+00:00",
         adapter_name="rss",
+        metadata={
+            "tags": ["engineering"],
+            "image_url": "https://example.test/one.jpg" if item_id == "one" else None,
+            "video_url": "https://example.test/one.mp4" if item_id == "one" else None,
+        },
     )
 
 
@@ -199,14 +215,17 @@ def _pipeline(
     *,
     curator: FakeCurator | None = None,
     memory_service: FakeMemoryService | None = None,
+    adapter_configs: dict[str, dict[str, object]] | None = None,
+    source_data_by_field: dict[str, list[SourceData]] | None = None,
+    adapter_ids: list[str] | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
         curate_agent_id="curator",
-        adapter_ids=["rss"],
+        adapter_ids=adapter_ids or ["rss"],
         top_n=2,
         targets=["good", "bad"],
-        adapter_configs={"rss": {"url": "https://feed.example.test"}},
+        adapter_configs=adapter_configs or {"rss": {"url": "https://feed.example.test"}},
     )
     ingestion = FakeIngestionService()
     repository = FakeSourceDataRepository(
@@ -214,7 +233,8 @@ def _pipeline(
             _source("one", "https://example.test/one", "One"),
             _source("two", "https://example.test/one/", "Duplicate"),
             _source("three", "https://example.test/three", "Three"),
-        ]
+        ],
+        source_data_by_field,
     )
     curator = curator or FakeCurator(curator_outputs)
     GoodPublisher.received = []
@@ -288,6 +308,7 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
     new_prompt = CURATE_PROMPT.format(
         items=json.dumps(projected, ensure_ascii=False, separators=(",", ":")),
         feedback="无",
+        target_count=12,
     )
     old_prompt = CURATE_PROMPT.format(
         items=json.dumps(
@@ -296,11 +317,201 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
             separators=(",", ":"),
         ),
         feedback="无",
+        target_count=12,
     )
 
     assert set(projected[0]) == {"id", "title", "summary"}
     assert all(len(str(item["summary"])) <= 150 for item in projected)
     assert len(new_prompt) < len(old_prompt) * 0.30
+
+
+def test_daily_digest_prompts_require_chinese_page_content() -> None:
+    """English sources are translated before the digest is archived and published."""
+    assert "title 必须将原标题翻译或改写为" in CURATE_PROMPT
+    assert "summary 必须使用中文" in CURATE_PROMPT
+    assert "目标范围为 10 到 15 条" in CURATE_PROMPT
+    assert "{target_count}" in CURATE_PROMPT
+    assert "只返回中文概览正文" in DIGEST_OVERVIEW_PROMPT
+
+
+def test_article_preview_image_prefers_safe_open_graph_metadata() -> None:
+    """Article metadata supplies a preview only when it resolves to HTTP(S)."""
+    html = '<meta property="og:image" content="/images/preview.jpg"><meta name="twitter:image" content="https://example.test/ignored.jpg">'
+
+    assert _article_preview_image(html, "https://example.test/news/article") == (
+        "https://example.test/images/preview.jpg"
+    )
+    assert (
+        _article_preview_image(
+            '<meta property="og:image" content="data:image/png;base64,x">', "https://example.test"
+        )
+        is None
+    )
+
+
+def test_section_priority_keeps_all_available_digest_sections() -> None:
+    """Section coverage wins over score ordering when the configured limit allows it."""
+    items = [
+        DigestItem(
+            "产品", "摘要", "https://example.test/product", "rss", 10.0, section="产品与功能更新"
+        ),
+        DigestItem("研究", "摘要", "https://example.test/research", "rss", 7.0, section="前沿研究"),
+        DigestItem(
+            "影响", "摘要", "https://example.test/impact", "rss", 6.0, section="行业展望与社会影响"
+        ),
+        DigestItem(
+            "开源",
+            "摘要",
+            "https://example.test/oss",
+            "github_trending",
+            5.0,
+            section="开源TOP项目",
+        ),
+        DigestItem(
+            "补充", "摘要", "https://example.test/extra", "rss", 9.0, section="产品与功能更新"
+        ),
+    ]
+
+    selected = _prioritize_digest_sections(items, 4)
+
+    assert {item.section for item in selected} == {
+        "产品与功能更新",
+        "前沿研究",
+        "行业展望与社会影响",
+        "开源TOP项目",
+    }
+
+
+def test_supplement_curated_items_fills_short_selection_with_diverse_candidates() -> None:
+    """Fallback selection fills the configured count without duplicate links or excess trends."""
+    curated = [
+        DigestItem(
+            "Product",
+            "summary",
+            "https://example.test/product",
+            "rss",
+            9.0,
+            section="产品与功能更新",
+        )
+    ]
+    candidates = [
+        UnifiedData(
+            id="duplicate",
+            title="Duplicate product",
+            url="https://example.test/product",
+            description="duplicate",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="rss",
+            category="technology",
+        ),
+        UnifiedData(
+            id="research",
+            title="Research paper",
+            url="https://example.test/research",
+            description="A new AI research paper.",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="rss",
+            category="technology",
+        ),
+        UnifiedData(
+            id="impact",
+            title="AI policy update",
+            url="https://example.test/impact",
+            description="New regulation for AI safety.",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="rss",
+            category="technology",
+        ),
+        *[
+            UnifiedData(
+                id=f"trend-{index}",
+                title=f"Trending project {index}",
+                url=f"https://example.test/trend-{index}",
+                description="Open source AI project.",
+                published_date="2026-07-17T08:00:00+00:00",
+                source="github_trending",
+                category="technology",
+            )
+            for index in range(3)
+        ],
+        *[
+            UnifiedData(
+                id=f"extra-{index}",
+                title=f"Product update {index}",
+                url=f"https://example.test/extra-{index}",
+                description="AI product update.",
+                published_date="2026-07-17T08:00:00+00:00",
+                source="rss",
+                category="technology",
+            )
+            for index in range(3)
+        ],
+    ]
+
+    selected = _supplement_curated_items(curated, candidates, 7)
+
+    assert len(selected) == 7
+    assert len({item.url for item in selected}) == 7
+    assert {item.section for item in selected} == {
+        "产品与功能更新",
+        "前沿研究",
+        "行业展望与社会影响",
+        "开源TOP项目",
+    }
+    assert sum(item.source == "github_trending" for item in selected) <= 2
+
+
+def test_supplement_curated_items_replaces_excess_items_to_restore_missing_sections() -> None:
+    """A full but one-note model response still renders each supported digest section."""
+    curated = [
+        DigestItem(
+            f"Product {index}",
+            "summary",
+            f"https://example.test/product-{index}",
+            "rss",
+            float(10 - index),
+            section="产品与功能更新",
+        )
+        for index in range(4)
+    ]
+    candidates = [
+        UnifiedData(
+            id="research",
+            title="Research paper",
+            url="https://example.test/research",
+            description="A new AI research paper.",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="rss",
+            category="technology",
+        ),
+        UnifiedData(
+            id="impact",
+            title="AI policy",
+            url="https://example.test/impact",
+            description="New regulation for AI safety.",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="rss",
+            category="technology",
+        ),
+        UnifiedData(
+            id="trend",
+            title="Trending project",
+            url="https://example.test/trend",
+            description="Open source AI project.",
+            published_date="2026-07-17T08:00:00+00:00",
+            source="github_trending",
+            category="technology",
+        ),
+    ]
+
+    selected = _supplement_curated_items(curated, candidates, 4)
+
+    assert {item.section for item in selected} == {
+        "产品与功能更新",
+        "前沿研究",
+        "行业展望与社会影响",
+        "开源TOP项目",
+    }
 
 
 @pytest.mark.asyncio
@@ -318,14 +529,88 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
     assert result["targets"]["good"]["status"] == "success"
     assert result["targets"]["bad"]["status"] == "error"
     assert ingestion.calls == [
-        [{"adapter_id": "rss", "config": {"url": "https://feed.example.test"}}]
+        [
+            {
+                "adapter_id": "rss",
+                "enabled": True,
+                "config": {"url": "https://feed.example.test"},
+            }
+        ]
     ]
     assert "improve summaries" in curator.inputs[1]
     assert len(GoodPublisher.received) == 1
     digest = GoodPublisher.received[0]
     assert isinstance(digest, CuratedDigest)
     assert [item.title for item in digest.items] == ["Three", "One"]
+    assert digest.items[1].image_url == "https://example.test/one.jpg"
+    assert digest.items[1].video_url == "https://example.test/one.mp4"
+    assert digest.items[1].tags == ("engineering", "technology")
     assert digest.total_scanned == 2
+
+
+@pytest.mark.asyncio
+async def test_multi_feed_run_excludes_stale_rss_rows_from_other_feeds() -> None:
+    """An explicit multi-feed task must not re-curate a previous BBC-style RSS row."""
+    pipeline, curator, _ = _pipeline(
+        [
+            '[{"id":"one","title":"AI update","summary":"summary","score":9}]',
+            '[{"id":"one","title":"AI update","summary":"summary","score":9}]',
+            "overview",
+        ],
+        adapter_configs={"rss": {"rss_urls": ["https://huggingface.co/blog/feed.xml"]}},
+    )
+    repository = pipeline._source_data_repo
+    assert isinstance(repository, FakeSourceDataRepository)
+    repository._entries[0].metadata["feed_url"] = "https://huggingface.co/blog/feed.xml"
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["result_count"] == 1
+    assert "Duplicate" not in curator.inputs[0]
+    assert "Three" not in curator.inputs[0]
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_uses_publication_dates_but_keeps_current_trending_snapshot() -> None:
+    """Old re-ingested articles cannot enter, while today's GitHub ranking can."""
+    fresh_rss = _source("fresh-rss", "https://example.test/fresh", "Fresh RSS")
+    stale_rss = _source("stale-rss", "https://example.test/stale", "Stale RSS")
+    github_snapshot = _source("github", "https://github.com/example/project", "Trending project")
+    github_snapshot = github_snapshot.model_copy(
+        update={
+            "published_date": "1970-01-01T00:00:00+00:00",
+            "source": "github_trending",
+            "adapter_name": "github_trending",
+        }
+    )
+    unknown_ai_search = _source("search", "https://example.test/search", "Unverified search")
+    unknown_ai_search = unknown_ai_search.model_copy(
+        update={
+            "published_date": "1970-01-01T00:00:00+00:00",
+            "source": "ai_search:perplexity",
+            "adapter_name": "ai_search",
+        }
+    )
+    curation = (
+        '[{"id":"fresh-rss","title":"Fresh RSS","summary":"fresh","score":9},'
+        '{"id":"github","title":"Trending project","summary":"trend","score":8}]'
+    )
+    pipeline, curator, _ = _pipeline(
+        [curation, curation, "overview"],
+        adapter_ids=["rss", "github_trending", "ai_search"],
+        source_data_by_field={
+            "published_date": [fresh_rss],
+            "fetched_at": [stale_rss, github_snapshot, unknown_ai_search],
+        },
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["result_count"] == 2
+    assert "Fresh RSS" in curator.inputs[0]
+    assert "Trending project" in curator.inputs[0]
+    assert "Stale RSS" not in curator.inputs[0]
+    assert "Unverified search" not in curator.inputs[0]
 
 
 @pytest.mark.asyncio

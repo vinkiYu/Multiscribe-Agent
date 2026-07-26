@@ -57,6 +57,14 @@ class FailingAdapter(SuccessAdapter):
         raise RuntimeError("fake adapter crash")
 
 
+class RuntimeAdapter(SuccessAdapter):
+    """Adapter instance used to verify dependency-injected runtime adapters."""
+
+    metadata: ClassVar[PluginMetadata] = PluginMetadata(
+        id="runtime", type="adapter", name="Runtime", description="Runtime adapter."
+    )
+
+
 class MemorySourceDataRepository:
     """In-memory source repository with ID deduplication."""
 
@@ -141,3 +149,24 @@ async def test_run_all_continues_after_adapter_error(service: IngestionService) 
     assert results == {"failure": 0, "success": 1}
     assert [log.status for log in task_repo.logs.values()] == ["error", "success"]
     assert task_repo.logs["1"].result_count == 0
+
+
+@pytest.mark.asyncio
+async def test_runtime_adapter_instance_overrides_registry_construction() -> None:
+    """Adapters requiring runtime dependencies can participate in normal ingestion."""
+    RuntimeAdapter.items = [item("runtime-1")]
+    registry = AdapterRegistry.get_instance()
+    registry.clear()
+    source_repo = MemorySourceDataRepository()
+    task_repo = MemoryTaskLogRepository()
+    service = IngestionService(
+        registry,
+        source_repo,
+        task_repo,
+        runtime_adapters={"ai_search": RuntimeAdapter()},
+    )
+
+    inserted = await service.run_single("ai_search", {})
+
+    assert inserted == 1
+    assert source_repo.saved_batches == [([item("runtime-1")], "ai_search")]

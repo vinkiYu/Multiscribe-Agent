@@ -31,6 +31,9 @@ async def save_schedule(
     if context.entities is None or context.scheduler is None:
         raise HTTPException(status_code=503, detail="services unavailable")
     task = ScheduleTask.model_validate(payload)
+    # Replace any existing scheduler job so disabling or changing a cron expression
+    # takes effect immediately, instead of leaving an old in-memory trigger active.
+    context.scheduler.unregister(task.id)
     await context.entities.save("schedules", task.id, task.model_dump(mode="json"))
     callback = context.scheduler._registry.get(task.task_type)
     if task.enabled and callback is not None:

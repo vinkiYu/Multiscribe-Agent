@@ -95,6 +95,8 @@ def test_default_providers_have_known_model_windows_and_output_limits() -> None:
     assert openai.default_output_tokens["gpt-4o"] == 16_384
     assert anthropic.context_window_tokens["claude-sonnet-4-5"] == 200_000
     assert ollama.context_window_tokens["qwen2.5"] == 32_768
+    assert all(len(provider.models) == 1 for provider in settings.ai_providers)
+    assert all(provider.enabled for provider in settings.ai_providers)
 
 
 def test_environment_overrides_provider_model_limits(monkeypatch) -> None:

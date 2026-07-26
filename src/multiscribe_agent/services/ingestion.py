@@ -13,6 +13,7 @@ from multiscribe_agent.domain.ports import (
     SourceDataRepository as SourceDataRepositoryPort,
 )
 from multiscribe_agent.domain.ports import TaskLogRepository as TaskLogRepositoryPort
+from multiscribe_agent.plugins.base import BaseAdapter
 from multiscribe_agent.plugins.registry import AdapterRegistry
 
 log = structlog.get_logger(__name__)
@@ -26,11 +27,13 @@ class IngestionService:
         adapter_registry: AdapterRegistry,
         source_data_repo: SourceDataRepositoryPort,
         task_log_repo: TaskLogRepositoryPort,
+        runtime_adapters: Mapping[str, BaseAdapter] | None = None,
     ) -> None:
         """Create a service from plugin and repository boundaries."""
         self._adapter_registry = adapter_registry
         self._source_data_repo = source_data_repo
         self._task_log_repo = task_log_repo
+        self._runtime_adapters = dict(runtime_adapters or {})
 
     async def run_single(
         self,
@@ -52,8 +55,10 @@ class IngestionService:
         if task_log_id is not None:
             await self._task_log_repo.update(log_id, status="running", start_time=started_at)
         try:
-            adapter_class = self._adapter_registry.get(adapter_id)
-            adapter = adapter_class()
+            adapter = self._runtime_adapters.get(adapter_id)
+            if adapter is None:
+                adapter_class = self._adapter_registry.get(adapter_id)
+                adapter = adapter_class()
             items = await adapter.fetch_and_transform(config)
             inserted = await self._source_data_repo.save_batch(items, adapter_id)
         except Exception as exc:  # Individual adapters must not stop run_all.

@@ -212,6 +212,8 @@ def create_provider(
         ProviderError: If no model is configured or the provider type is unknown.
         NotImplementedError: If the optional Google or Ollama implementation is requested.
     """
+    if not config.enabled:
+        raise ProviderError(f"provider {config.id} is disabled")
     resolved_model = model if model is not None else (config.models[0] if config.models else None)
     if not resolved_model:
         raise ProviderError(f"no model configured for provider {config.id}")

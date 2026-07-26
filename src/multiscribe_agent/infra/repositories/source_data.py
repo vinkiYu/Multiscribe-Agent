@@ -22,6 +22,11 @@ _DATE_RANGE_STATEMENTS = {
         WHERE published_date BETWEEN ? AND ?
         ORDER BY published_date
     """,
+    "fetched_at": """
+        SELECT * FROM source_data
+        WHERE fetched_at BETWEEN ? AND ?
+        ORDER BY fetched_at
+    """,
 }
 
 _FILTER_STATEMENTS = {
@@ -83,7 +88,7 @@ class SourceDataRepository:
         self._db = db
 
     async def save_batch(self, items: list[UnifiedData], adapter_name: str) -> int:
-        """Insert new items by ID and return the number of rows actually inserted."""
+        """Upsert the latest source payload and return the number of newly inserted IDs."""
         if not items:
             return 0
 
@@ -114,10 +119,23 @@ class SourceDataRepository:
 
         await self._db.executemany(
             """
-            INSERT OR IGNORE INTO source_data(
+            INSERT INTO source_data(
                 id, title, url, description, published_date, source, category, author,
                 metadata, fetched_at, ingestion_date, adapter_name, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                url = excluded.url,
+                description = excluded.description,
+                published_date = excluded.published_date,
+                source = excluded.source,
+                category = excluded.category,
+                author = excluded.author,
+                metadata = excluded.metadata,
+                fetched_at = excluded.fetched_at,
+                ingestion_date = excluded.ingestion_date,
+                adapter_name = excluded.adapter_name,
+                status = excluded.status
             """,
             rows,
         )
