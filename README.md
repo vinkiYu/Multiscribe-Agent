@@ -4,7 +4,7 @@
 
 Multiscribe 将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚到一个可自部署的平台。它能通过可配置的 Agent 和工作流完成采集、去重、AI 精选、中文摘要生成、日报归档及多渠道发布，并提供控制台、任务记录、知识库、记忆与插件扩展能力。
 
-![每日资讯页面](docs/pic/daily-news.png)
+![Multiscribe 官网](docs/pic/homepage.png)
 
 ## 主要能力
 
@@ -30,6 +30,12 @@ Multiscribe 将 RSS、GitHub Trending、AI 搜索和 Follow 订阅汇聚到一�
 日报页面采用归档、正文、目录三栏布局。正文按四个主题分区，右侧目录会随文章内容提供跳转，窄屏时自动收敛为单列阅读。
 
 ![每日资讯页面](docs/pic/daily-news.png)
+
+### 控制台
+
+控制台集中管理内容源、任务、Agent 配置与运行记录，日报生成后可回看归档并继续编辑发布流程。
+
+![Multiscribe 控制台](docs/pic/console.png)
 
 ## 快速开始
 
