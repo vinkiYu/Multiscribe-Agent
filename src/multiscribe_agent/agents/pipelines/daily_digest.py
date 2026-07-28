@@ -556,7 +556,7 @@ class _DailyDigestStepExecutor:
         prompt = DIGEST_OVERVIEW_PROMPT.format(
             items=_dump_json([_digest_item_dict(item) for item in items])
         )
-        return await self._curate_executor.execute(self._config.curate_agent_id, prompt)
+        return await self._curate_executor.execute(OVERVIEW_AGENT_ID, prompt)
 
     async def _fanout(self, value: str) -> str:
         """Render one CuratedDigest and publish it through the fault-isolating fan-out service."""

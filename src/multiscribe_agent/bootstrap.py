@@ -7,7 +7,11 @@ from pathlib import Path
 
 from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
 from multiscribe_agent.agents.executor import AgentExecutor
-from multiscribe_agent.agents.pipelines.daily_digest import DailyDigestConfig, DailyDigestPipeline
+from multiscribe_agent.agents.pipelines.daily_digest import (
+    OVERVIEW_AGENT_ID,
+    DailyDigestConfig,
+    DailyDigestPipeline,
+)
 from multiscribe_agent.agents.prompt_service import PromptService
 from multiscribe_agent.agents.reflector import Reflector
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
@@ -66,6 +70,12 @@ from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
+DEFAULT_OVERVIEW_AGENT_PROMPT = (
+    "You are a Chinese daily news digest writer. Given curated items, write a concise, "
+    "natural-language overview in Chinese (no more than 180 characters) that summarizes the "
+    "highlights. Do not output JSON, markdown, or English headings. Keep necessary product "
+    "names and technical terms in their original form."
+)
 DEFAULT_DAILY_AI_NEWS_TASK_ID = "daily-ai-news"
 _LEGACY_DAILY_AI_NEWS_TOP_N = frozenset({5, 10})
 _DEFAULT_DAILY_AI_NEWS_TOP_N = 12
@@ -283,6 +293,7 @@ class ServiceContext:
         self.task_logs = task_logs
         self.source_data = source_data
         await self._bootstrap_default_curation_agent(entities)
+        await self._bootstrap_default_overview_agent(entities)
         await self._bootstrap_daily_ai_news_schedule(entities)
         await self.scheduler.start()
         self._initialized = True
@@ -443,6 +454,31 @@ class ServiceContext:
             await entities.save(
                 "agents", DEFAULT_CURATION_AGENT_ID, definition.model_dump(mode="json")
             )
+
+    async def _bootstrap_default_overview_agent(self, entities: EntityJsonRepository) -> None:
+        """Persist the dedicated natural-language overview agent declaration."""
+        raw = await entities.get("agents", OVERVIEW_AGENT_ID)
+        definition = AgentDefinition(
+            id=OVERVIEW_AGENT_ID,
+            name="Daily Digest Overview Agent",
+            description="Writes the natural-language overview for the daily digest.",
+            system_prompt=DEFAULT_OVERVIEW_AGENT_PROMPT,
+            provider_id=self.settings.default_curation_provider_id,
+            model=self.settings.default_curation_model,
+            temperature=self.settings.default_curation_temperature,
+        )
+        if raw is None:
+            await entities.save("agents", OVERVIEW_AGENT_ID, definition.model_dump(mode="json"))
+            return
+
+        existing = AgentDefinition.model_validate(raw)
+        if (
+            existing.model != definition.model
+            or existing.temperature != definition.temperature
+            or existing.provider_id != definition.provider_id
+            or existing.system_prompt != definition.system_prompt
+        ):
+            await entities.save("agents", OVERVIEW_AGENT_ID, definition.model_dump(mode="json"))
 
     async def _bootstrap_daily_ai_news_schedule(self, entities: EntityJsonRepository) -> None:
         """Create or update the default multi-source AI-news schedule."""

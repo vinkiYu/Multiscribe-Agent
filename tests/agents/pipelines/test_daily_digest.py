@@ -10,6 +10,7 @@ from typing import ClassVar
 import pytest
 
 from multiscribe_agent.agents.pipelines.daily_digest import (
+    OVERVIEW_AGENT_ID,
     DailyDigestConfig,
     DailyDigestPipeline,
     _article_preview_image,
@@ -72,10 +73,12 @@ class FakeCurator:
     def __init__(self, outputs: list[str]) -> None:
         self._outputs = iter(outputs)
         self.inputs: list[str] = []
+        self.agent_ids: list[str] = []
 
     async def execute(self, agent_id: str, user_input: str) -> str:
         """Capture the requested prompt and return its configured response."""
-        assert agent_id == "curator"
+        assert agent_id in {"curator", OVERVIEW_AGENT_ID}
+        self.agent_ids.append(agent_id)
         self.inputs.append(user_input)
         return next(self._outputs)
 
@@ -321,6 +324,19 @@ def test_workflow_declares_five_nodes_and_data_dependencies() -> None:
     assert workflow.steps[-1].input_map == {"curated": "curate", "overview": "overview"}
     assert workflow.steps[2].max_iterations == 3
     assert workflow.steps[2].exit_condition == "llm"
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_overview_uses_dedicated_agent() -> None:
+    """Natural-language overview execution must not reuse the JSON curator agent."""
+    pipeline, curator, _ = _pipeline(
+        [_curation_json(), _curation_json(), "今日重点资讯概览"], targets=[]
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["overview"] == "今日重点资讯概览"
+    assert curator.agent_ids[-1] == OVERVIEW_AGENT_ID
 
 
 def test_explicit_empty_targets_disable_default_publishers() -> None:
