@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import copy
 import hashlib
 import json
 from collections.abc import AsyncIterator, Mapping
@@ -20,7 +21,11 @@ import structlog
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.events import WorkflowEvent
-from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
+from multiscribe_agent.agents.workflow.protocols import (
+    AgentStepExecutor,
+    LoopReflector,
+    ObservingAgentStepExecutor,
+)
 from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
 from multiscribe_agent.core.errors import WorkflowError
 from multiscribe_agent.core.publish_history import PublishHistory
@@ -28,6 +33,7 @@ from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import (
     ScheduleTask,
     SourceData,
+    TokenUsage,
     UnifiedData,
     WorkflowDefinition,
     WorkflowStep,
@@ -72,6 +78,44 @@ class MemoryAwareAgentStepExecutor(Protocol):
         self, agent_id: str, user_input: str, memory_summaries: list[str]
     ) -> str:
         """Execute one agent step with compact system-context memory."""
+
+
+@runtime_checkable
+class MemoryAwareObservingAgentStepExecutor(Protocol):
+    """Optional executor extension combining memory injection and usage capture."""
+
+    async def execute_observed_with_memory(
+        self, agent_id: str, user_input: str, memory_summaries: list[str]
+    ) -> tuple[str, TokenUsage | None]:
+        """Execute with memory and return provider usage alongside the output."""
+
+
+@dataclass(slots=True)
+class _DigestUsage:
+    """Per-run token and provider-call accumulator for the daily digest."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    llm_calls: int = 0
+
+    def add(self, usage: TokenUsage | None) -> None:
+        """Add one provider usage record when the execution surface exposes it."""
+        if usage is None:
+            return
+        self.input_tokens += usage.input_tokens
+        self.output_tokens += usage.output_tokens
+        self.total_tokens += usage.total_tokens
+        self.llm_calls += 1
+
+    def as_dict(self) -> dict[str, int]:
+        """Return the stable scheduler/API payload shape."""
+        return {
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "total_tokens": self.total_tokens,
+            "llm_calls": self.llm_calls,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,7 +268,7 @@ class DailyDigestPipeline:
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
-        engine = self._engine(run_date)
+        engine, usage = self._engine(run_date)
         result = await engine.run(WORKFLOW_ID, "", date=run_date)
         final = result["final"]
         if not isinstance(final, str):
@@ -244,11 +288,13 @@ class DailyDigestPipeline:
             "targets": targets,
             "curated": payload.get("curated", []),
             "overview": payload.get("overview", ""),
+            "usage": usage.as_dict(),
         }
 
     async def stream(self, *, run_date: str | None = None) -> AsyncIterator[WorkflowEvent]:
         """Expose P10 lifecycle events, including loop iterations, for observability."""
-        async for event in self._engine(run_date).stream(WORKFLOW_ID, "", date=run_date):
+        engine, _ = self._engine(run_date)
+        async for event in engine.stream(WORKFLOW_ID, "", date=run_date):
             yield event
 
     async def daily_digest_executor(self, task: ScheduleTask) -> dict[str, object]:
@@ -270,10 +316,11 @@ class DailyDigestPipeline:
         )
         return await pipeline.run()
 
-    def _engine(self, run_date: str | None) -> WorkflowEngine:
+    def _engine(self, run_date: str | None) -> tuple[WorkflowEngine, _DigestUsage]:
         """Build isolated per-run workflow state so concurrent schedules do not share outputs."""
         date_value = run_date or datetime.now(UTC).date().isoformat()
         workflow = build_daily_digest_workflow(self._config)
+        usage = _DigestUsage()
         step_executor = _DailyDigestStepExecutor(
             self._ingestion_service,
             self._source_data_repo,
@@ -285,8 +332,19 @@ class DailyDigestPipeline:
             self._publish_history,
             self._memory_service,
             self._pushed_content_repo,
+            usage,
         )
-        return WorkflowEngine(step_executor, _WorkflowStore(workflow), self._reflector)
+        run_reflector = self._reflector
+        set_usage_sink = getattr(run_reflector, "set_usage_sink", None)
+        if callable(set_usage_sink):
+            # Provider adapters are normally reused by the service context. Copy the
+            # small adapter shell before attaching a run-local sink so overlapping
+            # digest runs cannot redirect each other's reflector accounting.
+            run_reflector = copy.copy(self._reflector)
+            set_usage_sink = getattr(run_reflector, "set_usage_sink", None)
+            if callable(set_usage_sink):
+                set_usage_sink(usage.add)
+        return WorkflowEngine(step_executor, _WorkflowStore(workflow), run_reflector), usage
 
 
 def register_daily_digest_executor(
@@ -324,6 +382,7 @@ class _DailyDigestStepExecutor:
         publish_history: PublishHistory | None,
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
+        usage: _DigestUsage | None = None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -335,6 +394,7 @@ class _DailyDigestStepExecutor:
         self._publish_history = publish_history
         self._memory_service = memory_service
         self._pushed_content_repo = pushed_content_repo
+        self._usage = usage or _DigestUsage()
         self._total_scanned = 0
         self._content_hash_by_url: dict[str, str] = {}
 
@@ -515,7 +575,17 @@ class _DailyDigestStepExecutor:
             feedback=feedback or "无",
             target_count=self._config.top_n,
         )
-        if isinstance(self._curate_executor, MemoryAwareAgentStepExecutor):
+        if isinstance(self._curate_executor, MemoryAwareObservingAgentStepExecutor):
+            output, usage = await self._curate_executor.execute_observed_with_memory(
+                self._config.curate_agent_id, prompt, memory_summaries
+            )
+            self._usage.add(usage)
+        elif isinstance(self._curate_executor, ObservingAgentStepExecutor):
+            output, usage = await self._curate_executor.execute_observed(
+                self._config.curate_agent_id, prompt
+            )
+            self._usage.add(usage)
+        elif isinstance(self._curate_executor, MemoryAwareAgentStepExecutor):
             output = await self._curate_executor.execute_with_memory(
                 self._config.curate_agent_id, prompt, memory_summaries
             )
@@ -556,6 +626,10 @@ class _DailyDigestStepExecutor:
         prompt = DIGEST_OVERVIEW_PROMPT.format(
             items=_dump_json([_digest_item_dict(item) for item in items])
         )
+        if isinstance(self._curate_executor, ObservingAgentStepExecutor):
+            output, usage = await self._curate_executor.execute_observed(OVERVIEW_AGENT_ID, prompt)
+            self._usage.add(usage)
+            return output
         return await self._curate_executor.execute(OVERVIEW_AGENT_ID, prompt)
 
     async def _fanout(self, value: str) -> str:

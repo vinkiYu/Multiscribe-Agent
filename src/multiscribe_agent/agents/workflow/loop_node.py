@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
 from multiscribe_agent.core.errors import WorkflowError
-from multiscribe_agent.domain.models import WorkflowStep
+from multiscribe_agent.domain.models import TokenUsage, WorkflowStep
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +33,7 @@ class LoopIteration:
     feedback: str | None
     converged: bool
     reason: str
+    usage: TokenUsage | None = None
 
 
 def _coerce_loop_spec(step: WorkflowStep) -> LoopSpec:
@@ -90,7 +91,7 @@ async def execute_loop_step(
 
     for round_number in range(first_round, spec.max_rounds + 1):
         output = await executor.execute(step.agent_id, current_input)
-        rule_converged, score, feedback = await _evaluate(
+        rule_converged, score, feedback, usage = await _evaluate(
             step.exit_condition, task, output, reflector, spec
         )
         previous_score = iterations[-1].score if iterations else None
@@ -109,6 +110,7 @@ async def execute_loop_step(
             feedback=feedback,
             converged=converged,
             reason=reason,
+            usage=usage,
         )
         iterations.append(iteration)
         if iteration_store is not None and workflow_run_id is not None:
@@ -137,20 +139,23 @@ async def _evaluate(
     output: str,
     reflector: LoopReflector | None,
     spec: LoopSpec,
-) -> tuple[bool, float | None, str | None]:
-    """Return (condition_converged, score, feedback) for one loop round."""
+) -> tuple[bool, float | None, str | None, TokenUsage | None]:
+    """Return convergence, score, feedback, and optional reflector usage."""
     if exit_condition == "llm" or (exit_condition is None and reflector is not None):
         if reflector is None:
             raise WorkflowError("loop exit_condition 'llm' requires a reflector")
         assessment = await reflector.assess(task, output)
         score = _score_from_assessment(assessment, spec)
-        return score > spec.score_threshold, score, assessment.feedback
+        usage = getattr(assessment, "usage", None)
+        if not isinstance(usage, TokenUsage):
+            usage = None
+        return score > spec.score_threshold, score, assessment.feedback, usage
     if exit_condition is None:
-        return "DONE" in output, None, None
+        return "DONE" in output, None, None, None
     match = re.fullmatch(r"output contains ['\"](.+)['\"]", exit_condition)
     if match is None:
         raise WorkflowError(f"unsupported loop exit_condition: {exit_condition}")
-    return match.group(1) in output, None, None
+    return match.group(1) in output, None, None, None
 
 
 def _score_from_assessment(assessment: object, spec: LoopSpec) -> float:
@@ -198,6 +203,7 @@ def _dump_iteration(iteration: LoopIteration) -> dict[str, object]:
         "feedback": iteration.feedback,
         "converged": iteration.converged,
         "reason": iteration.reason,
+        "usage": iteration.usage.model_dump(mode="json") if iteration.usage else None,
     }
 
 
@@ -211,4 +217,5 @@ def _iteration_from_record(record: IterationRecord) -> LoopIteration:
         feedback=record.feedback,
         converged=record.converged,
         reason=record.reason,
+        usage=None,
     )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,7 +23,12 @@ from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
 from multiscribe_agent.core.pushed_content import PushedContentRepository
-from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
+from multiscribe_agent.domain.models import (
+    AgentDefinition,
+    AgentRunResult,
+    ScheduleTask,
+    TokenUsage,
+)
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.infra.redis_client import close_redis
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
@@ -103,12 +109,22 @@ class _ProviderLoopReflector:
 
     reflector: Reflector
     provider: AIProvider
+    usage_sink: Callable[[TokenUsage], None] | None = None
+
+    def set_usage_sink(self, sink: Callable[[TokenUsage], None]) -> None:
+        """Attach a per-run usage collector without changing the loop protocol."""
+        self.usage_sink = sink
 
     async def assess(self, task: str, output: str) -> LoopAssessment:
         """Assess loop output with the provider selected for the curation agent."""
         reflection = await self.reflector.assess(task, output, self.provider)
+        if reflection.usage is not None and self.usage_sink is not None:
+            self.usage_sink(reflection.usage)
         return _MutableLoopAssessment(
-            reflection.should_retry, reflection.feedback, reflection.score
+            reflection.should_retry,
+            reflection.feedback,
+            reflection.score,
+            reflection.usage,
         )
 
 
@@ -119,6 +135,7 @@ class _MutableLoopAssessment:
     should_retry: bool
     feedback: str
     score: float
+    usage: TokenUsage | None = None
 
 
 class _StoredAgentStepExecutor:
@@ -146,15 +163,40 @@ class _StoredAgentStepExecutor:
             AgentDefinition.model_validate(raw), user_input, memory_summaries
         )
 
+    async def execute_observed(
+        self, agent_id: str, user_input: str
+    ) -> tuple[str, TokenUsage | None]:
+        """Execute an agent and return its provider usage alongside the output."""
+        raw = await self._agents.get("agents", agent_id)
+        if raw is None:
+            raise LookupError(f"agent not found: {agent_id}")
+        result = await self._execute_result(AgentDefinition.model_validate(raw), user_input)
+        self._raise_if_terminal(result)
+        return result.content, result.usage
+
+    async def execute_observed_with_memory(
+        self,
+        agent_id: str,
+        user_input: str,
+        memory_summaries: list[str],
+    ) -> tuple[str, TokenUsage | None]:
+        """Execute an agent with memory injection while preserving provider usage."""
+        raw = await self._agents.get("agents", agent_id)
+        if raw is None:
+            raise LookupError(f"agent not found: {agent_id}")
+        result = await self._execute_result(
+            AgentDefinition.model_validate(raw), user_input, memory_summaries
+        )
+        self._raise_if_terminal(result)
+        return result.content, result.usage
+
     async def _execute_definition(
         self,
         definition: AgentDefinition,
         user_input: str,
         memory_summaries: list[str] | None = None,
     ) -> str:
-        result = await self._executor.run_result(
-            definition, user_input, memory_summaries=memory_summaries
-        )
+        result = await self._execute_result(definition, user_input, memory_summaries)
         if result.status != "success":
             raise AgentStepTerminalError(
                 result.status,
@@ -162,6 +204,23 @@ class _StoredAgentStepExecutor:
                 result.terminal_data,
             )
         return result.content
+
+    async def _execute_result(
+        self,
+        definition: AgentDefinition,
+        user_input: str,
+        memory_summaries: list[str] | None = None,
+    ) -> AgentRunResult:
+        """Run one stored definition and preserve the structured result for observers."""
+        return await self._executor.run_result(
+            definition, user_input, memory_summaries=memory_summaries
+        )
+
+    @staticmethod
+    def _raise_if_terminal(result: AgentRunResult) -> None:
+        """Convert non-success agent results into the workflow terminal error contract."""
+        if result.status != "success":
+            raise AgentStepTerminalError(result.status, result.content, result.terminal_data)
 
 
 # 负责装配配置、Agent、工作流、采集服务和发布服务,保证 API、CLI、调度任务复用同一套运行时依赖

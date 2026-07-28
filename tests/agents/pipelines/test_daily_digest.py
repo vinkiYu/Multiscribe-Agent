@@ -23,7 +23,13 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
 from multiscribe_agent.core.pushed_content import PushedContentRepository
-from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData, UnifiedData
+from multiscribe_agent.domain.models import (
+    MemoryEntry,
+    ScheduleTask,
+    SourceData,
+    TokenUsage,
+    UnifiedData,
+)
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.renderers.feishu_card import DigestItem
@@ -97,6 +103,17 @@ class MemoryAwareFakeCurator(FakeCurator):
         return await self.execute(agent_id, user_input)
 
 
+class ObservingFakeCurator(FakeCurator):
+    """Expose deterministic provider usage for each curation or overview call."""
+
+    async def execute_observed(
+        self, agent_id: str, user_input: str
+    ) -> tuple[str, TokenUsage | None]:
+        """Return the configured output and a fixed per-call usage record."""
+        output = await self.execute(agent_id, user_input)
+        return output, TokenUsage(input_tokens=10, output_tokens=2, total_tokens=12)
+
+
 class TerminalOverviewCurator(FakeCurator):
     """Fail the overview Agent with a structured context-budget terminal state."""
 
@@ -152,6 +169,27 @@ class RetryOnceReflector:
         del task
         assert output.startswith("[")
         self.calls += 1
+        return Assessment(should_retry=self.calls == 1, feedback="improve summaries")
+
+
+class ObservingReflector:
+    """Capture a per-run sink and report deterministic reflector usage."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self._usage_sink = None
+
+    def set_usage_sink(self, sink: object) -> None:
+        """Receive the accumulator callback installed by the pipeline."""
+        self._usage_sink = sink
+
+    async def assess(self, task: str, output: str) -> Assessment:
+        """Retry once and forward one reflector usage record per assessment."""
+        del task, output
+        self.calls += 1
+        usage = TokenUsage(input_tokens=5, output_tokens=1, total_tokens=6)
+        if callable(self._usage_sink):
+            self._usage_sink(usage)
         return Assessment(should_retry=self.calls == 1, feedback="improve summaries")
 
 
@@ -265,6 +303,7 @@ def _pipeline(
     pushed_content_repo: FakePushedContentRepository | PushedContentRepository | None = None,
     fetch_days: int = 2,
     targets: list[str] | None = None,
+    reflector: object | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
@@ -300,7 +339,7 @@ def _pipeline(
             curator,
             publishing,
             config,
-            RetryOnceReflector(),
+            reflector or RetryOnceReflector(),
             db=db,
             memory_service=memory_service,
             pushed_content_repo=pushed_content_repo,
@@ -587,6 +626,12 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
     result = await pipeline.run(run_date="2026-07-17")
 
     assert result["result_count"] == 2
+    assert result["usage"] == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "llm_calls": 0,
+    }
     assert [item["title"] for item in result["curated"]] == ["Three", "One"]
     assert result["overview"] == "今日重点资讯概览"
     assert result["targets"]["good"]["status"] == "success"
@@ -609,6 +654,46 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
     assert digest.items[1].video_url == "https://example.test/one.mp4"
     assert digest.items[1].tags == ("engineering", "technology")
     assert digest.total_scanned == 2
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_returns_per_run_token_usage_for_agents_and_reflector() -> None:
+    """Usage includes three agent calls and two reflector calls without shared state."""
+    curator = ObservingFakeCurator([_curation_json(), _curation_json(), "overview"])
+    reflector = ObservingReflector()
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        curator=curator,
+        reflector=reflector,
+        targets=[],
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["usage"] == {
+        "input_tokens": 40,
+        "output_tokens": 8,
+        "total_tokens": 48,
+        "llm_calls": 5,
+    }
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_usage_accumulator_is_isolated_per_run() -> None:
+    """A second run starts at zero instead of inheriting the first run's totals."""
+    curation = [_curation_json(), _curation_json(), "overview"]
+    curator = ObservingFakeCurator([*curation, *curation])
+    pipeline, _, _ = _pipeline(
+        [*curation, *curation],
+        curator=curator,
+        reflector=ObservingReflector(),
+        targets=[],
+    )
+
+    first = await pipeline.run(run_date="2026-07-17")
+    second = await pipeline.run(run_date="2026-07-18")
+
+    assert first["usage"] == second["usage"]
 
 
 @pytest.mark.asyncio
