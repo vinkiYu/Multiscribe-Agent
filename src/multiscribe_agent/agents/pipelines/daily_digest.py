@@ -24,6 +24,7 @@ from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopR
 from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
 from multiscribe_agent.core.errors import WorkflowError
 from multiscribe_agent.core.publish_history import PublishHistory
+from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import (
     ScheduleTask,
     SourceData,
@@ -187,6 +188,13 @@ def build_daily_digest_workflow(config: DailyDigestConfig) -> WorkflowDefinition
     )
 
 
+def _sort_fallback_candidates(
+    items: list[UnifiedData], limit: int
+) -> list[UnifiedData]:
+    """Make degraded curation deterministic by preferring the newest source records."""
+    return sorted(items, key=lambda item: item.published_date, reverse=True)[:limit]
+
+
 # 每日信息聚合管道
 class DailyDigestPipeline:
     """Assemble per-run pipeline dependencies into a P10 workflow execution."""
@@ -202,6 +210,7 @@ class DailyDigestPipeline:
         db: Database | None = None,
         publish_history: PublishHistory | None = None,
         memory_service: DigestMemoryService | None = None,
+        pushed_content_repo: PushedContentRepository | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -213,6 +222,7 @@ class DailyDigestPipeline:
         self._db = db
         self._publish_history = publish_history
         self._memory_service = memory_service
+        self._pushed_content_repo = pushed_content_repo
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
@@ -258,6 +268,7 @@ class DailyDigestPipeline:
             self._db,
             self._publish_history,
             self._memory_service,
+            self._pushed_content_repo,
         )
         return await pipeline.run()
 
@@ -275,6 +286,7 @@ class DailyDigestPipeline:
             self._db,
             self._publish_history,
             self._memory_service,
+            self._pushed_content_repo,
         )
         return WorkflowEngine(step_executor, _WorkflowStore(workflow), self._reflector)
 
@@ -313,6 +325,7 @@ class _DailyDigestStepExecutor:
         db: Database | None,
         publish_history: PublishHistory | None,
         memory_service: DigestMemoryService | None = None,
+        pushed_content_repo: PushedContentRepository | None = None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -323,14 +336,16 @@ class _DailyDigestStepExecutor:
         self._db = db
         self._publish_history = publish_history
         self._memory_service = memory_service
+        self._pushed_content_repo = pushed_content_repo
         self._total_scanned = 0
+        self._content_hash_by_url: dict[str, str] = {}
 
     async def execute(self, agent_id: str, user_input: str) -> str:
         """Dispatch one workflow node while preserving the P10 text executor contract."""
         if agent_id == INGEST_AGENT_ID:
             return await self._ingest()
         if agent_id == DEDUPE_AGENT_ID:
-            return self._dedupe(user_input)
+            return await self._dedupe(user_input)
         if agent_id == self._config.curate_agent_id:
             return await self._curate(user_input)
         if agent_id == OVERVIEW_AGENT_ID:
@@ -439,23 +454,41 @@ class _DailyDigestStepExecutor:
         normalized = value.strip().casefold().rstrip("/")
         return normalized or None
 
-    def _dedupe(self, value: str) -> str:
-        """Remove repeated normalized URLs or content hashes before LLM curation."""
+    async def _dedupe(self, value: str) -> str:
+        """Remove batch duplicates and content sent within the configured cross-day window."""
         items = _load_unified_items(value)
         seen_urls: set[str] = set()
         seen_hashes: set[str] = set()
+        pushed_hashes, pushed_urls = await self._recent_pushed_identities()
         unique: list[UnifiedData] = []
+        self._content_hash_by_url = {}
         for item in items:
             normalized_url = item.url.strip().rstrip("/").casefold()
             content_hash = hashlib.sha256(f"{item.title}\n{item.description}".encode()).hexdigest()
-            if normalized_url in seen_urls or content_hash in seen_hashes:
+            if (
+                normalized_url in seen_urls
+                or content_hash in seen_hashes
+                or normalized_url in pushed_urls
+                or content_hash in pushed_hashes
+            ):
                 continue
             seen_urls.add(normalized_url)
             seen_hashes.add(content_hash)
+            self._content_hash_by_url[normalized_url] = content_hash
             unique.append(item)
         self._total_scanned = len(unique)
         return _dump_json([item.model_dump(mode="json") for item in unique])
 
+    async def _recent_pushed_identities(self) -> tuple[set[str], set[str]]:
+        """Load pushed identities using the same inclusive window as source fetching."""
+        if self._db is None or self._pushed_content_repo is None:
+            return set(), set()
+        end_date = Date.fromisoformat(self._run_date)
+        since_date = (end_date - timedelta(days=self._config.fetch_days - 1)).isoformat()
+        return (
+            await self._pushed_content_repo.recent_hashes(self._db, since_date=since_date),
+            await self._pushed_content_repo.recent_urls(self._db, since_date=since_date),
+        )
     async def _curate(self, value: str) -> str:
         """Ask the injected curator for scored JSON and preserve the top configured entries."""
         item_payload, feedback = _split_feedback(value)
@@ -475,9 +508,9 @@ class _DailyDigestStepExecutor:
                     )
             except Exception as exc:  # Memory must never block the scheduled digest.
                 log.warning("daily_digest_memory_degraded", error_type=type(exc).__name__)
-                items = items[: self._config.curate_candidate_limit]
+                items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
         else:
-            items = items[: self._config.curate_candidate_limit]
+            items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
         prompt = CURATE_PROMPT.format(
             items=_dump_json([_curate_item_dict(item) for item in items]),
             feedback=feedback or "无",
@@ -555,6 +588,25 @@ class _DailyDigestStepExecutor:
                     content=digest.summary,
                     result_data=result,
                     error_message=str(error) if status == "error" and error is not None else None,
+                )
+        if (
+            self._db is not None
+            and self._pushed_content_repo is not None
+            and any(result.get("status") == "success" for result in targets.values())
+        ):
+            for item in items:
+                normalized_url = item.url.strip().rstrip("/").casefold()
+                content_hash = self._content_hash_by_url.get(normalized_url)
+                if content_hash is None:
+                    content_hash = hashlib.sha256(
+                        f"{item.title}\n{item.summary}".encode()
+                    ).hexdigest()
+                await self._pushed_content_repo.add(
+                    self._db,
+                    content_hash=content_hash,
+                    url=normalized_url,
+                    digest_date=self._run_date,
+                    title=item.title,
                 )
         return _dump_json(
             {

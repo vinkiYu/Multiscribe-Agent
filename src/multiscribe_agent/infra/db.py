@@ -356,6 +356,27 @@ class Database:
             """,
         )
 
+    async def migrate_pushed_content(self) -> None:
+        """Create the cross-day content fingerprint table used by digest curation."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pushed_content (
+                content_hash TEXT NOT NULL,
+                url TEXT NOT NULL,
+                digest_date TEXT NOT NULL,
+                pushed_at TEXT NOT NULL,
+                title TEXT NOT NULL,
+                PRIMARY KEY (content_hash, digest_date)
+            )
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_pushed_content_pushed_at
+            ON pushed_content(pushed_at DESC)
+            """,
+        )
+
     async def migrate_daily_digest_archives(self) -> None:
         """Create the public daily digest archive used by the reading page."""
         await self.execute(
@@ -726,6 +747,7 @@ async def init_db(
         )
     await init_schema(database)
     await database.migrate_publish_history()
+    await database.migrate_pushed_content()
     await database.migrate_daily_digest_archives()
     await database.migrate_kb()
     await _recover_interrupted_tasks(database)

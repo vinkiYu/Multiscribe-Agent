@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import ClassVar
 
 import pytest
@@ -20,7 +21,9 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
 )
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
+from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import MemoryEntry, ScheduleTask, SourceData, UnifiedData
+from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
@@ -181,6 +184,43 @@ class BadPublisher:
         raise RuntimeError("bad destination")
 
 
+class FakePushedContentRepository:
+    """In-memory cross-day identity store for pipeline behavior tests."""
+
+    def __init__(self, records: list[tuple[str, str, str, str]] | None = None) -> None:
+        self.records = records or []
+
+    async def add(
+        self,
+        db: Database,
+        *,
+        content_hash: str,
+        url: str,
+        digest_date: str,
+        title: str,
+    ) -> None:
+        """Record an item once per content hash and digest date."""
+        del db
+        key = (content_hash, digest_date)
+        if not any((item[0], item[2]) == key for item in self.records):
+            normalized_url = url.strip().rstrip("/").casefold()
+            self.records.append((content_hash, normalized_url, digest_date, title))
+
+    async def recent_hashes(self, db: Database, *, since_date: str) -> set[str]:
+        """Return hashes in the inclusive date window."""
+        del db
+        return {
+            content_hash
+            for content_hash, _, digest_date, _ in self.records
+            if digest_date >= since_date
+        }
+
+    async def recent_urls(self, db: Database, *, since_date: str) -> set[str]:
+        """Return normalized URLs in the inclusive date window."""
+        del db
+        return {url for _, url, digest_date, _ in self.records if digest_date >= since_date}
+
+
 def _source(item_id: str, url: str, title: str) -> SourceData:
     """Build one recent persisted source record."""
     return SourceData(
@@ -218,13 +258,18 @@ def _pipeline(
     adapter_configs: dict[str, dict[str, object]] | None = None,
     source_data_by_field: dict[str, list[SourceData]] | None = None,
     adapter_ids: list[str] | None = None,
+    db: Database | None = None,
+    pushed_content_repo: FakePushedContentRepository | PushedContentRepository | None = None,
+    fetch_days: int = 2,
+    targets: list[str] | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
         curate_agent_id="curator",
         adapter_ids=adapter_ids or ["rss"],
+        fetch_days=fetch_days,
         top_n=2,
-        targets=["good", "bad"],
+        targets=targets if targets is not None else ["good", "bad"],
         adapter_configs=adapter_configs or {"rss": {"url": "https://feed.example.test"}},
     )
     ingestion = FakeIngestionService()
@@ -253,7 +298,9 @@ def _pipeline(
             publishing,
             config,
             RetryOnceReflector(),
+            db=db,
             memory_service=memory_service,
+            pushed_content_repo=pushed_content_repo,
         ),
         curator,
         ingestion,
@@ -712,3 +759,131 @@ async def test_registered_scheduler_callback_runs_daily_digest_task() -> None:
     assert callback is not None
     result = await callback(task)
     assert result["result_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_excludes_recent_pushed_hash_and_url_and_keeps_new_candidate() -> None:
+    """Cross-day dedupe removes both identity forms while retaining unrelated content."""
+    database = await init_db(":memory:")
+    try:
+        repository = FakePushedContentRepository(
+            [
+                (
+                    sha256(b"One\nOne description").hexdigest(),
+                    "https://example.test/one",
+                    "2026-07-16",
+                    "One",
+                ),
+                (
+                    "unrelated-hash",
+                    "https://example.test/other",
+                    "2026-07-16",
+                    "Other",
+                ),
+            ]
+        )
+        pipeline, curator, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            pushed_content_repo=repository,
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        assert result["result_count"] == 1
+        assert '"id":"one"' not in curator.inputs[0]
+        assert '"id": "three"' in curator.inputs[0]
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_fetch_days_controls_cross_day_exclusion_window() -> None:
+    """A record outside fetch_days remains eligible for the current digest."""
+    database = await init_db(":memory:")
+    try:
+        repository = FakePushedContentRepository(
+            [
+                (
+                    sha256(b"One\nOne description").hexdigest(),
+                    "https://example.test/one",
+                    "2026-07-14",
+                    "One",
+                )
+            ]
+        )
+        pipeline, curator, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            pushed_content_repo=repository,
+            fetch_days=2,
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        assert result["result_count"] == 2
+        assert '"id": "one"' in curator.inputs[0]
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_fallback_candidates_are_sorted_newest_first() -> None:
+    """The no-memory fallback sends the newest candidates to the curator first."""
+    pipeline, curator, _ = _pipeline(["[]", "[]", "overview"])
+    source_repo = pipeline._source_data_repo
+    assert isinstance(source_repo, FakeSourceDataRepository)
+    source_repo._entries[0] = source_repo._entries[0].model_copy(
+        update={"published_date": "2026-07-15T08:00:00+00:00"}
+    )
+    source_repo._entries[2] = source_repo._entries[2].model_copy(
+        update={"published_date": "2026-07-17T08:00:00+00:00"}
+    )
+
+    await pipeline.run(run_date="2026-07-17")
+
+    assert curator.inputs[0].index('"id": "three"') < curator.inputs[0].index('"id": "one"')
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_records_all_items_after_one_successful_publisher() -> None:
+    """A partial fan-out success records every selected item for future dedupe."""
+    database = await init_db(":memory:")
+    try:
+        repository = PushedContentRepository()
+        pipeline, _, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            pushed_content_repo=repository,
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        rows = await database.fetchall("SELECT url, digest_date FROM pushed_content")
+        assert result["targets"]["good"]["status"] == "success"
+        assert len(rows) == result["result_count"]
+        assert {str(row["digest_date"]) for row in rows} == {"2026-07-17"}
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_does_not_record_items_when_all_publishers_fail() -> None:
+    """A fully failed fan-out must not poison the next day's exclusion set."""
+    database = await init_db(":memory:")
+    try:
+        repository = PushedContentRepository()
+        pipeline, _, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            pushed_content_repo=repository,
+            targets=["bad"],
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        rows = await database.fetchall("SELECT content_hash FROM pushed_content")
+        assert result["targets"]["bad"]["status"] == "error"
+        assert rows == []
+    finally:
+        await database.close()

@@ -16,6 +16,7 @@ from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
+from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.infra.redis_client import close_redis
@@ -169,6 +170,7 @@ class ServiceContext:
         self.scheduler: SchedulerService | None = None
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
+        self.pushed_content: PushedContentRepository | None = None
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
         self.memory_service: MemoryService | None = None
@@ -207,6 +209,7 @@ class ServiceContext:
         self.interop_service = InteropService(self.db)
         self.interop_limiter = SlidingWindowLimiter(window_seconds=60)
         self.publish_history = get_publish_history()
+        self.pushed_content = PushedContentRepository()
         entities = EntityJsonRepository(self.db)
         task_logs = TaskLogRepository(self.db)
         source_data = SourceDataRepository(self.db)
@@ -394,6 +397,7 @@ class ServiceContext:
             self.db,
             self.publish_history,
             self.memory_service,
+            self.pushed_content,
         )
         return await pipeline.run()
 
