@@ -234,9 +234,7 @@ class SystemSettings(BaseSettings):
         default=24 * 7,
         ge=1,
         le=24 * 365,
-        validation_alias=AliasChoices(
-            "CONSOLE_SESSION_HOURS", "MULTISCRIBE_CONSOLE_SESSION_HOURS"
-        ),
+        validation_alias=AliasChoices("CONSOLE_SESSION_HOURS", "MULTISCRIBE_CONSOLE_SESSION_HOURS"),
     )
     openai_api_key: str = Field(
         default="",
@@ -271,6 +269,23 @@ class SystemSettings(BaseSettings):
     wecom_webhook: str = Field(
         default="",
         validation_alias=AliasChoices("WECOM_WEBHOOK", "MULTISCRIBE_WECOM_WEBHOOK"),
+    )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        validation_alias=AliasChoices("REDIS_URL", "MULTISCRIBE_REDIS_URL"),
+    )
+    scheduler_lock_ttl_seconds: int = Field(
+        default=7_200,
+        ge=1,
+        validation_alias=AliasChoices(
+            "SCHEDULER_LOCK_TTL_SECONDS", "MULTISCRIBE_SCHEDULER_LOCK_TTL_SECONDS"
+        ),
+    )
+    scheduler_lock_strict_mode: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "SCHEDULER_LOCK_STRICT_MODE", "MULTISCRIBE_SCHEDULER_LOCK_STRICT_MODE"
+        ),
     )
     db_path: str = "data/database.sqlite"
     log_level: str = "INFO"
@@ -500,7 +515,10 @@ class ConfigService:
     def get_settings(self) -> SystemSettings:
         """Load defaults and apply dotenv or process-environment values."""
         if self._base_settings is not None:
-            return SystemSettings.model_validate(self._base_settings.model_dump(mode="python"))
+            return SystemSettings(
+                _env_file=None,
+                **self._base_settings.model_dump(mode="python"),
+            )
         return SystemSettings()
 
     async def load_overrides(self) -> dict[str, Any]:
@@ -529,7 +547,7 @@ class ConfigService:
 
         merged = settings.model_dump()
         merged.update(overrides)
-        return SystemSettings.model_validate(merged)
+        return SystemSettings(_env_file=None, **merged)
 
 
 _CONFIG_SERVICE = ConfigService()

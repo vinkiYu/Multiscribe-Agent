@@ -18,6 +18,7 @@ from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
 from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.redis_client import close_redis
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
 from multiscribe_agent.infra.repositories.kv import KvRepository
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
@@ -56,6 +57,7 @@ from multiscribe_agent.services.interop_registry import (
 )
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
+from multiscribe_agent.services.scheduler_lock import RedisSchedulerLock
 from multiscribe_agent.skills.builtin_loader import load_builtin_skills
 from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
 from multiscribe_agent.skills.registry import get_skill_registry
@@ -263,7 +265,17 @@ class ServiceContext:
         )
         registry = TaskExecutorRegistry()
         registry.register("daily_digest", self.run_daily_digest_task)
-        self.scheduler = SchedulerService(task_logs, entities, executor_registry=registry)
+        self.scheduler = SchedulerService(
+            task_logs,
+            entities,
+            executor_registry=registry,
+            lock=RedisSchedulerLock(
+                self.settings.redis_url,
+                strict_mode=self.settings.scheduler_lock_strict_mode,
+            ),
+            lock_ttl_seconds=self.settings.scheduler_lock_ttl_seconds,
+            lock_strict_mode=self.settings.scheduler_lock_strict_mode,
+        )
         self.entities = entities
         self.task_logs = task_logs
         self.source_data = source_data
@@ -278,6 +290,7 @@ class ServiceContext:
             await self.scheduler.stop()
         if self.db is not None:
             await self.db.close()
+        await close_redis()
         self._initialized = False
         self.db = None
         await self.init()
@@ -288,6 +301,7 @@ class ServiceContext:
             await self.scheduler.stop()
         if self.db is not None:
             await self.db.close()
+        await close_redis()
         self._initialized = False
 
     async def _init_kb(self) -> None:

@@ -127,3 +127,16 @@ def test_environment_overrides_custom_configured_model(monkeypatch) -> None:
     )
 
     assert settings.ai_providers[0].context_window_tokens["custom-model"] == 32_000
+
+
+def test_environment_overrides_scheduler_lock_settings(monkeypatch) -> None:
+    """Redis URL, lease TTL, and strict mode accept MULTISCRIBE aliases."""
+    monkeypatch.setenv("MULTISCRIBE_REDIS_URL", "redis://redis.example.test:6379/2")
+    monkeypatch.setenv("MULTISCRIBE_SCHEDULER_LOCK_TTL_SECONDS", "1800")
+    monkeypatch.setenv("MULTISCRIBE_SCHEDULER_LOCK_STRICT_MODE", "false")
+
+    settings = SystemSettings(_env_file=None)
+
+    assert settings.redis_url == "redis://redis.example.test:6379/2"
+    assert settings.scheduler_lock_ttl_seconds == 1800
+    assert settings.scheduler_lock_strict_mode is False

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from multiscribe_agent.domain.models import ScheduleTask, TaskLog
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
+from multiscribe_agent.services.scheduler_lock import AcquireResult
 
 
 class MemoryTaskLogs:
@@ -90,3 +93,133 @@ async def test_errors_missing_executor_reload_and_invalid_cron_are_isolated() ->
     with pytest.raises(ValueError, match="Wrong number of fields"):
         service.register(task("bad").model_copy(update={"cron": "bad cron"}), failing_callback)
     await service.stop()
+
+
+class HoldingLock:
+    """In-process lock fake that exposes concurrent acquisition behavior."""
+
+    def __init__(self) -> None:
+        self.held = False
+        self.releases = 0
+
+    async def acquire(self, key: str, ttl_seconds: int) -> AcquireResult:
+        assert key.startswith("multiscribe:scheduler:lock:daily:")
+        assert ttl_seconds == 120
+        if self.held:
+            return AcquireResult(acquired=False, reason="already_locked")
+        self.held = True
+        return AcquireResult(acquired=True, token="owner-token", reason="acquired")
+
+    async def release(self, key: str, token: str) -> None:
+        assert key.startswith("multiscribe:scheduler:lock:daily:")
+        assert token == "owner-token"
+        self.held = False
+        self.releases += 1
+
+
+class UnavailableLock:
+    """Lock fake that models a Redis connection failure."""
+
+    async def acquire(self, key: str, ttl_seconds: int) -> AcquireResult:
+        del key, ttl_seconds
+        raise ConnectionError("redis unavailable")
+
+    async def release(self, key: str, token: str) -> None:
+        del key, token
+
+
+@pytest.mark.asyncio
+async def test_lock_busy_is_skipped_without_calling_callback() -> None:
+    """A concurrent second trigger gets a skipped terminal log."""
+    logs = MemoryTaskLogs()
+    lock = HoldingLock()
+    service = SchedulerService(logs, MemorySchedules(), lock=lock, lock_ttl_seconds=120)
+    started = asyncio.Event()
+    finish = asyncio.Event()
+    calls = 0
+
+    async def callback(_: ScheduleTask) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await finish.wait()
+        return {}
+
+    first = asyncio.create_task(service.execute_task(task(), callback))
+    await started.wait()
+    await service.execute_task(task(), callback)
+    assert calls == 1
+    assert any(log.status == "skipped" for log in logs.logs.values())
+
+    finish.set()
+    await first
+    assert lock.releases == 1
+
+
+@pytest.mark.asyncio
+async def test_released_lock_allows_next_run_and_run_now_uses_same_guard() -> None:
+    """The direct scheduler path and run_now share execute_task's lock boundary."""
+    logs = MemoryTaskLogs()
+    lock = HoldingLock()
+    service = SchedulerService(logs, MemorySchedules(), lock=lock, lock_ttl_seconds=120)
+    calls: list[str] = []
+
+    async def callback(scheduled: ScheduleTask) -> dict[str, object]:
+        calls.append(scheduled.id)
+        return {"result_count": 1}
+
+    service.register(task(), callback)
+    await service.execute_task(task(), callback)
+    await service.run_now("daily")
+
+    assert calls == ["daily", "daily"]
+    assert all(log.status == "success" for log in logs.logs.values())
+    assert lock.releases == 2
+
+
+@pytest.mark.asyncio
+async def test_unavailable_lock_strict_mode_records_error_without_callback() -> None:
+    """Strict mode rejects a Redis outage so duplicate delivery is not reintroduced."""
+    logs = MemoryTaskLogs()
+    service = SchedulerService(
+        logs,
+        MemorySchedules(),
+        lock=UnavailableLock(),
+        lock_ttl_seconds=120,
+        lock_strict_mode=True,
+    )
+    calls = 0
+
+    async def callback(_: ScheduleTask) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {}
+
+    await service.execute_task(task(), callback)
+
+    assert calls == 0
+    assert next(iter(logs.logs.values())).status == "error"
+
+
+@pytest.mark.asyncio
+async def test_unavailable_lock_relaxed_mode_warns_and_runs() -> None:
+    """Relaxed mode provides the explicit operational escape hatch."""
+    logs = MemoryTaskLogs()
+    service = SchedulerService(
+        logs,
+        MemorySchedules(),
+        lock=UnavailableLock(),
+        lock_ttl_seconds=120,
+        lock_strict_mode=False,
+    )
+    calls = 0
+
+    async def callback(_: ScheduleTask) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {}
+
+    await service.execute_task(task(), callback)
+
+    assert calls == 1
+    assert next(iter(logs.logs.values())).status == "success"

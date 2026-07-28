@@ -211,7 +211,11 @@ class SourceData(_DomainModel):
 
 
 class TaskLog(_DomainModel):
-    """Lifecycle record for one scheduled or manually triggered task."""
+    """Lifecycle record for one scheduled or manually triggered task.
+
+    ``skipped`` means the distributed scheduler lock was already held by another
+    execution or strict lock acquisition rejected the run.
+    """
 
     id: str | None = None
     task_id: str
@@ -219,7 +223,7 @@ class TaskLog(_DomainModel):
     start_time: str | None
     end_time: str | None = None
     duration_ms: int | None = None
-    status: Literal["running", "success", "error", "interrupted"]
+    status: Literal["running", "success", "error", "interrupted", "skipped"]
     progress: float | None = None
     message: str | None = None
     result_count: int | None = None
