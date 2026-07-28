@@ -38,7 +38,8 @@ async def get_settings(context: ServiceContext = Depends(get_context)) -> dict[s
 
 @router.put("")
 async def save_settings(
-    payload: dict[str, object], context: ServiceContext = Depends(get_context)  # noqa: B008
+    payload: dict[str, object],
+    context: ServiceContext = Depends(get_context),  # noqa: B008
 ) -> dict[str, object]:
     if context.config_service is None:
         raise HTTPException(status_code=503, detail="configuration service unavailable")
@@ -89,9 +90,7 @@ async def sync_provider_models(
     if not isinstance(api_key, str) or api_key == MASK:
         api_key = provider.api_key
     try:
-        models, source, note = await _discover_provider_models(
-            provider.type, base_url, api_key
-        )
+        models, source, note = await _discover_provider_models(provider.type, base_url, api_key)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except httpx.HTTPStatusError as exc:

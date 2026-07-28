@@ -188,9 +188,7 @@ def build_daily_digest_workflow(config: DailyDigestConfig) -> WorkflowDefinition
     )
 
 
-def _sort_fallback_candidates(
-    items: list[UnifiedData], limit: int
-) -> list[UnifiedData]:
+def _sort_fallback_candidates(items: list[UnifiedData], limit: int) -> list[UnifiedData]:
     """Make degraded curation deterministic by preferring the newest source records."""
     return sorted(items, key=lambda item: item.published_date, reverse=True)[:limit]
 
@@ -489,6 +487,7 @@ class _DailyDigestStepExecutor:
             await self._pushed_content_repo.recent_hashes(self._db, since_date=since_date),
             await self._pushed_content_repo.recent_urls(self._db, since_date=since_date),
         )
+
     async def _curate(self, value: str) -> str:
         """Ask the injected curator for scored JSON and preserve the top configured entries."""
         item_payload, feedback = _split_feedback(value)

@@ -6,6 +6,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+# pytest basetemp temporary artifacts (never commit generated test fixtures)
+.tmp-pytest/
+.pytest-tmp/
+.pytest-tmp-*/
 dist/
 *.egg-info/
 node_modules/
