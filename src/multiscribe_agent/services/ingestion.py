@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from time import perf_counter
@@ -89,9 +90,14 @@ class IngestionService:
         return inserted
 
     async def run_all(
-        self, adapter_configs: list[dict[str, object]], task_log_id: str | None = None
+        self,
+        adapter_configs: list[dict[str, object]],
+        task_log_id: str | None = None,
+        *,
+        max_concurrency: int = 4,
     ) -> dict[str, int]:
-        """Run enabled adapter configurations independently and return per-adapter counts."""
+        """Run enabled adapter configurations with bounded cross-adapter concurrency."""
+        tasks: list[tuple[str, dict[str, object]]] = []
         results: dict[str, int] = {}
         for adapter_config in adapter_configs:
             if adapter_config.get("enabled") is False:
@@ -107,11 +113,31 @@ class IngestionService:
                 )
                 results[adapter_id] = 0
                 continue
-            results[adapter_id] = await self.run_single(
-                adapter_id,
-                dict(config_value),
-                task_log_id=task_log_id,
-            )
+            tasks.append((adapter_id, dict(config_value)))
+
+        semaphore = asyncio.Semaphore(max(1, max_concurrency))
+
+        async def _bounded(adapter_id: str, config: dict[str, object]) -> tuple[str, int]:
+            async with semaphore:
+                return adapter_id, await self.run_single(
+                    adapter_id,
+                    config,
+                    task_log_id=task_log_id,
+                )
+
+        outcomes = await asyncio.gather(
+            *(_bounded(adapter_id, config) for adapter_id, config in tasks),
+            return_exceptions=True,
+        )
+        for outcome in outcomes:
+            if isinstance(outcome, BaseException):
+                log.warning(
+                    "ingestion_concurrent_unexpected",
+                    error_type=type(outcome).__name__,
+                )
+                continue
+            adapter_id, count = outcome
+            results[adapter_id] = count
         return results
 
     @staticmethod
