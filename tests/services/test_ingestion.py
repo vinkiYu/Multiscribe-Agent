@@ -9,9 +9,12 @@ from typing import ClassVar
 
 import pytest
 
+from multiscribe_agent.core.adapter_health import AdapterHealth, AdapterHealthRepository
 from multiscribe_agent.domain.models import PluginMetadata, TaskLog, UnifiedData
+from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.plugins.base import BaseAdapter
 from multiscribe_agent.plugins.registry import AdapterRegistry
+from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
 from multiscribe_agent.services.ingestion import IngestionService
 
 
@@ -149,6 +152,37 @@ class MemoryTaskLogRepository:
 
     async def get(self, log_id: str) -> TaskLog | None:
         return self.logs.get(log_id)
+
+
+class RecordingAlerter:
+    """Capture threshold alerts and optionally fail like a publisher."""
+
+    def __init__(self, fail: bool = False) -> None:
+        self.alerts: list[tuple[str, AdapterHealth]] = []
+        self.fail = fail
+
+    async def alert_disabled(self, adapter_id: str, health: AdapterHealth) -> None:
+        if self.fail:
+            raise RuntimeError("alert publisher unavailable")
+        self.alerts.append((adapter_id, health))
+
+
+class RecordingPublisher:
+    """Publisher double for the plain-text adapter health alert."""
+
+    received: ClassVar[list[tuple[object, object]]] = []
+
+    async def publish(self, content: object, options: object = None) -> dict[str, object]:
+        self.received.append((content, options))
+        return {"ok": True}
+
+
+class PublisherRegistryDouble:
+    """Minimal publisher registry boundary accepted by the alerter."""
+
+    def get(self, target: str) -> type[RecordingPublisher]:
+        assert target == "feishu_bot"
+        return RecordingPublisher
 
 
 def controlled_service(adapters: dict[str, BaseAdapter]) -> IngestionService:
@@ -320,3 +354,94 @@ async def test_run_all_skips_disabled_adapter_before_scheduling() -> None:
 
     assert results == {"enabled": 1}
     assert tracker["calls"] == 1
+
+
+@pytest.mark.asyncio
+async def test_health_threshold_disables_adapter_and_run_all_skips_it() -> None:
+    """Three failures persist a disabled state, alert once, and prevent later callbacks."""
+    database = await init_db(":memory:")
+    try:
+        registry = AdapterRegistry.get_instance()
+        registry.clear()
+        registry.register("failure", FailingAdapter, FailingAdapter.metadata)
+        source_repo = MemorySourceDataRepository()
+        task_repo = MemoryTaskLogRepository()
+        health_repo = AdapterHealthRepository(failure_threshold=3)
+        alerter = RecordingAlerter()
+        service = IngestionService(
+            registry,
+            source_repo,
+            task_repo,
+            db=database,
+            health_repo=health_repo,
+            alerter=alerter,  # type: ignore[arg-type]
+        )
+
+        for _ in range(3):
+            assert await service.run_single("failure", {}) == 0
+
+        health = await health_repo.get(database, adapter_id="failure")
+        assert health is not None
+        assert health.disabled is True
+        assert len(alerter.alerts) == 1
+        skipped = await service.run_all([{"adapter_id": "failure", "config": {}}])
+        assert skipped == {"failure": 0}
+        assert len(task_repo.logs) == 3
+
+        await health_repo.set_disabled(database, adapter_id="failure", disabled=False)
+        resumed = await service.run_all([{"adapter_id": "failure", "config": {}}])
+        assert resumed == {"failure": 0}
+        assert len(task_repo.logs) == 4
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_health_alert_failure_does_not_break_ingestion() -> None:
+    """A publisher outage cannot turn the adapter health side effect into a crash."""
+    database = await init_db(":memory:")
+    try:
+        registry = AdapterRegistry.get_instance()
+        registry.clear()
+        registry.register("failure", FailingAdapter, FailingAdapter.metadata)
+        service = IngestionService(
+            registry,
+            MemorySourceDataRepository(),
+            MemoryTaskLogRepository(),
+            db=database,
+            health_repo=AdapterHealthRepository(failure_threshold=1),
+            alerter=RecordingAlerter(fail=True),  # type: ignore[arg-type]
+        )
+
+        assert await service.run_single("failure", {}) == 0
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_adapter_health_alerter_publishes_plain_text_without_blocking() -> None:
+    """The alert contains operational fields and uses the existing publisher contract."""
+    RecordingPublisher.received = []
+    alerter = AdapterHealthAlerter(
+        ["feishu_bot"],
+        {"feishu_bot": {"webhook": "https://example.test/hook"}},
+        publisher_registry=PublisherRegistryDouble(),  # type: ignore[arg-type]
+    )
+    health = AdapterHealth(
+        adapter_id="rss",
+        consecutive_failures=3,
+        disabled=True,
+        last_status="error",
+        last_error="feed timeout",
+        last_run_at="2026-07-29T00:00:00+00:00",
+        updated_at="2026-07-29T00:00:00+00:00",
+    )
+
+    await alerter.alert_disabled("rss", health)
+
+    assert len(RecordingPublisher.received) == 1
+    content, options = RecordingPublisher.received[0]
+    assert isinstance(content, str)
+    assert "rss" in content
+    assert "Consecutive failures: 3" in content
+    assert options == {"webhook": "https://example.test/hook"}

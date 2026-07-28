@@ -350,6 +350,21 @@ class SystemSettings(BaseSettings):
             "DEFAULT_DIGEST_ADAPTER_IDS", "MULTISCRIBE_DEFAULT_DIGEST_ADAPTER_IDS"
         ),
     )
+    adapter_health_failure_threshold: int = Field(
+        default=3,
+        ge=1,
+        validation_alias=AliasChoices(
+            "ADAPTER_HEALTH_FAILURE_THRESHOLD",
+            "MULTISCRIBE_ADAPTER_HEALTH_FAILURE_THRESHOLD",
+        ),
+    )
+    adapter_health_alert_targets: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "ADAPTER_HEALTH_ALERT_TARGETS",
+            "MULTISCRIBE_ADAPTER_HEALTH_ALERT_TARGETS",
+        ),
+    )
     daily_ai_news_cron: str = Field(
         default="0 9 * * *",
         validation_alias=AliasChoices("DAILY_AI_NEWS_CRON", "MULTISCRIBE_DAILY_AI_NEWS_CRON"),

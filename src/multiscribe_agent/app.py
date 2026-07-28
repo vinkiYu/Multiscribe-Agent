@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from multiscribe_agent.api.middleware import CsrfMiddleware, EndpointRateLimiter
 from multiscribe_agent.api.routes import (
+    adapter_health,
     agents,
     ai_v1,
     auth,
@@ -129,6 +130,7 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         metrics.router,
         daily_news.router,
         dashboard.router,
+        adapter_health.router,
         digest.router,
         knowledge.router,
         memory.router,

@@ -398,6 +398,28 @@ class Database:
             """
         )
 
+    async def migrate_adapter_health(self) -> None:
+        """Create the persisted source-adapter health table and lookup index."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS adapter_health (
+                adapter_id TEXT PRIMARY KEY,
+                consecutive_failures INTEGER NOT NULL DEFAULT 0,
+                disabled INTEGER NOT NULL DEFAULT 0,
+                last_status TEXT NOT NULL DEFAULT 'unknown',
+                last_error TEXT,
+                last_run_at TEXT,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_adapter_health_disabled
+            ON adapter_health(disabled)
+            """
+        )
+
     async def migrate_kb(self) -> bool:
         """Create durable KB indexes and enable sqlite-vec when its optional extension exists."""
         await self.connection.executescript(
@@ -749,6 +771,7 @@ async def init_db(
     await database.migrate_publish_history()
     await database.migrate_pushed_content()
     await database.migrate_daily_digest_archives()
+    await database.migrate_adapter_health()
     await database.migrate_kb()
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)

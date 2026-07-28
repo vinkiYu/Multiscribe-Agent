@@ -17,6 +17,7 @@ from multiscribe_agent.agents.reflector import Reflector
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
+from multiscribe_agent.core.adapter_health import AdapterHealthRepository
 from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
@@ -51,6 +52,7 @@ from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
 from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
+from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
 from multiscribe_agent.services.ingestion import IngestionService
 from multiscribe_agent.services.interop import InteropService
 from multiscribe_agent.services.interop_rate_limit import SlidingWindowLimiter
@@ -173,6 +175,7 @@ class ServiceContext:
         self.task_logs: TaskLogRepository | None = None
         self.source_data: SourceDataRepository | None = None
         self.ingestion: IngestionService | None = None
+        self.adapter_health_repo: AdapterHealthRepository | None = None
         self.publishing: PublishingService | None = None
         self.tools: ToolRegistry | None = None
         self.agent_executor: AgentExecutor | None = None
@@ -243,14 +246,32 @@ class ServiceContext:
         runtime_adapters = (
             {"ai_search": AISearchAdapter(default_provider)} if default_provider is not None else {}
         )
-        self.ingestion = IngestionService(
-            adapters, source_data, task_logs, runtime_adapters=runtime_adapters
-        )
         options = {
             publisher.id: publisher.config
             for publisher in self.settings.publishers
             if publisher.enabled
         }
+        self.adapter_health_repo = AdapterHealthRepository(
+            self.settings.adapter_health_failure_threshold
+        )
+        health_alerter = AdapterHealthAlerter(
+            [
+                target.strip()
+                for target in self.settings.adapter_health_alert_targets.split(",")
+                if target.strip()
+            ],
+            options,
+            publisher_registry=publishers,
+        )
+        self.ingestion = IngestionService(
+            adapters,
+            source_data,
+            task_logs,
+            runtime_adapters=runtime_adapters,
+            db=self.db,
+            health_repo=self.adapter_health_repo,
+            alerter=health_alerter,
+        )
         self.publishing = PublishingService(
             publishers,
             {

@@ -9,13 +9,16 @@ from time import perf_counter
 
 import structlog
 
+from multiscribe_agent.core.adapter_health import AdapterHealth, AdapterHealthRepository
 from multiscribe_agent.domain.models import TaskLog
 from multiscribe_agent.domain.ports import (
     SourceDataRepository as SourceDataRepositoryPort,
 )
 from multiscribe_agent.domain.ports import TaskLogRepository as TaskLogRepositoryPort
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.plugins.base import BaseAdapter
 from multiscribe_agent.plugins.registry import AdapterRegistry
+from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
 
 log = structlog.get_logger(__name__)
 
@@ -29,12 +32,19 @@ class IngestionService:
         source_data_repo: SourceDataRepositoryPort,
         task_log_repo: TaskLogRepositoryPort,
         runtime_adapters: Mapping[str, BaseAdapter] | None = None,
+        *,
+        db: Database | None = None,
+        health_repo: AdapterHealthRepository | None = None,
+        alerter: AdapterHealthAlerter | None = None,
     ) -> None:
         """Create a service from plugin and repository boundaries."""
         self._adapter_registry = adapter_registry
         self._source_data_repo = source_data_repo
         self._task_log_repo = task_log_repo
         self._runtime_adapters = dict(runtime_adapters or {})
+        self._db = db
+        self._health_repo = health_repo
+        self._health_alerter = alerter
 
     async def run_single(
         self,
@@ -77,6 +87,9 @@ class IngestionService:
                 result_count=0,
                 message=f"{type(exc).__name__}: {exc}",
             )
+            health = await self._record_health(adapter_id, success=False, error=str(exc))
+            if health is not None and health.just_disabled:
+                await self._alert_disabled(adapter_id, health)
             return 0
 
         await self._task_log_repo.update(
@@ -87,6 +100,7 @@ class IngestionService:
             result_count=inserted,
             message=None,
         )
+        await self._record_health(adapter_id, success=True)
         return inserted
 
     async def run_all(
@@ -99,12 +113,17 @@ class IngestionService:
         """Run enabled adapter configurations with bounded cross-adapter concurrency."""
         tasks: list[tuple[str, dict[str, object]]] = []
         results: dict[str, int] = {}
+        disabled = await self._disabled_adapters()
         for adapter_config in adapter_configs:
             if adapter_config.get("enabled") is False:
                 continue
             adapter_id = self._adapter_id(adapter_config)
             if adapter_id is None:
                 log.warning("ingestion_config_skipped", reason="missing_adapter_id")
+                continue
+            if adapter_id in disabled:
+                log.info("ingestion_adapter_health_disabled", adapter_id=adapter_id)
+                results[adapter_id] = 0
                 continue
             config_value = adapter_config.get("config", adapter_config)
             if not isinstance(config_value, Mapping):
@@ -139,6 +158,54 @@ class IngestionService:
             adapter_id, count = outcome
             results[adapter_id] = count
         return results
+
+    async def _record_health(
+        self,
+        adapter_id: str,
+        *,
+        success: bool,
+        error: str | None = None,
+    ) -> AdapterHealth | None:
+        """Persist a health result while keeping health failures out of ingestion."""
+        if self._db is None or self._health_repo is None:
+            return None
+        try:
+            return await self._health_repo.record_result(
+                self._db,
+                adapter_id=adapter_id,
+                success=success,
+                error=error,
+            )
+        except Exception as exc:  # Health telemetry must never break the source path.
+            log.warning(
+                "ingestion_adapter_health_record_failed",
+                adapter_id=adapter_id,
+                error_type=type(exc).__name__,
+            )
+            return None
+
+    async def _alert_disabled(self, adapter_id: str, health: AdapterHealth) -> None:
+        """Send the threshold alert without affecting the current adapter result."""
+        if self._health_alerter is None:
+            return
+        try:
+            await self._health_alerter.alert_disabled(adapter_id, health)
+        except Exception as exc:  # Alert delivery is an independent best-effort side effect.
+            log.warning(
+                "ingestion_adapter_health_alert_failed",
+                adapter_id=adapter_id,
+                error_type=type(exc).__name__,
+            )
+
+    async def _disabled_adapters(self) -> set[str]:
+        """Load the persisted disabled set, degrading to an empty set on health DB errors."""
+        if self._db is None or self._health_repo is None:
+            return set()
+        try:
+            return await self._health_repo.list_disabled(self._db)
+        except Exception as exc:  # Health lookup must not disable the whole ingestion run.
+            log.warning("ingestion_adapter_health_lookup_failed", error_type=type(exc).__name__)
+            return set()
 
     @staticmethod
     def _adapter_id(config: Mapping[str, object]) -> str | None:
