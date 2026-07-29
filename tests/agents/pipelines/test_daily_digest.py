@@ -16,6 +16,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     _article_preview_image,
     _curate_item_dict,
     _prioritize_digest_sections,
+    _score_value,
     _supplement_curated_items,
     build_daily_digest_workflow,
     register_daily_digest_executor,
@@ -23,6 +24,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
+from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import (
     MemoryEntry,
@@ -42,8 +44,9 @@ from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 class FakeIngestionService:
     """Record configured adapter runs without external fetching."""
 
-    def __init__(self) -> None:
+    def __init__(self, counts: dict[str, int] | None = None) -> None:
         self.calls: list[list[dict[str, object]]] = []
+        self._counts = counts
 
     async def run_all(
         self, adapter_configs: list[dict[str, object]], task_log_id: str | None = None
@@ -51,6 +54,8 @@ class FakeIngestionService:
         """Record adapters and return a successful count mapping."""
         del task_log_id
         self.calls.append(adapter_configs)
+        if self._counts is not None:
+            return dict(self._counts)
         return {str(config["adapter_id"]): 1 for config in adapter_configs}
 
 
@@ -308,6 +313,8 @@ def _pipeline(
     preview_mode: Literal["off", "preview_first"] = "off",
     preview_targets: list[str] | None = None,
     archive_repo: DailyDigestArchive | None = None,
+    publish_history: PublishHistory | None = None,
+    ingestion_counts: dict[str, int] | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
@@ -320,7 +327,7 @@ def _pipeline(
         preview_targets=preview_targets or [],
         adapter_configs=adapter_configs or {"rss": {"url": "https://feed.example.test"}},
     )
-    ingestion = FakeIngestionService()
+    ingestion = FakeIngestionService(ingestion_counts)
     repository = FakeSourceDataRepository(
         [
             _source("one", "https://example.test/one", "One"),
@@ -347,6 +354,7 @@ def _pipeline(
             config,
             reflector or RetryOnceReflector(),
             db=db,
+            publish_history=publish_history,
             memory_service=memory_service,
             pushed_content_repo=pushed_content_repo,
             archive_repo=archive_repo,
@@ -1060,3 +1068,179 @@ async def test_daily_digest_does_not_record_items_when_all_publishers_fail() -> 
         assert rows == []
     finally:
         await database.close()
+
+
+@pytest.mark.asyncio
+async def test_fanout_skips_already_succeeded_target_on_rerun() -> None:
+    """A successful same-day target is filtered before the publisher is called."""
+    database = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        await history.add(
+            database,
+            "good",
+            "success",
+            "Daily",
+            "content",
+            {},
+            digest_date="2026-07-17",
+        )
+        pipeline, _, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            publish_history=history,
+            targets=["good"],
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        assert result["approval_status"] == "skipped"
+        assert result["skipped_targets"] == ["good"]
+        assert result["targets"] == {}
+        assert GoodPublisher.received == []
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_fanout_retries_failed_target_on_rerun() -> None:
+    """A same-day error record does not block a retry for that target."""
+    database = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        await history.add(
+            database,
+            "bad",
+            "error",
+            "Daily",
+            "content",
+            {},
+            digest_date="2026-07-17",
+        )
+        pipeline, _, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=database,
+            publish_history=history,
+            targets=["bad"],
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        assert result["skipped_targets"] == []
+        assert result["targets"]["bad"]["status"] == "error"
+    finally:
+        await database.close()
+
+
+@pytest.mark.asyncio
+async def test_fanout_skips_preflight_when_db_unavailable() -> None:
+    """Without the optional persistence boundary, publishing keeps legacy behavior."""
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        targets=["good"],
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["targets"]["good"]["status"] == "success"
+    assert result["skipped_targets"] == []
+    assert len(GoodPublisher.received) == 1
+
+
+@pytest.mark.asyncio
+async def test_ingest_raises_when_all_adapters_fail_and_no_history() -> None:
+    """An empty adapter run cannot silently publish an empty or stale digest."""
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        ingestion_counts={"rss": 0},
+        source_data_by_field={"published_date": [], "fetched_at": []},
+    )
+
+    with pytest.raises(WorkflowError, match="all adapters returned 0 new items"):
+        await pipeline.run(run_date="2026-07-17")
+
+
+@pytest.mark.asyncio
+async def test_ingest_continues_with_stale_when_history_exists() -> None:
+    """Zero new adapter rows can still use eligible historical candidates."""
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        ingestion_counts={"rss": 0},
+        targets=[],
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["result_count"] == 2
+    assert result["fetched_counts"] == {"rss": 0}
+
+
+@pytest.mark.asyncio
+async def test_fanout_refuses_empty_curation() -> None:
+    """An empty LLM selection is rejected before archive or publisher work."""
+    pipeline, _, _ = _pipeline(
+        ["[]", "[]", "overview"],
+        targets=["good"],
+        ingestion_counts={"rss": 1},
+        source_data_by_field={"published_date": [], "fetched_at": []},
+    )
+
+    with pytest.raises(WorkflowError, match="refusing to publish an empty daily digest"):
+        await pipeline.run(run_date="2026-07-17")
+    assert GoodPublisher.received == []
+
+
+def test_score_value_rejects_out_of_range() -> None:
+    """Curation scores outside the contract are rejected."""
+    with pytest.raises(WorkflowError, match="out of range"):
+        _score_value(10.1)
+    with pytest.raises(WorkflowError, match="out of range"):
+        _score_value("0")
+
+
+def test_score_value_accepts_numeric_string() -> None:
+    """Numeric JSON strings remain compatible with existing model responses."""
+    assert _score_value("9") == 9.0
+
+
+@pytest.mark.asyncio
+async def test_curated_title_rebinds_to_source() -> None:
+    """LLM title rewrites cannot replace the source title in the published item."""
+    curation = (
+        '[{"id":"one","title":"Injected title","summary":"summary",'
+        '"score":9,"score_reason":"clear evidence"}]'
+    )
+    pipeline, _, _ = _pipeline([curation, curation, "overview"], targets=["good"])
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    item = next(item for item in result["curated"] if item["url"].endswith("/one"))
+    assert item["title"] == "One"
+
+
+@pytest.mark.asyncio
+async def test_curated_summary_truncated() -> None:
+    """Curated summaries are bounded before they reach a publisher."""
+    long_summary = "x" * 150
+    curation = json.dumps([{"id": "one", "title": "One", "summary": long_summary, "score": 9}])
+    pipeline, _, _ = _pipeline([curation, curation, "overview"], targets=["good"])
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    item = next(item for item in result["curated"] if item["url"].endswith("/one"))
+    assert len(item["summary"]) == 100
+
+
+@pytest.mark.asyncio
+async def test_score_reason_saved_to_digest_item() -> None:
+    """The optional curation rationale survives the workflow handoff."""
+    curation = (
+        '[{"id":"one","title":"One","summary":"summary","score":9,"score_reason":"high relevance"}]'
+    )
+    pipeline, _, _ = _pipeline([curation, curation, "overview"], targets=["good"])
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    item = next(item for item in result["curated"] if item["url"].endswith("/one"))
+    assert item["score_reason"] == "high relevance"
+    assert GoodPublisher.received[0].items[0].score_reason == "high relevance"

@@ -19,6 +19,7 @@ class DigestItem:
     published_at: str | None = None
     section: str = "产品与功能更新"
     tags: tuple[str, ...] = ()
+    score_reason: str | None = None
 
 
 def render_digest_card(

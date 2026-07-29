@@ -64,6 +64,9 @@ WORKFLOW_ID = "daily_digest"
 FEEDBACK_SEPARATOR = "\n\nFeedback from previous attempt:\n"
 _SNAPSHOT_ADAPTER_IDS = frozenset({"github_trending"})
 _CONTENT_FALLBACK_DAYS = 7
+CURATE_SCORE_MIN = 1.0
+CURATE_SCORE_MAX = 10.0
+CURATE_SUMMARY_MAX_CHARS = 100
 _DIGEST_SECTIONS = frozenset({"产品与功能更新", "前沿研究", "行业展望与社会影响", "开源TOP项目"})
 log = structlog.get_logger(__name__)
 
@@ -377,7 +380,9 @@ class DailyDigestPipeline:
             raise WorkflowError("daily digest final result is missing result_count")
         targets = payload.get("targets", {})
         approval_status = payload.get("approval_status", "published")
-        if approval_status == "pending":
+        if approval_status == "skipped":
+            message = f"skipped {result_count} curated items because targets were already published"
+        elif approval_status == "pending":
             message = f"prepared {result_count} curated items for approval"
         elif targets:
             message = f"published {result_count} curated items"
@@ -408,10 +413,12 @@ class DailyDigestPipeline:
             "result_count": result_count,
             "message": message,
             "targets": targets,
+            "skipped_targets": payload.get("skipped_targets", []),
             "curated": payload.get("curated", []),
             "overview": payload.get("overview", ""),
             "preview_mode": payload.get("preview_mode", "off"),
             "approval_status": approval_status,
+            "fetched_counts": payload.get("fetched_counts", {}),
             "usage": usage.as_dict(),
             "loop_summary": serialized_loop_summary,
             "workflow_run_id": workflow_run_id,
@@ -537,6 +544,7 @@ class _DailyDigestStepExecutor:
         self._usage = usage or _DigestUsage()
         self._archive_repo = archive_repo or get_daily_digest_archive()
         self._total_scanned = 0
+        self._fetched_counts: dict[str, int] = {}
         self._content_hash_by_url: dict[str, str] = {}
 
     async def execute(self, agent_id: str, user_input: str) -> str:
@@ -565,7 +573,7 @@ class _DailyDigestStepExecutor:
                     "config": adapter_config,
                 }
             )
-        await self._ingestion_service.run_all(adapter_configs)
+        self._fetched_counts = await self._ingestion_service.run_all(adapter_configs)
         end_date = Date.fromisoformat(self._run_date)
         start_date = end_date - timedelta(days=self._config.fetch_days - 1)
         fallback_start_date = end_date - timedelta(days=_CONTENT_FALLBACK_DAYS - 1)
@@ -575,6 +583,12 @@ class _DailyDigestStepExecutor:
         source_data = await self._recent_daily_candidates(start, fallback_start, end)
         source_data = self._filter_configured_rss_sources(source_data)
         items = [UnifiedData.model_validate(item.model_dump()) for item in source_data]
+        total_new = sum(self._fetched_counts.values())
+        if total_new == 0 and not items and adapter_configs:
+            raise WorkflowError(
+                "all adapters returned 0 new items and no historical candidates exist "
+                f"in the window; adapter_counts={self._fetched_counts}"
+            )
         return _dump_json([item.model_dump(mode="json") for item in items])
 
     async def _recent_daily_candidates(
@@ -744,11 +758,14 @@ class _DailyDigestStepExecutor:
                 score = _score_value(record.get("score"))
                 curated.append(
                     DigestItem(
-                        title=_required_string(record, "title"),
-                        summary=_plain_text(_required_string(record, "summary")),
+                        title=source.title,
+                        summary=_plain_text(_required_string(record, "summary"))[
+                            :CURATE_SUMMARY_MAX_CHARS
+                        ],
                         url=source.url,
                         source=source.source,
                         score=score,
+                        score_reason=_optional_string(record.get("score_reason")),
                         image_url=_metadata_string(source.metadata, "image_url", "thumbnail_url"),
                         video_url=_metadata_string(source.metadata, "video_url"),
                         published_at=source.published_date,
@@ -780,6 +797,10 @@ class _DailyDigestStepExecutor:
         """Render one CuratedDigest and publish it through the fault-isolating fan-out service."""
         values = _fanout_inputs(value)
         items = _load_digest_items(values["curated"])
+        if not items:
+            raise WorkflowError(
+                "curation produced 0 items; refusing to publish an empty daily digest"
+            )
         overview = values["overview"] if self._config.enable_overview else ""
         digest = CuratedDigest(
             date=self._run_date,
@@ -798,20 +819,54 @@ class _DailyDigestStepExecutor:
                 approval_status="pending" if preview_enabled else "published",
             )
         if preview_enabled:
-            targets = await self._publishing_service.fanout(digest, self._config.preview_targets)
+            publish_targets, skipped_targets = await self._filter_already_succeeded_targets(
+                self._config.preview_targets
+            )
+            if not publish_targets:
+                return _dump_json(
+                    {
+                        "result_count": len(items),
+                        "targets": {},
+                        "skipped_targets": skipped_targets,
+                        "curated": [_digest_item_dict(item) for item in items],
+                        "overview": overview,
+                        "preview_mode": "preview_first",
+                        "approval_status": "skipped",
+                        "fetched_counts": self._fetched_counts,
+                    }
+                )
+            targets = await self._publishing_service.fanout(digest, publish_targets)
             await self._record_publish_history(digest, targets)
             return _dump_json(
                 {
                     "result_count": len(items),
                     "targets": targets,
+                    "skipped_targets": skipped_targets,
                     "curated": [_digest_item_dict(item) for item in items],
                     "overview": overview,
                     "preview_mode": "preview_first",
                     "approval_status": "pending",
+                    "fetched_counts": self._fetched_counts,
                 }
             )
 
-        targets = await self._publishing_service.fanout(digest, self._config.targets)
+        publish_targets, skipped_targets = await self._filter_already_succeeded_targets(
+            self._config.targets
+        )
+        if not publish_targets:
+            return _dump_json(
+                {
+                    "result_count": len(items),
+                    "targets": {},
+                    "skipped_targets": skipped_targets,
+                    "curated": [_digest_item_dict(item) for item in items],
+                    "overview": overview,
+                    "preview_mode": "off",
+                    "approval_status": "skipped",
+                    "fetched_counts": self._fetched_counts,
+                }
+            )
+        targets = await self._publishing_service.fanout(digest, publish_targets)
         await self._record_publish_history(digest, targets)
         if (
             self._db is not None
@@ -836,12 +891,35 @@ class _DailyDigestStepExecutor:
             {
                 "result_count": len(items),
                 "targets": targets,
+                "skipped_targets": skipped_targets,
                 "curated": [_digest_item_dict(item) for item in items],
                 "overview": overview,
                 "preview_mode": "off",
                 "approval_status": "published",
+                "fetched_counts": self._fetched_counts,
             }
         )
+
+    async def _filter_already_succeeded_targets(
+        self, targets: list[str]
+    ) -> tuple[list[str], list[str]]:
+        """Skip targets already successful for this digest date before sending again."""
+        if self._db is None or self._publish_history is None:
+            return list(targets), []
+        to_publish: list[str] = []
+        skipped: list[str] = []
+        for target in targets:
+            records = await self._publish_history.query(
+                self._db,
+                publisher_id=target,
+                digest_date=self._run_date,
+                limit=10,
+            )
+            if any(record.status == "success" for record in records):
+                skipped.append(target)
+            else:
+                to_publish.append(target)
+        return to_publish, skipped
 
     async def _record_publish_history(
         self, digest: CuratedDigest, targets: dict[str, dict[str, object]]
@@ -966,6 +1044,7 @@ def _load_digest_items(value: str) -> list[DigestItem]:
                 image_url=_optional_string(record.get("image_url")),
                 video_url=_optional_string(record.get("video_url")),
                 published_at=_optional_string(record.get("published_at")),
+                score_reason=_optional_string(record.get("score_reason")),
                 section=_optional_string(record.get("section")) or "产品与功能更新",
                 tags=_string_tuple(record.get("tags")),
             )
@@ -1003,7 +1082,7 @@ def _required_string(record: Mapping[str, object], key: str) -> str:
 
 
 def _score_value(value: object) -> float | None:
-    """Read a numeric non-boolean LLM score, accepting numeric JSON strings."""
+    """Read a numeric LLM score in the inclusive 1-10 range."""
     if value is None:
         return None
     if isinstance(value, str):
@@ -1013,7 +1092,12 @@ def _score_value(value: object) -> float | None:
             raise WorkflowError("curation record requires numeric score") from exc
     if not isinstance(value, int | float) or isinstance(value, bool):
         raise WorkflowError("curation record requires numeric score")
-    return float(value)
+    score = float(value)
+    if not (CURATE_SCORE_MIN <= score <= CURATE_SCORE_MAX):
+        raise WorkflowError(
+            f"curation score {score} out of range [{CURATE_SCORE_MIN}, {CURATE_SCORE_MAX}]"
+        )
+    return score
 
 
 def _numeric_value(value: object) -> float | None:
@@ -1291,6 +1375,7 @@ def _digest_item_dict(item: DigestItem) -> dict[str, object]:
         "video_url": item.video_url,
         "published_at": item.published_at,
         "section": item.section,
+        "score_reason": item.score_reason,
         "tags": list(item.tags),
     }
 
