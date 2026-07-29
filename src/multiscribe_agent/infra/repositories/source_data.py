@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
-
-import aiosqlite
 
 from multiscribe_agent.domain.models import SourceData, UnifiedData
 from multiscribe_agent.infra.db import Database
@@ -92,7 +91,7 @@ class SourceDataRepository:
         if not items:
             return 0
 
-        count_before = await self._db.fetchone("SELECT COUNT(*) FROM source_data")
+        count_before = await self._db.fetchone("SELECT COUNT(*) AS count FROM source_data")
         if count_before is None:
             raise RuntimeError("source_data table is unavailable")
 
@@ -139,10 +138,10 @@ class SourceDataRepository:
             """,
             rows,
         )
-        count_after = await self._db.fetchone("SELECT COUNT(*) FROM source_data")
+        count_after = await self._db.fetchone("SELECT COUNT(*) AS count FROM source_data")
         if count_after is None:
             raise RuntimeError("source_data table is unavailable")
-        return int(count_after[0]) - int(count_before[0])
+        return int(count_after["count"]) - int(count_before["count"])
 
     async def get_by_date_range(
         self,
@@ -211,7 +210,7 @@ class SourceDataRepository:
         return default
 
     @staticmethod
-    def _to_source_data(row: aiosqlite.Row, highlight: str | None = None) -> SourceData:
+    def _to_source_data(row: Mapping[str, Any], highlight: str | None = None) -> SourceData:
         """Convert a SQLite row into a validated SourceData model."""
         data = dict(row)
         data["metadata"] = SourceDataRepository._decode_metadata(str(data["metadata"]))

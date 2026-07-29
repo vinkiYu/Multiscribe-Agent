@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-
-import aiosqlite
+from typing import Any
 
 from multiscribe_agent.infra.db import Database
 
@@ -144,7 +144,7 @@ class AdapterHealthRepository:
         return {str(row["adapter_id"]) for row in rows}
 
     @staticmethod
-    def _from_row(row: aiosqlite.Row) -> AdapterHealth:
+    def _from_row(row: Mapping[str, Any]) -> AdapterHealth:
         """Convert a SQLite row into the typed health value object."""
         return AdapterHealth(
             adapter_id=str(row["adapter_id"]),

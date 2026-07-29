@@ -6,9 +6,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import cast
-
-import aiosqlite
+from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.renderers.models import CuratedDigest
@@ -179,7 +177,7 @@ class DailyDigestArchive:
         return [_record_from_row(row) for row in rows]
 
 
-def _record_from_row(row: aiosqlite.Row) -> ArchivedDigest:
+def _record_from_row(row: Mapping[str, Any]) -> ArchivedDigest:
     """Decode one trusted SQLite row into the typed public archive contract."""
     decoded: object = json.loads(str(row["items"]))
     if not isinstance(decoded, list):

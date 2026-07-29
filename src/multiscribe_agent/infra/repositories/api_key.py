@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
-
-import aiosqlite
 
 from multiscribe_agent.infra.db import Database
 
@@ -82,6 +81,6 @@ class ApiKeyRepository:
         return datetime.now(UTC).isoformat()
 
     @staticmethod
-    def _to_dict(row: aiosqlite.Row) -> dict[str, Any]:
+    def _to_dict(row: Mapping[str, Any]) -> dict[str, Any]:
         """Convert a SQLite row to a dynamic API key metadata mapping."""
         return cast(dict[str, Any], dict(row))

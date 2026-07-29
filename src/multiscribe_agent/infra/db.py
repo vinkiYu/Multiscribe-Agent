@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import importlib
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import aiosqlite
 import structlog
@@ -35,8 +35,31 @@ class _SqliteVecModule(Protocol):
     def loadable_path(self) -> str: ...
 
 
-class Database:
-    """Wrap an aiosqlite connection with small typed query helpers."""
+class _SqliteRowMapping(Mapping[str, Any]):
+    """Expose SQLite rows as mappings while preserving legacy numeric indexing."""
+
+    def __init__(self, row: aiosqlite.Row) -> None:
+        """Copy one SQLite row into a backend-neutral, ordered mapping."""
+        self._data = {str(key): row[key] for key in row.keys()}  # noqa: SIM118
+        self._values = tuple(row[index] for index in range(len(row)))
+
+    def __getitem__(self, key: str | int) -> Any:  # noqa: ANN401 - backend row values are dynamic.
+        """Read by column name, or by the legacy positional index."""
+        if isinstance(key, int):
+            return self._values[key]
+        return self._data[key]
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterate column names in SQLite result order."""
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        """Return the number of columns in the result row."""
+        return len(self._data)
+
+
+class SqliteDatabase:
+    """SQLite-backed database implementation with FTS5 and jieba tokenization."""
 
     def __init__(
         self,
@@ -64,7 +87,7 @@ class Database:
         *,
         slow_query_threshold: float = 1.0,
         enable_sql_audit: bool = True,
-    ) -> Database:
+    ) -> SqliteDatabase:
         """Open a database connection and apply SQLite runtime settings."""
         connection = await aiosqlite.connect(path)
         connection.row_factory = aiosqlite.Row
@@ -85,7 +108,7 @@ class Database:
         write_timeout: float = 30.0,
         slow_query_threshold: float = 1.0,
         enable_sql_audit: bool = True,
-    ) -> Database:
+    ) -> SqliteDatabase:
         """Open a file-backed database using separate read and write lanes."""
         from multiscribe_agent.infra.connection_pool import ConnectionPool
 
@@ -183,7 +206,7 @@ class Database:
         self,
         statement: str,
         parameters: SqlParameters = (),
-    ) -> aiosqlite.Row | None:
+    ) -> Mapping[str, Any] | None:
         """Return the first row for a parameterized query."""
         if self._pool is not None:
             async with self._pool.acquire_read() as connection:
@@ -195,13 +218,14 @@ class Database:
         connection: aiosqlite.Connection,
         statement: str,
         parameters: SqlParameters,
-    ) -> aiosqlite.Row | None:
+    ) -> _SqliteRowMapping | None:
         """Fetch one row on a selected read lane."""
         started = time.monotonic()
         normalized_parameters = self._normalize_fts_parameters(statement, parameters)
         cursor = await connection.execute(statement, normalized_parameters)
         try:
-            return await cursor.fetchone()
+            row = await cursor.fetchone()
+            return _SqliteRowMapping(row) if row is not None else None
         finally:
             await cursor.close()
             self._record_query_observability(statement, parameters, time.monotonic() - started)
@@ -210,25 +234,27 @@ class Database:
         self,
         statement: str,
         parameters: SqlParameters = (),
-    ) -> list[aiosqlite.Row]:
+    ) -> list[Mapping[str, Any]]:
         """Return all rows for a parameterized query."""
         if self._pool is not None:
             async with self._pool.acquire_read() as connection:
-                return await self._fetchall_on_connection(connection, statement, parameters)
-        return await self._fetchall_on_connection(self.connection, statement, parameters)
+                rows = await self._fetchall_on_connection(connection, statement, parameters)
+                return cast(list[Mapping[str, Any]], rows)
+        rows = await self._fetchall_on_connection(self.connection, statement, parameters)
+        return cast(list[Mapping[str, Any]], rows)
 
     async def _fetchall_on_connection(
         self,
         connection: aiosqlite.Connection,
         statement: str,
         parameters: SqlParameters,
-    ) -> list[aiosqlite.Row]:
+    ) -> list[_SqliteRowMapping]:
         """Fetch all rows on a selected read lane."""
         started = time.monotonic()
         normalized_parameters = self._normalize_fts_parameters(statement, parameters)
         cursor = await connection.execute(statement, normalized_parameters)
         try:
-            return list(await cursor.fetchall())
+            return [_SqliteRowMapping(row) for row in await cursor.fetchall()]
         finally:
             await cursor.close()
             self._record_query_observability(statement, parameters, time.monotonic() - started)
@@ -724,6 +750,9 @@ CREATE TRIGGER IF NOT EXISTS trg_kb_chunks_au AFTER UPDATE ON kb_chunks BEGIN
     INSERT INTO kb_chunks_fts(rowid, content) VALUES (new.rowid, new.content);
 END;
 """
+# Backward-compatible public name. New backend implementations should target
+# ``DatabaseProtocol`` instead of inheriting from this SQLite implementation.
+Database = SqliteDatabase
 
 
 async def init_schema(db: Database) -> None:
@@ -744,11 +773,11 @@ async def _recover_interrupted_tasks(db: Database) -> None:
 
 async def _backfill_source_fts(db: Database) -> None:
     """Populate the source FTS index once when legacy content has no index rows."""
-    source_count = await db.fetchone("SELECT COUNT(*) FROM source_data")
-    fts_count = await db.fetchone("SELECT COUNT(*) FROM source_data_fts")
+    source_count = await db.fetchone("SELECT COUNT(*) AS count FROM source_data")
+    fts_count = await db.fetchone("SELECT COUNT(*) AS count FROM source_data_fts")
     if source_count is None or fts_count is None:
         return
-    if int(source_count[0]) == 0 or int(fts_count[0]) > 0:
+    if int(source_count["count"]) == 0 or int(fts_count["count"]) > 0:
         return
 
     await db.execute(
@@ -770,14 +799,14 @@ async def init_db(
 ) -> Database:
     """Open, initialize, repair, and return a ready SQLite database."""
     if use_pool and path != ":memory:":
-        database = await Database.open_with_pool(
+        database = await SqliteDatabase.open_with_pool(
             path,
             read_pool_size=read_pool_size,
             slow_query_threshold=slow_query_threshold,
             enable_sql_audit=enable_sql_audit,
         )
     else:
-        database = await Database.open(
+        database = await SqliteDatabase.open(
             path,
             slow_query_threshold=slow_query_threshold,
             enable_sql_audit=enable_sql_audit,

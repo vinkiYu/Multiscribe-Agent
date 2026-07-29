@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import cast
-
-import aiosqlite
+from collections.abc import Mapping
+from typing import Any, cast
 
 from multiscribe_agent.domain.models import TaskLog
 from multiscribe_agent.infra.db import Database
@@ -97,7 +96,7 @@ class TaskLogRepository:
         return self._to_task_log(row)
 
     @staticmethod
-    def _to_task_log(row: aiosqlite.Row) -> TaskLog:
+    def _to_task_log(row: Mapping[str, Any]) -> TaskLog:
         """Convert a task_logs row into a validated TaskLog model."""
         data = dict(row)
         data["id"] = str(data["id"])

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from uuid import uuid4
 
-import aiosqlite
 import structlog
 
 from multiscribe_agent.infra.db import Database
@@ -140,7 +140,7 @@ class PublishHistory:
         return [_record_from_row(row) for row in rows]
 
 
-def _record_from_row(row: aiosqlite.Row) -> PublishRecord:
+def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
     """Convert a trusted SQLite row into a typed published-record value."""
     status = str(row["status"])
     if status not in {"success", "error"}:
