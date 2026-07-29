@@ -196,5 +196,7 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | Phase 3 | FTS tsvector + pgvector替代 | 🟢 已通过 | FtsQueryBuilder/PgVectorStore; 530全量 |
 | Phase 4 | 配置 Bootstrap 双驱动 | 🟢 已通过 | db_driver配置 + init_database工厂 + Docker Postgres; 557全量 |
 | Phase 5 | 迁移工具 + 完整切换 + 集成测试 | 🟢 已通过 | 8个Port补齐 + dialect.py + migrate_sqlite_to_postgres.py + testcontainers; 562全量(+48) |
-| Phase 6 | Repository SQL 方言切换 | 🔄 进行中 | ?→$N全面切换(约100处) + json_extract方言; dialect.py框架接入 |
-| — | P2技术债(8项): _ingest冗余查询/score_threshold硬编码/publish唯一约束/Reflection截断/id()索引/google+ollama空壳/archive表缺字段 | 🔄 待处理 | 按优先级排序，Phase 6后独立排期 |
+| Phase 6 | Repository SQL 方言切换 | 🟢 已通过 | ?→$N全面切换(约100处) + json_extract方言; dialect.py框架接入; 566全量 + 真实PG容器烟测 15/15 |
+| P30 | 上下文窗口生产链路修复 | 🟢 已通过 | curate投影补url/source + ConservativeTokenCounter显式degraded + 566全量 + ruff/mypy clean |
+| P31.1 | 每日资讯 P2 收尾（score_threshold 字段化 + publish_history 加 digest_date UNIQUE + Reflection 截断可配） | 🔄 进行中 | 任务包已就绪，待执行 |
+| — | P2剩余7项: _ingest冗余查询/全失败保护/空候选拦截/LLM契约/dedup_key/AlertEngine/id()索引/google+ollama空壳/archive表缺字段 | 🔄 待处理 | P31.1后独立排期 |
