@@ -199,4 +199,5 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | Phase 6 | Repository SQL 方言切换 | 🟢 已通过 | ?→$N全面切换(约100处) + json_extract方言; dialect.py框架接入; 566全量 + 真实PG容器烟测 15/15 |
 | P30 | 上下文窗口生产链路修复 | 🟢 已通过 | curate投影补url/source + ConservativeTokenCounter显式degraded + 566全量 + ruff/mypy clean |
 | P31.1 | 每日资讯 P2 收尾（score_threshold 字段化 + publish_history 加 digest_date UNIQUE + Reflection 截断可配） | 🟢 已通过 | 业务代码4 + 测试3；定向50 + 全量572 passed；ruff/mypy clean |
-| — | P2剩余7项: _ingest冗余查询/全失败保护/空候选拦截/LLM契约/dedup_key/AlertEngine/id()索引/google+ollama空壳/archive表缺字段 | 🔄 待处理 | P31.1后独立排期 |
+| P31.2 | 每日资讯全链路 P0 修复（幂等预检 / 全失败保护 / 空候选拦截 / LLM 契约） | 🔄 进行中 | 任务包已就绪，待 Codex 执行；4 个 P0 + 12 条验收 |
+| — | P2剩余7项: _ingest冗余查询/AlertEngine/id()索引/google+ollama空壳/archive表缺字段 | 🔄 待处理 | P31.2后独立排期 |
