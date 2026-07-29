@@ -6,7 +6,7 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal, cast
 from uuid import uuid4
 
@@ -21,8 +21,15 @@ _MAX_QUERY_LIMIT = 200
 _INSERT_RECORD = """
 INSERT INTO publish_history (
     id, publisher_id, status, title, content_preview, result_data,
-    error_message, published_at, adapter_name
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    error_message, published_at, adapter_name, digest_date
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+"""
+_INSERT_IDEMPOTENT_RECORD = """
+INSERT INTO publish_history (
+    id, publisher_id, status, title, content_preview, result_data,
+    error_message, published_at, adapter_name, digest_date
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(publisher_id, digest_date) DO NOTHING
 """
 
 log = structlog.get_logger(__name__)
@@ -41,6 +48,7 @@ class PublishRecord:
     error_message: str | None
     published_at: datetime
     adapter_name: str | None
+    digest_date: str | None = None
 
 
 class PublishHistory(ExplicitDatabaseDialectMixin):
@@ -82,13 +90,16 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         result_data: dict[str, object],
         error_message: str | None = None,
         adapter_name: str | None = None,
+        digest_date: str | None = None,
     ) -> str:
         """Persist one normalized publisher outcome and return its generated identifier."""
         record_id = str(uuid4())
+        _validate_digest_date(digest_date)
         published_at = datetime.now(UTC)
+        statement = _INSERT_IDEMPOTENT_RECORD if digest_date is not None else _INSERT_RECORD
         await self._execute(
             db,
-            _INSERT_RECORD,
+            statement,
             (
                 record_id,
                 publisher_id,
@@ -99,8 +110,17 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
                 error_message,
                 published_at.isoformat(),
                 adapter_name,
+                digest_date,
             ),
         )
+        if digest_date is not None:
+            existing = await self._fetchone(
+                db,
+                "SELECT id FROM publish_history WHERE publisher_id = ? AND digest_date = ?",
+                (publisher_id, digest_date),
+            )
+            if existing is not None:
+                record_id = str(existing["id"])
         log.info("publish_history_added", publisher_id=publisher_id, record_id=record_id)
         return record_id
 
@@ -111,6 +131,7 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         from_date: datetime | None = None,
         to_date: datetime | None = None,
         limit: int = 50,
+        digest_date: str | None = None,
     ) -> list[PublishRecord]:
         """Return newest records after applying optional publisher and time filters."""
         filters: list[str] = []
@@ -124,12 +145,16 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         if to_date is not None:
             filters.append("published_at <= ?")
             parameters.append(to_date.isoformat())
+        if digest_date is not None:
+            _validate_digest_date(digest_date)
+            filters.append("digest_date = ?")
+            parameters.append(digest_date)
         where_clause = " AND ".join(filters) if filters else "1 = 1"
         parameters.append(max(1, min(limit, _MAX_QUERY_LIMIT)))
         # where_clause consists only of static clauses defined above; all values use placeholders.
         statement = f"""
             SELECT id, publisher_id, status, title, content_preview, result_data,
-                   error_message, published_at, adapter_name
+                   error_message, published_at, adapter_name, digest_date
             FROM {_TABLE_NAME}
             WHERE {where_clause}
             ORDER BY published_at DESC, id DESC
@@ -192,7 +217,20 @@ def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
         error_message=_optional_row_text(row["error_message"]),
         published_at=datetime.fromisoformat(str(row["published_at"])),
         adapter_name=_optional_row_text(row["adapter_name"]),
+        digest_date=_optional_row_text(row.get("digest_date")),
     )
+
+
+def _validate_digest_date(value: str | None) -> None:
+    """Validate the optional daily idempotency key format."""
+    if value is None:
+        return
+    if not isinstance(value, str) or re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) is None:
+        raise ValueError("digest_date must use YYYY-MM-DD format")
+    try:
+        date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("digest_date must be a valid calendar date") from exc
 
 
 def _optional_row_text(value: object) -> str | None:

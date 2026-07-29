@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import time
 from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import suppress
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -390,6 +391,14 @@ class SqliteDatabase:
                 published_at TEXT NOT NULL,
                 adapter_name TEXT
             )
+            """,
+        )
+        with suppress(aiosqlite.Error):
+            await self.execute("ALTER TABLE publish_history ADD COLUMN digest_date TEXT")
+        await self.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_publish_history_publisher_date
+            ON publish_history(publisher_id, digest_date)
             """,
         )
         await self.execute(

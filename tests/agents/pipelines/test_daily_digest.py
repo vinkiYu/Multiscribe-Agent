@@ -372,6 +372,24 @@ def test_workflow_declares_five_nodes_and_data_dependencies() -> None:
     assert workflow.steps[2].exit_condition == "llm"
 
 
+def test_score_threshold_from_config_to_workflow() -> None:
+    """The configured curation threshold reaches the nested loop config."""
+    workflow = build_daily_digest_workflow(
+        DailyDigestConfig(curate_agent_id="curator", curate_score_threshold=7.5)
+    )
+
+    assert workflow.steps[2].config == {"loop": {"score_threshold": 7.5}}
+
+
+def test_score_threshold_from_mapping() -> None:
+    """Persisted schedule mappings expose the curation score threshold."""
+    config = DailyDigestConfig.from_mapping(
+        {"curate_agent_id": "curator", "curate_score_threshold": 7.5}
+    )
+
+    assert config.curate_score_threshold == 7.5
+
+
 @pytest.mark.asyncio
 async def test_daily_digest_overview_uses_dedicated_agent() -> None:
     """Natural-language overview execution must not reuse the JSON curator agent."""

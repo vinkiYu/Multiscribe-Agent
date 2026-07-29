@@ -77,6 +77,7 @@ class AgentExecutor:
         *,
         max_rounds: int = DEFAULT_MAX_ROUNDS,
         reflector_max_retries: int = DEFAULT_REFLECTOR_MAX_RETRIES,
+        max_reflection_tokens: int = 512,
         token_budget: int = 120_000,
         max_input_tokens: int | None = None,
         max_output_tokens: int | None = None,
@@ -94,6 +95,12 @@ class AgentExecutor:
             raise ValueError("max_rounds must be positive")
         if reflector_max_retries < 0:
             raise ValueError("reflector_max_retries must not be negative")
+        if (
+            not isinstance(max_reflection_tokens, int)
+            or isinstance(max_reflection_tokens, bool)
+            or max_reflection_tokens <= 0
+        ):
+            raise ValueError("max_reflection_tokens must be a positive integer")
         if token_budget <= 0:
             raise ValueError("token_budget must be positive")
         self._provider_factory = provider_factory
@@ -102,6 +109,7 @@ class AgentExecutor:
         self._reflector = reflector
         self._max_rounds = max_rounds
         self._reflector_max_retries = reflector_max_retries
+        self._max_reflection_tokens = max_reflection_tokens
         self._token_budget = token_budget
         self._max_input_tokens = max_input_tokens
         self._max_output_tokens = max_output_tokens
@@ -526,7 +534,7 @@ class AgentExecutor:
                 try:
                     remaining_output = run_budget.remaining_output_tokens()
                     reflection_output_limit = min(
-                        512,
+                        self._max_reflection_tokens,
                         output_reserve,
                         remaining_output if remaining_output is not None else output_reserve,
                     )

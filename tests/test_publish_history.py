@@ -16,7 +16,7 @@ from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.publish_history import PublishHistory
-from multiscribe_agent.infra.db import init_db
+from multiscribe_agent.infra.db import SqliteDatabase, init_db
 
 
 class FakePublishingService:
@@ -115,6 +115,70 @@ async def test_query_clamps_out_of_range_limits() -> None:
 
 
 @pytest.mark.asyncio
+async def test_add_with_digest_date_is_idempotent_per_publisher_and_day() -> None:
+    """Retries for one publisher/day keep one durable history row."""
+    db = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        first = await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "Daily",
+            "content",
+            {"attempt": 1},
+            digest_date="2026-07-29",
+        )
+        second = await history.add(
+            db,
+            "feishu_bot",
+            "error",
+            "Daily",
+            "retry",
+            {"attempt": 2},
+            digest_date="2026-07-29",
+        )
+
+        records = await history.query(db, digest_date="2026-07-29")
+        assert second == first
+        assert len(records) == 1
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
+async def test_query_by_digest_date() -> None:
+    """History can be narrowed to one digest date independently of timestamps."""
+    db = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "Today",
+            "content",
+            {},
+            digest_date="2026-07-29",
+        )
+        await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "Tomorrow",
+            "content",
+            {},
+            digest_date="2026-07-30",
+        )
+
+        records = await history.query(db, digest_date="2026-07-29")
+        assert [record.title for record in records] == ["Today"]
+        assert records[0].digest_date == "2026-07-29"
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
 async def test_database_initialization_creates_publish_history_table() -> None:
     """The migration is part of normal database initialization and is idempotent."""
     db = await init_db(":memory:")
@@ -125,6 +189,55 @@ async def test_database_initialization_creates_publish_history_table() -> None:
 
         assert row is not None
         await db.migrate_publish_history()
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
+async def test_existing_publish_history_table_is_upgraded_with_digest_date() -> None:
+    """Legacy databases gain the idempotency column without losing old rows."""
+    db = await SqliteDatabase.open(":memory:")
+    try:
+        await db.execute(
+            """
+            CREATE TABLE publish_history (
+                id TEXT PRIMARY KEY,
+                publisher_id TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
+                title TEXT NOT NULL,
+                content_preview TEXT NOT NULL,
+                result_data TEXT NOT NULL DEFAULT '{}',
+                error_message TEXT,
+                published_at TEXT NOT NULL,
+                adapter_name TEXT
+            )
+            """
+        )
+        await db.execute(
+            """
+            INSERT INTO publish_history
+                (id, publisher_id, status, title, content_preview, result_data,
+                 published_at, adapter_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("legacy", "feishu_bot", "success", "Legacy", "content", "{}", "2026-07-29", None),
+        )
+
+        await db.migrate_publish_history()
+        history = PublishHistory()
+        record_id = await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "Today",
+            "content",
+            {},
+            digest_date="2026-07-29",
+        )
+
+        records = await history.query(db, digest_date="2026-07-29")
+        assert record_id != "legacy"
+        assert records[0].digest_date == "2026-07-29"
     finally:
         await db.close()
 

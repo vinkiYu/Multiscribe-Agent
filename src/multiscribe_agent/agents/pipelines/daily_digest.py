@@ -7,6 +7,7 @@ import asyncio
 import copy
 import hashlib
 import json
+import math
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, time, timedelta
@@ -190,6 +191,7 @@ class DailyDigestConfig:
     resolve_article_images: bool = False
     loop_max_iterations: int = 3
     curate_candidate_limit: int = 100
+    curate_score_threshold: float = 8.0
     adapter_configs: Mapping[str, Mapping[str, object]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -203,6 +205,12 @@ class DailyDigestConfig:
             <= 0
         ):
             raise ValueError("daily digest numeric limits must be positive")
+        if (
+            isinstance(self.curate_score_threshold, bool)
+            or not isinstance(self.curate_score_threshold, int | float)
+            or not math.isfinite(float(self.curate_score_threshold))
+        ):
+            raise ValueError("curate_score_threshold must be numeric")
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, object]) -> DailyDigestConfig:
@@ -242,6 +250,9 @@ class DailyDigestConfig:
             curate_candidate_limit=_positive_int(
                 values.get("curate_candidate_limit"), 100, "curate_candidate_limit"
             ),
+            curate_score_threshold=_float_value(
+                values.get("curate_score_threshold"), 8.0, "curate_score_threshold"
+            ),
             adapter_configs=adapter_configs,
         )
 
@@ -277,6 +288,7 @@ def build_daily_digest_workflow(config: DailyDigestConfig) -> WorkflowDefinition
                 next_step_id="overview",
                 max_iterations=config.loop_max_iterations,
                 exit_condition="llm",
+                config={"loop": {"score_threshold": config.curate_score_threshold}},
             ),
             WorkflowStep(
                 id="overview",
@@ -850,6 +862,7 @@ class _DailyDigestStepExecutor:
                 content=digest.summary,
                 result_data=result,
                 error_message=str(error) if status == "error" and error is not None else None,
+                digest_date=self._run_date,
             )
 
 
@@ -869,6 +882,18 @@ def _positive_int(value: object, default: int, name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
         raise ValueError(f"{name} must be a positive integer")
     return value
+
+
+def _float_value(value: object, default: float, name: str) -> float:
+    """Validate a finite numeric configuration value."""
+    if value is None:
+        return default
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ValueError(f"{name} must be numeric")
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError(f"{name} must be finite")
+    return numeric
 
 
 def _bool_value(value: object, default: bool, name: str) -> bool:

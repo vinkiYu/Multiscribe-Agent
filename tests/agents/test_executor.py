@@ -34,6 +34,7 @@ def make_executor(
     reflector: object | None = None,
     max_rounds: int = 5,
     max_llm_calls: int | None = None,
+    max_reflection_tokens: int = 512,
 ) -> AgentExecutor:
     """Create an executor around one deterministic provider."""
     return AgentExecutor(
@@ -43,6 +44,7 @@ def make_executor(
         reflector=reflector,
         max_rounds=max_rounds,
         max_llm_calls=max_llm_calls,
+        max_reflection_tokens=max_reflection_tokens,
     )
 
 
@@ -219,6 +221,21 @@ async def test_reflection_usage_and_output_limit_are_in_run_budget(
     assert result.status == "success"
     assert result.usage == TokenUsage(input_tokens=11, output_tokens=5, total_tokens=16)
     assert provider.generate_output_limits == [512]
+
+
+@pytest.mark.asyncio
+async def test_reflection_output_limit_is_configurable(agent_def: AgentDefinition) -> None:
+    """A caller can raise the reflection cap without changing the default."""
+    provider = FakeProvider(
+        streamed_rounds=[[AIResponse(content="draft")]],
+        generated_responses=[AIResponse(content='{"quality":"pass","score":9,"feedback":"ok"}')],
+    )
+    executor = make_executor(provider, reflector=Reflector(), max_reflection_tokens=1024)
+
+    result = await executor.run_result(agent_def, "write answer")
+
+    assert result.status == "success"
+    assert provider.generate_output_limits == [1024]
 
 
 @pytest.mark.asyncio
