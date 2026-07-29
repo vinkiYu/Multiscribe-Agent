@@ -9,6 +9,7 @@ __pycache__/
 .benchmarks/
 # pytest basetemp temporary artifacts (never commit generated test fixtures)
 .tmp-pytest/
+.ptmp/
 .pytest-tmp/
 .pytest-tmp-*/
 .pytest-tmp-*-final/
