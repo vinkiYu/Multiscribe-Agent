@@ -34,6 +34,9 @@ from multiscribe_agent.domain.models import (
 )
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.infra.redis_client import close_redis
+from multiscribe_agent.infra.repositories.curation_evaluations import (
+    CurationEvaluationRepository,
+)
 from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
 from multiscribe_agent.infra.repositories.kv import KvRepository
@@ -248,6 +251,7 @@ class ServiceContext:
         self.iteration_store: IterationStore | None = None
         self.scheduler: SchedulerService | None = None
         self.daily_usage: DailyUsageRepository | None = None
+        self.curation_evaluations: CurationEvaluationRepository | None = None
         self.scheduler_lock: SchedulerLock | None = None
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
@@ -283,6 +287,8 @@ class ServiceContext:
         self.iteration_store = IterationStore(self.db)
         self.daily_usage = DailyUsageRepository(self.db)
         await self.daily_usage.ensure_schema()
+        self.curation_evaluations = CurationEvaluationRepository(self.db)
+        await self.curation_evaluations.ensure_schema()
         if self.settings.enable_sql_audit:
             self.sql_audit = SqlAuditLogger(self.db)
             self.db.set_audit_logger(self.sql_audit)
@@ -526,6 +532,7 @@ class ServiceContext:
             archive_repo=get_daily_digest_archive(),
             preference_feedback=self.preference_feedback,
             iteration_store=self.iteration_store,
+            curation_evaluations=self.curation_evaluations,
         )
         return await pipeline.run()
 

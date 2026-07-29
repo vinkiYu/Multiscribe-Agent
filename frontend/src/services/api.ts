@@ -28,7 +28,9 @@ export interface TaskLog {
 export interface DailyUsageRecord { date: string; input_tokens: number; output_tokens: number; total_tokens: number; llm_calls: number; task_count: number }
 export interface PublishSummary { total: number; success: number; error: number }
 export interface IterationRecord { workflow_run_id: string; step_id: string; round: number; score: number | null; converged: boolean; reason: string }
-export interface OperationsOverview { usage: DailyUsageRecord; publish: PublishSummary; iterations: IterationRecord[]; task_logs: TaskLog[] }
+export interface CurationEvaluationRecord { workflow_run_id: string; date: string; recorded_at: number; rounds: number; converged: boolean; exit_reason: string; final_score: number | null; score_delta: number | null; avg_iter_score: number | null; result_count: number; usage: Omit<DailyUsageRecord, 'date' | 'task_count'> }
+export interface CurationEvaluationsSummary { total_runs: number; converged_runs: number; avg_score: number | null; avg_final_score: number | null; avg_rounds: number; converge_rate: number; per_reason_counts: Record<string, number> }
+export interface OperationsOverview { usage: DailyUsageRecord; publish: PublishSummary; iterations: IterationRecord[]; evaluation: { today_summary: CurationEvaluationsSummary; recent: CurationEvaluationRecord[] }; task_logs: TaskLog[] }
 
 export interface WorkflowSummary {
   id: string

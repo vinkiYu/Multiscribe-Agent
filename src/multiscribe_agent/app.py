@@ -20,6 +20,7 @@ from multiscribe_agent.api.routes import (
     agents,
     ai_v1,
     auth,
+    curation_evaluations,
     daily_news,
     dashboard,
     digest,
@@ -128,6 +129,7 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
 
     for router in (
         auth.router,
+        curation_evaluations.router,
         ai_v1.router,
         metrics.router,
         daily_news.router,

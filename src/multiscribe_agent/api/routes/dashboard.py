@@ -44,7 +44,12 @@ async def logs(
 @router.get("/overview")
 async def overview(context: ServiceContext = Depends(get_context)) -> dict[str, object]:
     """Return the single payload consumed by the operations dashboard."""
-    if context.db is None or context.daily_usage is None or context.publish_history is None:
+    if (
+        context.db is None
+        or context.daily_usage is None
+        or context.publish_history is None
+        or context.curation_evaluations is None
+    ):
         raise HTTPException(status_code=503, detail="services unavailable")
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     usage_rows = await context.daily_usage.query(today, today)
@@ -65,6 +70,25 @@ async def overview(context: ServiceContext = Depends(get_context)) -> dict[str, 
             for item in await context.iteration_store.list_recent(limit=20)
         ]
     rows = await context.db.fetchall("SELECT * FROM task_logs ORDER BY id DESC LIMIT 20")
+    evaluation = {
+        "today_summary": await context.curation_evaluations.summary(today, today),
+        "recent": [
+            {
+                "workflow_run_id": item.workflow_run_id,
+                "date": item.date,
+                "recorded_at": item.recorded_at,
+                "rounds": item.rounds,
+                "converged": item.converged,
+                "exit_reason": item.exit_reason,
+                "final_score": item.final_score,
+                "score_delta": item.score_delta,
+                "avg_iter_score": item.avg_iter_score,
+                "result_count": item.result_count,
+                "usage": item.usage,
+            }
+            for item in await context.curation_evaluations.query(today, None, limit=10)
+        ],
+    }
     return {
         "usage": {
             "date": usage.date if usage else today,
@@ -76,6 +100,7 @@ async def overview(context: ServiceContext = Depends(get_context)) -> dict[str, 
         },
         "publish": publish,
         "iterations": iterations,
+        "evaluation": evaluation,
         "task_logs": [dict(cast(Mapping[str, object], row)) for row in rows],
     }
 

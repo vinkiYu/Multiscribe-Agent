@@ -41,6 +41,10 @@ from multiscribe_agent.domain.models import (
 )
 from multiscribe_agent.domain.ports import SourceDataRepository
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.repositories.curation_evaluations import (
+    CurationEvaluationRecord,
+    CurationEvaluationRepository,
+)
 from multiscribe_agent.memory.digest_context import DigestMemoryContextBuilder, DigestMemoryService
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
@@ -117,6 +121,57 @@ class _DigestUsage:
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
             "llm_calls": self.llm_calls,
+        }
+
+    def add_mapping(self, usage: Mapping[str, object]) -> None:
+        """Add a serialized loop usage payload without trusting dynamic event data."""
+        self.input_tokens += _usage_int(usage.get("input_tokens"))
+        self.output_tokens += _usage_int(usage.get("output_tokens"))
+        self.total_tokens += _usage_int(usage.get("total_tokens"))
+        self.llm_calls += 1 if usage else 0
+
+
+@dataclass(slots=True)
+class _LoopIterationAccumulator:
+    """Collect curation Loop observations emitted by the existing workflow engine."""
+
+    rounds: int = 0
+    converged: bool = False
+    exit_reason: str = "max_rounds"
+    final_score: float | None = None
+    score_delta: float | None = None
+    scores: list[float] = field(default_factory=list)
+    usage: _DigestUsage = field(default_factory=_DigestUsage)
+
+    def record(self, event_data: Mapping[str, object]) -> None:
+        """Capture one serialized `loop_iteration` event for the curation step."""
+        round_value = event_data.get("iteration")
+        if isinstance(round_value, int) and not isinstance(round_value, bool):
+            self.rounds = max(self.rounds, round_value)
+        score = _numeric_value(event_data.get("score"))
+        if score is not None:
+            self.final_score = score
+            self.scores.append(score)
+        self.score_delta = _numeric_value(event_data.get("delta"))
+        reason = event_data.get("reason")
+        if isinstance(reason, str) and reason:
+            self.exit_reason = reason
+        if event_data.get("converged") is True:
+            self.converged = True
+        iteration_usage = event_data.get("usage")
+        if isinstance(iteration_usage, Mapping):
+            self.usage.add_mapping(iteration_usage)
+
+    def as_dict(self) -> dict[str, object]:
+        """Return the stable curation evaluation payload used by persistence and APIs."""
+        return {
+            "rounds": self.rounds,
+            "converged": self.converged,
+            "exit_reason": self.exit_reason,
+            "final_score": self.final_score,
+            "score_delta": self.score_delta,
+            "avg_iter_score": sum(self.scores) / len(self.scores) if self.scores else None,
+            "usage": self.usage.as_dict(),
         }
 
 
@@ -267,6 +322,7 @@ class DailyDigestPipeline:
         archive_repo: DailyDigestArchive | None = None,
         preference_feedback: PreferenceFeedbackService | None = None,
         iteration_store: IterationStore | None = None,
+        curation_evaluations: CurationEvaluationRepository | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -282,14 +338,25 @@ class DailyDigestPipeline:
         self._archive_repo = archive_repo or get_daily_digest_archive()
         self._preference_feedback = preference_feedback
         self._iteration_store = iteration_store
+        self._curation_evaluations = curation_evaluations
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
         if self._preference_feedback is not None and self._db is not None:
             await self._preference_feedback.apply_click_feedback(self._db)
-        engine, usage = self._engine(run_date)
-        result = await engine.run(WORKFLOW_ID, "", date=run_date)
-        final = result["final"]
+        date_value = run_date or datetime.now(UTC).date().isoformat()
+        engine, usage = self._engine(date_value)
+        loop_summary = _LoopIterationAccumulator()
+        workflow_run_id = ""
+        final: object = ""
+        async for event in engine.stream(WORKFLOW_ID, "", date=date_value):
+            workflow_run_id = event.trace_id
+            if event.type == "workflow_error":
+                raise WorkflowError(str(event.data["message"]), event.data)
+            if event.type == "loop_iteration" and event.data.get("step_id") == "curate":
+                loop_summary.record(event.data)
+            if event.type == "workflow_complete":
+                final = event.data["final"]
         if not isinstance(final, str):
             raise WorkflowError("daily digest workflow returned a non-text final result")
         payload = _json_object(final)
@@ -304,6 +371,27 @@ class DailyDigestPipeline:
             message = f"published {result_count} curated items"
         else:
             message = f"generated {result_count} curated items without publishing"
+        serialized_loop_summary = loop_summary.as_dict()
+        if self._curation_evaluations is not None and workflow_run_id:
+            await self._curation_evaluations.upsert(
+                CurationEvaluationRecord(
+                    workflow_run_id=workflow_run_id,
+                    date=date_value,
+                    recorded_at=int(datetime.now(UTC).timestamp()),
+                    rounds=loop_summary.rounds,
+                    converged=loop_summary.converged,
+                    exit_reason=loop_summary.exit_reason,
+                    final_score=loop_summary.final_score,
+                    score_delta=loop_summary.score_delta,
+                    avg_iter_score=(
+                        sum(loop_summary.scores) / len(loop_summary.scores)
+                        if loop_summary.scores
+                        else None
+                    ),
+                    result_count=result_count,
+                    usage=loop_summary.usage.as_dict(),
+                )
+            )
         return {
             "result_count": result_count,
             "message": message,
@@ -313,6 +401,8 @@ class DailyDigestPipeline:
             "preview_mode": payload.get("preview_mode", "off"),
             "approval_status": approval_status,
             "usage": usage.as_dict(),
+            "loop_summary": serialized_loop_summary,
+            "workflow_run_id": workflow_run_id,
         }
 
     async def stream(self, *, run_date: str | None = None) -> AsyncIterator[WorkflowEvent]:
@@ -340,6 +430,7 @@ class DailyDigestPipeline:
             archive_repo=self._archive_repo,
             preference_feedback=self._preference_feedback,
             iteration_store=self._iteration_store,
+            curation_evaluations=self._curation_evaluations,
         )
         return await pipeline.run()
 
@@ -898,6 +989,23 @@ def _score_value(value: object) -> float | None:
     if not isinstance(value, int | float) or isinstance(value, bool):
         raise WorkflowError("curation record requires numeric score")
     return float(value)
+
+
+def _numeric_value(value: object) -> float | None:
+    """Read a numeric non-boolean loop event value without raising on telemetry data."""
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        return None
+    return float(value)
+
+
+def _usage_int(value: object) -> int:
+    """Normalize serialized non-negative token counters from workflow event data."""
+    if isinstance(value, bool) or not isinstance(value, int | float | str):
+        return 0
+    try:
+        return max(0, int(value))
+    except (OverflowError, ValueError):
+        return 0
 
 
 def _optional_string(value: object) -> str | None:
