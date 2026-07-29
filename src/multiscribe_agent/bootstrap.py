@@ -16,6 +16,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
 from multiscribe_agent.agents.prompt_service import PromptService
 from multiscribe_agent.agents.reflector import Reflector
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
+from multiscribe_agent.agents.workflow.iteration_store import IterationStore
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.adapter_health import AdapterHealthRepository
@@ -243,6 +244,7 @@ class ServiceContext:
         self.tools: ToolRegistry | None = None
         self.agent_executor: AgentExecutor | None = None
         self.workflow_engine: WorkflowEngine | None = None
+        self.iteration_store: IterationStore | None = None
         self.scheduler: SchedulerService | None = None
         self.scheduler_lock: SchedulerLock | None = None
         self.config_service: ConfigService | None = None
@@ -276,6 +278,7 @@ class ServiceContext:
             enable_sql_audit=self.settings.enable_sql_audit,
             use_pool=True,
         )
+        self.iteration_store = IterationStore(self.db)
         if self.settings.enable_sql_audit:
             self.sql_audit = SqlAuditLogger(self.db)
             self.db.set_audit_logger(self.sql_audit)
@@ -372,7 +375,9 @@ class ServiceContext:
         )
         self.agent_executor = executor
         self.workflow_engine = WorkflowEngine(
-            _StoredAgentStepExecutor(entities, executor), entities
+            _StoredAgentStepExecutor(entities, executor),
+            entities,
+            iteration_store=self.iteration_store,
         )
         registry = TaskExecutorRegistry()
         registry.register("daily_digest", self.run_daily_digest_task)
@@ -515,6 +520,7 @@ class ServiceContext:
             self.pushed_content,
             archive_repo=get_daily_digest_archive(),
             preference_feedback=self.preference_feedback,
+            iteration_store=self.iteration_store,
         )
         return await pipeline.run()
 

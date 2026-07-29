@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from multiscribe_agent.agents.workflow.events import WorkflowEvent
 from multiscribe_agent.agents.workflow.graph import build_graph, topological_levels
+from multiscribe_agent.agents.workflow.iteration_store import IterationStore
 from multiscribe_agent.agents.workflow.loop_node import execute_loop_step
 from multiscribe_agent.agents.workflow.protocols import AgentStepExecutor, LoopReflector
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
@@ -32,10 +33,12 @@ class WorkflowEngine:
         executor: AgentStepExecutor,
         workflow_store: WorkflowStore,
         reflector: LoopReflector | None = None,
+        iteration_store: IterationStore | None = None,
     ) -> None:
         self._executor = executor
         self._workflow_store = workflow_store
         self._reflector = reflector
+        self._iteration_store = iteration_store
 
     async def run(
         self,
@@ -167,6 +170,8 @@ class WorkflowEngine:
                 self._executor,
                 self._reflector,
                 trace_id=trace_id,
+                workflow_run_id=trace_id,
+                iteration_store=self._iteration_store,
             )
             return output, history
         return await self._executor.execute(step.agent_id, str(value)), []

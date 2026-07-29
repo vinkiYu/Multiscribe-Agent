@@ -21,6 +21,7 @@ import structlog
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.events import WorkflowEvent
+from multiscribe_agent.agents.workflow.iteration_store import IterationStore
 from multiscribe_agent.agents.workflow.protocols import (
     AgentStepExecutor,
     LoopReflector,
@@ -265,6 +266,7 @@ class DailyDigestPipeline:
         pushed_content_repo: PushedContentRepository | None = None,
         archive_repo: DailyDigestArchive | None = None,
         preference_feedback: PreferenceFeedbackService | None = None,
+        iteration_store: IterationStore | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -279,6 +281,7 @@ class DailyDigestPipeline:
         self._pushed_content_repo = pushed_content_repo
         self._archive_repo = archive_repo or get_daily_digest_archive()
         self._preference_feedback = preference_feedback
+        self._iteration_store = iteration_store
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
@@ -336,6 +339,7 @@ class DailyDigestPipeline:
             self._pushed_content_repo,
             archive_repo=self._archive_repo,
             preference_feedback=self._preference_feedback,
+            iteration_store=self._iteration_store,
         )
         return await pipeline.run()
 
@@ -368,7 +372,15 @@ class DailyDigestPipeline:
             set_usage_sink = getattr(run_reflector, "set_usage_sink", None)
             if callable(set_usage_sink):
                 set_usage_sink(usage.add)
-        return WorkflowEngine(step_executor, _WorkflowStore(workflow), run_reflector), usage
+        return (
+            WorkflowEngine(
+                step_executor,
+                _WorkflowStore(workflow),
+                run_reflector,
+                iteration_store=self._iteration_store,
+            ),
+            usage,
+        )
 
 
 def register_daily_digest_executor(

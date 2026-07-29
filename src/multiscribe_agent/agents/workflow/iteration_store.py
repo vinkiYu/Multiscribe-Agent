@@ -66,6 +66,20 @@ class IterationStore:
         )
         return [self._from_row(row) for row in rows]
 
+    async def list_recent(self, limit: int = 20) -> list[IterationRecord]:
+        """Return the most recently recorded iterations across workflow runs."""
+        bounded_limit = max(1, min(limit, 100))
+        rows = await self._db.fetchall(
+            """
+            SELECT workflow_run_id, step_id, round, output, score, feedback, converged, reason
+            FROM workflow_iterations
+            ORDER BY recorded_at DESC, round DESC
+            LIMIT ?
+            """,
+            (bounded_limit,),
+        )
+        return [self._from_row(row) for row in rows]
+
     async def latest_for_step(self, workflow_run_id: str, step_id: str) -> IterationRecord | None:
         """Return the latest durable iteration for a step, if one exists."""
         rows = await self._db.fetchall(

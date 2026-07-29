@@ -32,6 +32,7 @@ from multiscribe_agent.api.routes import (
     skills,
     sources,
     track_click,
+    workflow_iterations,
     workflows,
 )
 from multiscribe_agent.api.routes import (
@@ -142,6 +143,7 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
         skills.router,
         agents.router,
         workflows.router,
+        workflow_iterations.router,
         schedules.router,
         track_click.router,
     ):
