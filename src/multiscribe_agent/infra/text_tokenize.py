@@ -11,7 +11,7 @@ from typing import cast
 def _get_jieba() -> ModuleType | None:
     """Load jieba lazily so deployments without it retain Unicode FTS support."""
     try:
-        import jieba  # type: ignore[import-not-found]
+        import jieba  # type: ignore[import-untyped]
 
         jieba.setLogLevel(20)
         return cast(ModuleType, jieba)

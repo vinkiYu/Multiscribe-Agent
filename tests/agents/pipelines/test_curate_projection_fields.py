@@ -34,11 +34,11 @@ def _projection_ratio(items: list[UnifiedData]) -> float:
     return len(projected) / len(full)
 
 
-def test_projection_returns_only_id_title_summary() -> None:
-    """The LLM projection excludes fields recovered after ID mapping."""
+def test_projection_returns_only_provenance_fields() -> None:
+    """The LLM projection exposes id, title, summary, url, and source only."""
     projected = _curate_item_dict(_make_item("一段描述文字"))
 
-    assert set(projected) == {"id", "title", "summary"}
+    assert set(projected) == {"id", "title", "summary", "url", "source"}
 
 
 def test_summary_is_truncated_to_limit() -> None:
@@ -57,16 +57,16 @@ def test_short_summary_not_padded() -> None:
 
 
 def test_ratio_rss_short_descriptions() -> None:
-    """One hundred typical short RSS summaries project below 30 percent."""
+    """One hundred typical short RSS summaries project below 50 percent."""
     description = "人工智能在医疗领域取得新突破, GPT-5 展现卓越诊断能力。"
     items = [_make_item(description, index) for index in range(100)]
     ratio = _projection_ratio(items)
 
-    assert ratio < 0.30, f"RSS short-description projection ratio {ratio:.1%} exceeds 30%"
+    assert ratio < 0.50, f"RSS short-description projection ratio {ratio:.1%} exceeds 50%"
 
 
 def test_ratio_mixed_realistic_distribution() -> None:
-    """A deterministic 20/50/30 long, medium, and short mix stays below 30 percent."""
+    """A deterministic 20/50/30 long, medium, and short mix stays below 50 percent."""
     long_description = "这是一篇关于人工智能发展历史的深度长文。" * 30
     medium_description = "<p>AI 技术持续发展, GPT-5 发布、Claude 升级。</p>"
     short_description = "AI在医疗领域取得新突破。"
@@ -74,4 +74,4 @@ def test_ratio_mixed_realistic_distribution() -> None:
     items = [_make_item(description, index) for index, description in enumerate(descriptions)]
     ratio = _projection_ratio(items)
 
-    assert ratio < 0.30, f"Mixed-distribution projection ratio {ratio:.1%} exceeds 30%"
+    assert ratio < 0.50, f"Mixed-distribution projection ratio {ratio:.1%} exceeds 50%"

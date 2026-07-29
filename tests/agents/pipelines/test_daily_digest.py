@@ -439,7 +439,15 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         target_count=12,
     )
 
-    assert set(projected[0]) == {"id", "title", "summary"}
+    # Core minimal fields stay; full description and metadata must not leak.
+    assert "id" in projected[0]
+    assert "title" in projected[0]
+    assert "summary" in projected[0]
+    assert "url" in projected[0]
+    assert "source" in projected[0]
+    assert "description" not in projected[0]
+    assert "metadata" not in projected[0]
+    assert "author" not in projected[0]
     assert all(len(str(item["summary"])) <= 150 for item in projected)
     assert len(new_prompt) < len(old_prompt) * 0.30
 

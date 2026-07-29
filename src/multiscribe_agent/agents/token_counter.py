@@ -77,7 +77,12 @@ class ConservativeTokenCounter:
                 sort_keys=True,
             )
             partitions["tool_schema"] = self.count_text(schema)
-        return TokenEstimate(total=sum(partitions.values()), partitions=partitions)
+        return TokenEstimate(
+            total=sum(partitions.values()),
+            partitions=partitions,
+            degraded=True,
+            reason="tokenizer_unavailable",
+        )
 
 
 class AnthropicTokenCounter:

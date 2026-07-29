@@ -1280,6 +1280,8 @@ def _curate_item_dict(item: UnifiedData) -> dict[str, object]:
         "id": item.id,
         "title": item.title,
         "summary": item.description[:_CURATE_SUMMARY_CHAR_LIMIT],
+        "url": item.url,
+        "source": item.source,
     }
     if item.source == "github_trending":
         projected["g"] = True
