@@ -288,6 +288,29 @@ class SystemSettings(BaseSettings):
         ),
     )
     db_path: str = "data/database.sqlite"
+    db_driver: Literal["sqlite", "postgres"] = Field(
+        default="sqlite",
+        validation_alias=AliasChoices("DB_DRIVER", "MULTISCRIBE_DB_DRIVER"),
+    )
+    db_dsn: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "DB_DSN",
+            "DATABASE_URL",
+            "MULTISCRIBE_DB_DSN",
+            "MULTISCRIBE_DATABASE_URL",
+        ),
+    )
+    db_pool_size: int = Field(
+        default=5,
+        ge=1,
+        validation_alias=AliasChoices("DB_POOL_SIZE", "MULTISCRIBE_DB_POOL_SIZE"),
+    )
+    db_pool_timeout: float = Field(
+        default=30.0,
+        gt=0,
+        validation_alias=AliasChoices("DB_POOL_TIMEOUT", "MULTISCRIBE_DB_POOL_TIMEOUT"),
+    )
     log_level: str = "INFO"
     log_file: str = Field(
         default="logs/multiscribe-agent.log",

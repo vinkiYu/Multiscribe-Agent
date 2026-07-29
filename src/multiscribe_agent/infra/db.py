@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import time
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping, Sequence
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
@@ -867,3 +867,73 @@ async def init_db(
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)
     return database
+
+
+async def init_database(
+    db_driver: str,
+    *,
+    sqlite_path: str = "data/database.sqlite",
+    postgres_dsn: str = "",
+    pool_size: int = 5,
+    pool_timeout: float = 30.0,
+    slow_query_threshold: float = 1.0,
+    enable_sql_audit: bool = True,
+) -> Database:
+    """Initialize the configured SQLite or PostgreSQL database backend.
+
+    SQLite keeps the established :func:`init_db` lifecycle. PostgreSQL is an
+    optional path: ``asyncpg`` and the driver are imported only when selected,
+    so default SQLite deployments do not need the extra installed.
+    """
+    if db_driver == "sqlite":
+        return await init_db(
+            sqlite_path,
+            slow_query_threshold=slow_query_threshold,
+            enable_sql_audit=enable_sql_audit,
+            use_pool=True,
+        )
+
+    if db_driver == "postgres":
+        from multiscribe_agent.infra.postgres.schema_fts import (
+            AGENT_MEMORIES_FTS_INDEXES,
+            AGENT_MEMORIES_FTS_TABLE,
+            CHUNK_VECTORS_TABLE,
+            KB_CHUNKS_FTS_INDEX,
+            KB_CHUNKS_FTS_TABLE,
+            PGVECTOR_EXTENSION,
+            SOURCE_DATA_FTS_INDEXES,
+            SOURCE_DATA_FTS_TABLE,
+        )
+        from multiscribe_agent.infra.postgres_driver import PostgresDatabase, _AsyncpgPool
+
+        asyncpg_module = importlib.import_module("asyncpg")
+        create_pool = cast(
+            Callable[..., Awaitable[_AsyncpgPool]], asyncpg_module.__dict__["create_pool"]
+        )
+        pool = await create_pool(
+            dsn=postgres_dsn,
+            min_size=1,
+            max_size=pool_size,
+            timeout=pool_timeout,
+            command_timeout=30,
+        )
+        database = PostgresDatabase(pool)
+
+        async with pool.acquire() as connection:
+            await connection.execute(PGVECTOR_EXTENSION)
+            await connection.execute(CHUNK_VECTORS_TABLE)
+            await connection.execute(SOURCE_DATA_FTS_TABLE)
+            for statement in SOURCE_DATA_FTS_INDEXES:
+                await connection.execute(statement)
+            await connection.execute(KB_CHUNKS_FTS_TABLE)
+            await connection.execute(KB_CHUNKS_FTS_INDEX)
+            await connection.execute(AGENT_MEMORIES_FTS_TABLE)
+            for statement in AGENT_MEMORIES_FTS_INDEXES:
+                await connection.execute(statement)
+
+        # ``Database`` is the historical SQLite alias used by existing
+        # repositories. The backend-neutral protocol is introduced gradually;
+        # keep this factory compatible until those repositories are migrated.
+        return cast(Database, database)
+
+    raise ValueError(f"unsupported db_driver: {db_driver!r}")

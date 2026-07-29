@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
 from multiscribe_agent.agents.executor import AgentExecutor
@@ -32,7 +33,8 @@ from multiscribe_agent.domain.models import (
     ScheduleTask,
     TokenUsage,
 )
-from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.db import Database, init_database
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PlaceholderStyle
 from multiscribe_agent.infra.redis_client import close_redis
 from multiscribe_agent.infra.repositories.curation_evaluations import (
     CurationEvaluationRepository,
@@ -44,8 +46,10 @@ from multiscribe_agent.infra.repositories.source_data import SourceDataRepositor
 from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
+from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
 from multiscribe_agent.knowledge.retriever import Retriever
+from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.memory.extractor import PreferenceExtractor
@@ -278,11 +282,14 @@ class ServiceContext:
         """Initialize database, plugins, services, executor adapters, and scheduler."""
         if self._initialized:
             return
-        self.db = await init_db(
-            self.settings.db_path,
+        self.db = await init_database(
+            db_driver=self.settings.db_driver,
+            sqlite_path=self.settings.db_path,
+            postgres_dsn=self.settings.db_dsn,
+            pool_size=self.settings.db_pool_size,
+            pool_timeout=self.settings.db_pool_timeout,
             slow_query_threshold=self.settings.slow_query_threshold_seconds,
             enable_sql_audit=self.settings.enable_sql_audit,
-            use_pool=True,
         )
         self.iteration_store = IterationStore(self.db)
         self.daily_usage = DailyUsageRepository(self.db)
@@ -435,15 +442,28 @@ class ServiceContext:
         self._initialized = False
 
     async def _init_kb(self) -> None:
-        """Initialize FTS5 knowledge services while preserving optional-feature degradation."""
+        """Initialize knowledge services using the selected database dialect."""
         if self.db is None:
             raise RuntimeError("knowledge base initialization requires a database")
-        vector_enabled = await self.db.migrate_kb()
+        backend = "postgres" if _is_postgres_database(self.db) else "sqlite"
+        vector_enabled = await _migrate_kb_for_backend(self.db, backend)
         embeddings = EmbeddingService() if EmbeddingService.is_available() else None
-        vector_store = VectorStore(self.db) if vector_enabled else None
-        retriever = Retriever(self.db, vector_store, embeddings)
+        vector_store: VectorStorePort | None = None
+        if vector_enabled:
+            if backend == "postgres":
+                from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
+
+                vector_store = PostgresVectorStore(self.db)
+            else:
+                vector_store = VectorStore(self.db)
+        fts_builder = FtsQueryBuilder(backend)
+        retriever = Retriever(self.db, vector_store, embeddings, fts_builder=fts_builder)
         self.kb_service = KBService(
-            self.db, DocumentProcessor(), embeddings, vector_store, retriever
+            self.db,
+            DocumentProcessor(),
+            embeddings,
+            cast(VectorStore | None, vector_store),
+            retriever,
         )
         self.kb_capabilities = self.kb_service.capabilities
 
@@ -703,6 +723,19 @@ class ServiceContext:
         """Raise an explicit runtime error when context users skipped initialization."""
         if not self._initialized:
             raise RuntimeError("service context is not initialized")
+
+
+def _is_postgres_database(db: Database | DatabaseProtocol) -> bool:
+    """Detect the PostgreSQL backend through the shared protocol dialect marker."""
+    return getattr(db, "placeholder_style", None) is PlaceholderStyle.DOLLAR
+
+
+async def _migrate_kb_for_backend(db: Database, backend: str) -> bool:
+    """Apply backend-specific knowledge schema exactly once during bootstrap."""
+    if backend == "postgres":
+        # PostgreSQL FTS/vector tables are created by init_database().
+        return True
+    return await db.migrate_kb()
 
 
 _context: ServiceContext | None = None
