@@ -15,7 +15,7 @@ from multiscribe_agent.infra.db_protocol import PlaceholderStyle
 
 if TYPE_CHECKING:
     from multiscribe_agent.infra.connection_pool import ConnectionPool
-    from multiscribe_agent.observability.sql_audit import AuditEntry, SqlAuditLogger
+    from multiscribe_agent.observability.sql_audit import AuditEntry
 
 type SqlParameters = Sequence[object]
 log = structlog.get_logger(__name__)
@@ -126,9 +126,9 @@ class SqliteDatabase:
             enable_sql_audit=enable_sql_audit,
         )
 
-    def set_audit_logger(self, audit_logger: SqlAuditLogger | None) -> None:
+    def set_audit_logger(self, audit_logger: object | None) -> None:
         """Attach the audit sink used for subsequent write statements."""
-        self._audit_logger = audit_logger
+        self._audit_logger = cast(_AuditLogger | None, audit_logger)
 
     @property
     def placeholder_style(self) -> PlaceholderStyle:
@@ -143,27 +143,37 @@ class SqliteDatabase:
             await self.connection.close()
 
     async def execute(self, statement: str, parameters: SqlParameters = ()) -> int:
-        """Execute one write statement, commit it, and return affected rows."""
+        """Execute one write statement and return rows or a RETURNING value."""
         active_connection = _active_write_connection.get()
         if active_connection is not None:
-            return await self._execute_on_connection(active_connection, statement, parameters)
+            return cast(
+                int, await self._execute_on_connection(active_connection, statement, parameters)
+            )
         if self._pool is not None:
             async with self._pool.acquire_write() as connection:
-                return await self._execute_on_connection(connection, statement, parameters)
-        return await self._execute_on_connection(self.connection, statement, parameters)
+                return cast(
+                    int, await self._execute_on_connection(connection, statement, parameters)
+                )
+        return cast(int, await self._execute_on_connection(self.connection, statement, parameters))
 
     async def _execute_on_connection(
         self,
         connection: aiosqlite.Connection,
         statement: str,
         parameters: SqlParameters,
-    ) -> int:
-        """Run one write on a selected lane and apply observability hooks."""
+    ) -> int | None:
+        """Run one write and extract a single value from a RETURNING clause."""
         started = time.monotonic()
         cursor = await connection.execute(statement, parameters)
         try:
+            returning = " RETURNING " in statement.upper()
+            returned_value: int | None = None
+            if returning:
+                row = await cursor.fetchone()
+                if row is not None:
+                    returned_value = int(row[0])
             await connection.commit()
-            return cursor.rowcount
+            return returned_value if returning else cursor.rowcount
         finally:
             await cursor.close()
             self._record_query_observability(statement, parameters, time.monotonic() - started)

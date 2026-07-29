@@ -25,8 +25,8 @@ class DatabaseProtocol(Protocol):
     def placeholder_style(self) -> PlaceholderStyle:
         """Return the SQL parameter placeholder dialect used by this backend."""
 
-    async def execute(self, statement: str, parameters: SqlParameters = ()) -> int:
-        """Execute one statement and return the affected row count."""
+    async def execute(self, statement: str, parameters: SqlParameters = ()) -> int | None:
+        """Execute one statement and return its affected row count or RETURNING value."""
 
     async def executemany(self, statement: str, parameters: list[SqlParameters]) -> int:
         """Execute one statement for a batch of parameter sets."""

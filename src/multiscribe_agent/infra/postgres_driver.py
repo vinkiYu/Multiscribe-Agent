@@ -47,6 +47,9 @@ class _AsyncpgConnection(Protocol):
     async def fetch(self, statement: str, *parameters: object) -> Sequence[_AsyncpgRecord]:
         """Fetch all records."""
 
+    async def fetchval(self, statement: str, *parameters: object) -> object:
+        """Fetch one scalar value from a statement returning a value."""
+
 
 class _AsyncpgPool(Protocol):
     """Subset of an asyncpg pool required by the database skeleton."""
@@ -101,9 +104,12 @@ class PostgresDatabase:
         """PostgreSQL uses numbered ``$1`` placeholders."""
         return PlaceholderStyle.DOLLAR
 
-    async def execute(self, statement: str, parameters: SqlParameters = ()) -> int:
-        """Execute one statement and return the count encoded in its command tag."""
+    async def execute(self, statement: str, parameters: SqlParameters = ()) -> int | None:
+        """Execute one statement and return its row count or RETURNING value."""
         async with self._pool.acquire() as connection:
+            if " RETURNING " in statement.upper():
+                value = await connection.fetchval(statement, *parameters)
+                return int(str(value)) if value is not None else None
             command_tag = await connection.execute(statement, *parameters)
         return _command_tag_count(command_tag)
 

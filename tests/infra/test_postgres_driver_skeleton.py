@@ -11,9 +11,19 @@ from typing import Any
 
 import pytest
 
+from multiscribe_agent.domain.models import TaskLog
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PlaceholderStyle
+from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
 
 MODULE_NAME = "multiscribe_agent.infra.postgres_driver"
+
+
+def _load_fake_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
+    """Load the driver with a fake asyncpg module installed."""
+    monkeypatch.delitem(sys.modules, MODULE_NAME, raising=False)
+    monkeypatch.setitem(sys.modules, "asyncpg", ModuleType("asyncpg"))
+    return importlib.import_module(MODULE_NAME)
 
 
 class _FakeRecord:
@@ -37,6 +47,7 @@ class _FakeConnection:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, tuple[Any, ...]]] = []
+        self.returning_value: object | None = 42
 
     async def execute(self, statement: str, *parameters: Any) -> str:
         self.calls.append((statement, parameters))
@@ -52,6 +63,10 @@ class _FakeConnection:
     async def fetch(self, statement: str, *parameters: Any) -> Sequence[_FakeRecord]:
         self.calls.append((statement, parameters))
         return (_FakeRecord({"id": 2, "title": "two"}),)
+
+    async def fetchval(self, statement: str, *parameters: Any) -> object:
+        self.calls.append((statement, parameters))
+        return self.returning_value
 
 
 class _FakeAcquire(AbstractAsyncContextManager[_FakeConnection]):
@@ -99,9 +114,7 @@ async def test_postgres_database_implements_protocol_with_fake_asyncpg(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The skeleton exposes the complete protocol without installing asyncpg."""
-    monkeypatch.delitem(sys.modules, MODULE_NAME, raising=False)
-    monkeypatch.setitem(sys.modules, "asyncpg", ModuleType("asyncpg"))
-    module = importlib.import_module(MODULE_NAME)
+    module = _load_fake_module(monkeypatch)
     pool = _FakePool()
     database = module.PostgresDatabase(pool)
 
@@ -121,3 +134,94 @@ async def test_postgres_database_implements_protocol_with_fake_asyncpg(
 
     await database.close()
     assert pool.closed
+
+
+@pytest.mark.asyncio
+async def test_sqlite_execute_with_returning(db: Database) -> None:
+    """SQLite extracts an inserted id from a RETURNING clause."""
+    await db.execute("CREATE TABLE returning_records (id INTEGER PRIMARY KEY AUTOINCREMENT)")
+    row_id = await db.execute("INSERT INTO returning_records DEFAULT VALUES RETURNING id")
+
+    assert row_id == 1
+
+
+@pytest.mark.asyncio
+async def test_sqlite_execute_without_returning(db: Database) -> None:
+    """SQLite retains affected-row semantics for ordinary DML."""
+    await db.execute("CREATE TABLE rowcount_records (id INTEGER PRIMARY KEY, value TEXT)")
+    affected = await db.execute("INSERT INTO rowcount_records(id, value) VALUES (?, ?)", (1, "one"))
+
+    assert affected == 1
+
+
+@pytest.mark.asyncio
+async def test_postgres_execute_returning(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Postgres uses one fetchval call for a RETURNING statement."""
+    module = _load_fake_module(monkeypatch)
+    pool = _FakePool()
+    database = module.PostgresDatabase(pool)
+
+    assert (
+        await database.execute("INSERT INTO records(value) VALUES ($1) RETURNING id", ("value",))
+        == 42
+    )
+    assert pool.connection.calls == [
+        ("INSERT INTO records(value) VALUES ($1) RETURNING id", ("value",))
+    ]
+
+
+@pytest.mark.asyncio
+async def test_postgres_execute_rowcount(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Postgres uses the command tag for ordinary statements."""
+    module = _load_fake_module(monkeypatch)
+    pool = _FakePool()
+    database = module.PostgresDatabase(pool)
+
+    assert await database.execute("DELETE FROM records WHERE id = $1", (1,)) == 1
+    assert pool.connection.calls == [("DELETE FROM records WHERE id = $1", (1,))]
+
+
+@pytest.mark.asyncio
+async def test_task_log_create_via_protocol() -> None:
+    """Task log creation does not depend on a backend connection attribute."""
+
+    class ProtocolDatabase:
+        async def execute(self, statement: str, parameters: tuple[object, ...] = ()) -> int:
+            del parameters
+            assert "RETURNING id" in statement
+            return 7
+
+        @property
+        def connection(self) -> object:
+            raise AssertionError("TaskLogRepository must not access db.connection")
+
+    log = TaskLog(
+        task_id="task-1",
+        task_name="daily",
+        start_time="2026-07-29T00:00:00Z",
+        status="running",
+    )
+
+    assert await TaskLogRepository(ProtocolDatabase()).create(log) == "7"
+
+
+@pytest.mark.asyncio
+async def test_task_log_create_returns_string_id() -> None:
+    """A protocol-backed task log repository returns the generated id as text."""
+
+    class ProtocolDatabase:
+        async def execute(self, statement: str, parameters: tuple[object, ...] = ()) -> int:
+            del parameters
+            assert "RETURNING id" in statement
+            return 19
+
+    log = TaskLog(
+        task_id="task-2",
+        task_name="daily",
+        start_time="2026-07-29T00:00:00Z",
+        status="success",
+    )
+
+    result = await TaskLogRepository(ProtocolDatabase()).create(log)
+
+    assert result == "19"

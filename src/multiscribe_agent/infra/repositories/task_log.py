@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from typing import Any, cast
 
 from multiscribe_agent.domain.models import TaskLog
-from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 
 _UPDATE_FIELDS = frozenset(
     {
@@ -25,18 +25,19 @@ _UPDATE_FIELDS = frozenset(
 class TaskLogRepository:
     """Create, update, and retrieve task lifecycle records."""
 
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: DatabaseProtocol) -> None:
         """Create a repository using an initialized database."""
         self._db = db
 
     async def create(self, log: TaskLog) -> str:
         """Insert a task log and return its generated identifier."""
-        cursor = await self._db.connection.execute(
+        row_id = await self._db.execute(
             """
             INSERT INTO task_logs(
                 task_id, task_name, start_time, end_time, duration, status,
                 progress, message, result_count
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
             """,
             (
                 log.task_id,
@@ -50,11 +51,9 @@ class TaskLogRepository:
                 log.result_count,
             ),
         )
-        try:
-            await self._db.connection.commit()
-            return str(cursor.lastrowid)
-        finally:
-            await cursor.close()
+        if row_id is None:
+            raise RuntimeError("INSERT INTO task_logs did not return an id")
+        return str(row_id)
 
     async def update(self, log_id: str, **fields: object) -> None:
         """Update only whitelisted columns on an existing task log."""
