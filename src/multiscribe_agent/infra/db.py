@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 import aiosqlite
 import structlog
 
+from multiscribe_agent.infra.db_protocol import PlaceholderStyle
+
 if TYPE_CHECKING:
     from multiscribe_agent.infra.connection_pool import ConnectionPool
     from multiscribe_agent.observability.sql_audit import AuditEntry, SqlAuditLogger
@@ -127,6 +129,11 @@ class SqliteDatabase:
     def set_audit_logger(self, audit_logger: SqlAuditLogger | None) -> None:
         """Attach the audit sink used for subsequent write statements."""
         self._audit_logger = audit_logger
+
+    @property
+    def placeholder_style(self) -> PlaceholderStyle:
+        """SQLite uses ``?`` placeholders."""
+        return PlaceholderStyle.QUESTION_MARK
 
     async def close(self) -> None:
         """Close the underlying SQLite connection."""

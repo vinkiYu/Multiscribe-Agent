@@ -40,6 +40,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+postgres = [
+    "asyncpg>=0.29",
+]
 dev = [
     "mypy>=1.10",
     "pre-commit",

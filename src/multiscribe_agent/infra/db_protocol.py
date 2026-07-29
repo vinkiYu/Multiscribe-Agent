@@ -3,14 +3,27 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from enum import Enum
 from typing import Any, Protocol, runtime_checkable
 
 SqlParameters = tuple[Any, ...] | list[Any]
 
 
+class PlaceholderStyle(Enum):
+    """SQL parameter placeholder dialect used by a database backend."""
+
+    QUESTION_MARK = "question_mark"
+    DOLLAR = "dollar"
+    PERCENT = "percent"
+
+
 @runtime_checkable
 class DatabaseProtocol(Protocol):
     """Backend-agnostic database surface for repositories and services."""
+
+    @property
+    def placeholder_style(self) -> PlaceholderStyle:
+        """Return the SQL parameter placeholder dialect used by this backend."""
 
     async def execute(self, statement: str, parameters: SqlParameters = ()) -> int:
         """Execute one statement and return the affected row count."""
