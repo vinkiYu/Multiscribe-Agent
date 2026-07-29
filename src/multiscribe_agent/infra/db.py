@@ -409,6 +409,35 @@ class SqliteDatabase:
             """,
         )
 
+    async def migrate_click_events(self) -> None:
+        """Create the anonymous public-digest click signal table and indexes."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS click_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                digest_date TEXT NOT NULL,
+                item_url TEXT NOT NULL,
+                item_source TEXT,
+                item_tags TEXT NOT NULL DEFAULT '[]',
+                clicked_at TEXT NOT NULL,
+                user_agent TEXT,
+                referer TEXT
+            )
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_click_events_clicked_at
+            ON click_events(clicked_at DESC)
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_click_events_item_url
+            ON click_events(item_url)
+            """,
+        )
+
     async def migrate_daily_digest_archives(self) -> None:
         """Create the public daily digest archive used by the reading page."""
         await self.execute(
@@ -814,6 +843,7 @@ async def init_db(
     await init_schema(database)
     await database.migrate_publish_history()
     await database.migrate_pushed_content()
+    await database.migrate_click_events()
     await database.migrate_daily_digest_archives()
     await database.migrate_adapter_health()
     await database.migrate_kb()

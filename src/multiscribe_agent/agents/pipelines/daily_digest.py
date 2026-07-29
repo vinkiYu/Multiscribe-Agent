@@ -43,6 +43,7 @@ from multiscribe_agent.infra.db import Database
 from multiscribe_agent.memory.digest_context import DigestMemoryContextBuilder, DigestMemoryService
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from multiscribe_agent.services.preference_feedback import PreferenceFeedbackService
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 
@@ -263,6 +264,7 @@ class DailyDigestPipeline:
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
         archive_repo: DailyDigestArchive | None = None,
+        preference_feedback: PreferenceFeedbackService | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -276,9 +278,12 @@ class DailyDigestPipeline:
         self._memory_service = memory_service
         self._pushed_content_repo = pushed_content_repo
         self._archive_repo = archive_repo or get_daily_digest_archive()
+        self._preference_feedback = preference_feedback
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
+        if self._preference_feedback is not None and self._db is not None:
+            await self._preference_feedback.apply_click_feedback(self._db)
         engine, usage = self._engine(run_date)
         result = await engine.run(WORKFLOW_ID, "", date=run_date)
         final = result["final"]
@@ -330,6 +335,7 @@ class DailyDigestPipeline:
             self._memory_service,
             self._pushed_content_repo,
             archive_repo=self._archive_repo,
+            preference_feedback=self._preference_feedback,
         )
         return await pipeline.run()
 
@@ -619,21 +625,24 @@ class _DailyDigestStepExecutor:
             source = by_id.get(item_id)
             if source is None:
                 continue
-            score = _score_value(record.get("score"))
-            curated.append(
-                DigestItem(
-                    title=_required_string(record, "title"),
-                    summary=_plain_text(_required_string(record, "summary")),
-                    url=source.url,
-                    source=source.source,
-                    score=score,
-                    image_url=_metadata_string(source.metadata, "image_url", "thumbnail_url"),
-                    video_url=_metadata_string(source.metadata, "video_url"),
-                    published_at=source.published_date,
-                    section=_digest_section(record.get("section"), source),
-                    tags=_metadata_tags(source.metadata, source.category),
+            try:
+                score = _score_value(record.get("score"))
+                curated.append(
+                    DigestItem(
+                        title=_required_string(record, "title"),
+                        summary=_plain_text(_required_string(record, "summary")),
+                        url=source.url,
+                        source=source.source,
+                        score=score,
+                        image_url=_metadata_string(source.metadata, "image_url", "thumbnail_url"),
+                        video_url=_metadata_string(source.metadata, "video_url"),
+                        published_at=source.published_date,
+                        section=_digest_section(record.get("section"), source),
+                        tags=_metadata_tags(source.metadata, source.category),
+                    )
                 )
-            )
+            except WorkflowError:
+                log.warning("daily_digest_invalid_curation_record")
         curated = _supplement_curated_items(curated, items, self._config.top_n)
         selected = _prioritize_digest_sections(curated, self._config.top_n)
         if self._config.resolve_article_images:
@@ -865,8 +874,15 @@ def _required_string(record: Mapping[str, object], key: str) -> str:
     return value.strip()
 
 
-def _score_value(value: object) -> float:
-    """Read a numeric non-boolean LLM score for sorting selected items."""
+def _score_value(value: object) -> float | None:
+    """Read a numeric non-boolean LLM score, accepting numeric JSON strings."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            value = float(value.strip())
+        except ValueError as exc:
+            raise WorkflowError("curation record requires numeric score") from exc
     if not isinstance(value, int | float) or isinstance(value, bool):
         raise WorkflowError("curation record requires numeric score")
     return float(value)
@@ -987,7 +1003,7 @@ def _supplement_digest_item(candidate: UnifiedData, section: str) -> DigestItem:
     """Project an existing source candidate without asking the model to invent text."""
     return DigestItem(
         title=candidate.title,
-        summary=candidate.description[:180].strip() or candidate.title,
+        summary=_plain_text(candidate.description[:180]) or candidate.title,
         url=candidate.url,
         source=candidate.source,
         score=None,

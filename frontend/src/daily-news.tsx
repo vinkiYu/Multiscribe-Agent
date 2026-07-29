@@ -32,7 +32,10 @@ async function fetchDigest(date?: string): Promise<DailyNewsResponse> {
 }
 
 function DailyNewsApp(): ReactElement {
-  const [selectedDate, setSelectedDate] = useState<string | undefined>()
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(() => {
+    const date = new URLSearchParams(window.location.search).get('date')
+    return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined
+  })
   const [data, setData] = useState<DailyNewsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -97,7 +100,7 @@ function DailyNewsApp(): ReactElement {
             <section className="article-heading" id="today-summary"><p>今日摘要</p><h2>{digest.title}</h2><span>共 {digest.items.length} 条精选资讯，按主题分模块阅读</span></section>
             {sections.map(([section, items]) => <section className="news-section" id={`section-${section}`} key={section}><header className="news-section-heading"><h2>{section}</h2><span>{items.length} 条</span></header><ol className="news-list">{items.map((item, index) => <li className={item.image_url ? 'news-item has-image' : 'news-item'} key={`${item.url}-${index}`}>
               <span className="news-index">{String(index + 1).padStart(2, '0')}</span>
-              <div className="news-item-body"><div className="news-item-meta"><span>{item.source || '未知来源'}</span><time>{formatTime(item.published_at)}</time>{item.score !== null && <b>{item.score.toFixed(1)} 分</b>}</div><h3><a href={item.url} target="_blank" rel="noreferrer">{item.title}<ExternalLink /></a></h3><p>{item.summary || '该条资讯暂未提供摘要。'}</p>{item.tags.length > 0 && <div className="news-tags"><Tags />{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}</div>
+              <div className="news-item-body"><div className="news-item-meta"><span>{item.source || '未知来源'}</span><time>{formatTime(item.published_at)}</time>{item.score !== null && <b>{item.score.toFixed(1)} 分</b>}</div><h3><a href={`${API_BASE}/track-click?digest_date=${encodeURIComponent(digest.date)}&item_url=${encodeURIComponent(item.url)}&item_source=${encodeURIComponent(item.source || '')}&item_tags=${encodeURIComponent(item.tags.join(','))}`} target="_blank" rel="noreferrer">{item.title}<ExternalLink /></a></h3><p>{item.summary || '该条资讯暂未提供摘要。'}</p>{item.tags.length > 0 && <div className="news-tags"><Tags />{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}</div>
               {item.image_url && <img className="news-item-image" src={item.image_url} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true }} />}
             </li>)}</ol></section>)}
             <nav className="article-pagination" aria-label="日报翻页"><button type="button" disabled={!newer} onClick={() => newer && chooseDate(newer.date)}><ArrowLeft />{newer ? formatDate(newer.date, { month: 'numeric', day: 'numeric' }) : '没有更新日报'}</button><button type="button" disabled={!older} onClick={() => older && chooseDate(older.date)}>{older ? formatDate(older.date, { month: 'numeric', day: 'numeric' }) : '没有更早日报'}<ArrowRight /></button></nav>

@@ -19,6 +19,7 @@ from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.adapter_health import AdapterHealthRepository
+from multiscribe_agent.core.click_events import ClickEventRepository
 from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
 from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
@@ -70,6 +71,7 @@ from multiscribe_agent.services.interop_registry import (
 from multiscribe_agent.services.interop_registry import (
     build_default_registry,
 )
+from multiscribe_agent.services.preference_feedback import PreferenceFeedbackService
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
 from multiscribe_agent.services.scheduler_lock import RedisSchedulerLock, SchedulerLock
@@ -246,6 +248,9 @@ class ServiceContext:
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
         self.pushed_content: PushedContentRepository | None = None
+        self.click_events: ClickEventRepository | None = None
+        self.preference_store: PreferenceStore | None = None
+        self.preference_feedback: PreferenceFeedbackService | None = None
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
         self.memory_service: MemoryService | None = None
@@ -286,6 +291,7 @@ class ServiceContext:
         self.interop_limiter = SlidingWindowLimiter(window_seconds=60)
         self.publish_history = get_publish_history()
         self.pushed_content = PushedContentRepository()
+        self.click_events = ClickEventRepository()
         entities = EntityJsonRepository(self.db)
         task_logs = TaskLogRepository(self.db)
         source_data = SourceDataRepository(self.db)
@@ -442,12 +448,16 @@ class ServiceContext:
                 importance_threshold=self.settings.memory_importance_threshold,
             ),
         )
+        self.preference_store = preferences
         self.memory_service = MemoryService(
             MemoryEntryRepository(self.db),
             preferences,
             PreferenceExtractor(self.db, self.publish_history, self._provider_for_default()),
             self.kb_service,
         )
+        if self.click_events is None:
+            raise RuntimeError("click-event repository initialization failed")
+        self.preference_feedback = PreferenceFeedbackService(self.click_events, preferences)
 
     def _provider_for_default(self) -> AIProvider | None:
         """Create the default curator provider only when a usable credential exists."""
@@ -504,6 +514,7 @@ class ServiceContext:
             self.memory_service,
             self.pushed_content,
             archive_repo=get_daily_digest_archive(),
+            preference_feedback=self.preference_feedback,
         )
         return await pipeline.run()
 
