@@ -251,6 +251,25 @@ class Database:
         self, statement: str, parameters: SqlParameters, duration: float
     ) -> None:
         """Emit slow-query warning and update the optional metric backend."""
+        try:
+            from multiscribe_agent.observability.meter import get_metrics_registry
+
+            registry = get_metrics_registry()
+            record_query_timing = getattr(registry, "record_query_timing", None)
+            if callable(record_query_timing):
+                record_query_timing(duration, self._slow_query_threshold)
+            elif duration >= self._slow_query_threshold:
+                # Compatibility for test/deployment registries from before P43.
+                record_slow_query = getattr(registry, "record_slow_query", None)
+                if callable(record_slow_query):
+                    record_slow_query(duration)
+                else:
+                    record_counter = getattr(registry, "_record_counter", None)
+                    if callable(record_counter):
+                        record_counter("slow_query")
+        except (ImportError, RuntimeError, TypeError, AttributeError):
+            log.debug("slow_query_metric_unavailable")
+
         if duration < self._slow_query_threshold:
             return
         parameter_count = len(parameters) if hasattr(parameters, "__len__") else 0
@@ -261,19 +280,6 @@ class Database:
             duration_ms=round(duration * 1000, 2),
             threshold_ms=round(self._slow_query_threshold * 1000, 2),
         )
-        try:
-            from multiscribe_agent.observability.meter import get_metrics_registry
-
-            registry = get_metrics_registry()
-            record_slow_query = getattr(registry, "record_slow_query", None)
-            if callable(record_slow_query):
-                record_slow_query(duration)
-            else:
-                record_counter = getattr(registry, "_record_counter", None)
-                if callable(record_counter):
-                    record_counter("slow_query")
-        except (ImportError, RuntimeError, TypeError):
-            log.debug("slow_query_metric_unavailable")
 
     @staticmethod
     def _is_write_statement(statement: str) -> bool:

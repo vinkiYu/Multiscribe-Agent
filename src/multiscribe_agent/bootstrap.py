@@ -50,6 +50,7 @@ from multiscribe_agent.memory.repositories.memory_entries import MemoryEntryRepo
 from multiscribe_agent.observability.alerts import AlertEngine, load_rules
 from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_registry
 from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
+from multiscribe_agent.observability.publisher_alert_callback import PublisherAlertCallback
 from multiscribe_agent.observability.sql_audit import SqlAuditLogger
 from multiscribe_agent.observability.tracer import setup_tracer
 from multiscribe_agent.plugins.builtin.adapters.ai_search import AISearchAdapter
@@ -277,6 +278,7 @@ class ServiceContext:
         self.alerts = AlertEngine(load_rules(rules_path))
         self.observability_capabilities = detect()
         self.metrics = MetricsRegistry.create(self.observability_capabilities)
+        self.metrics.alert_engine = self.alerts
         set_metrics_registry(self.metrics)
         self.tracer = setup_tracer()
         self.event_bus = get_event_bus()
@@ -312,6 +314,14 @@ class ServiceContext:
             for publisher in self.settings.publishers
             if publisher.enabled
         }
+        if self.settings.alert_targets:
+            self.alerts.add_callback(
+                PublisherAlertCallback(
+                    self.settings.alert_targets.split(","),
+                    options,
+                    publisher_registry=publishers,
+                )
+            )
         self.adapter_health_repo = AdapterHealthRepository(
             self.settings.adapter_health_failure_threshold
         )

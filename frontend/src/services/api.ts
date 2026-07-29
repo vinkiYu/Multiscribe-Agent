@@ -158,6 +158,14 @@ export interface SourceConfigField { key: string; label: string; type: 'text' | 
 export interface SourceAdapterMetadata { id: string; type: string; name: string; description: string; icon: string; config_fields: SourceConfigField[]; is_builtin: boolean }
 export interface SourceConfiguration { id: string; type: string; enabled: boolean; config: Record<string, unknown> }
 export interface SourcesResponse { sources: SourceConfiguration[]; available_adapters: SourceAdapterMetadata[] }
+export interface AdapterHealth {
+  adapter_id: string
+  consecutive_failures: number
+  disabled: boolean
+  last_status: string
+  last_error: string | null
+  last_run_at: string | null
+}
 export interface SettingsProvider { id: string; name: string; type: string; enabled: boolean; api_key: string; base_url: string; models: string[]; context_window_tokens: Record<string, number>; default_output_tokens: Record<string, number> }
 export interface SettingsPublisher { id: string; type: string; enabled: boolean; config: Record<string, unknown> }
 export interface RuntimeSettings { ai_providers: SettingsProvider[]; publishers: SettingsPublisher[]; http_proxy: string; optional_dependencies: Record<string, boolean> }
@@ -294,6 +302,13 @@ export const sourcesApi = {
   list: (): Promise<SourcesResponse> => request<SourcesResponse>('/sources'),
   save: (id: string, source: Omit<SourceConfiguration, 'id'>): Promise<SourceConfiguration> => request<SourceConfiguration>(`/sources/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(source) }),
 }
+
+export const adapterHealthApi = {
+  list: (): Promise<AdapterHealth[]> => request<AdapterHealth[]>('/adapter-health'),
+  enable: (id: string): Promise<AdapterHealth> => request<AdapterHealth>(`/adapter-health/${encodeURIComponent(id)}/enable`, { method: 'POST' }),
+  disable: (id: string): Promise<AdapterHealth> => request<AdapterHealth>(`/adapter-health/${encodeURIComponent(id)}/disable`, { method: 'POST' }),
+}
+
 export const settingsApi = {
   get: (): Promise<RuntimeSettings> => request<RuntimeSettings>('/settings'),
   save: (settings: Partial<RuntimeSettings>): Promise<RuntimeSettings> => request<RuntimeSettings>('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) }),

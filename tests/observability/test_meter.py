@@ -18,6 +18,20 @@ def test_metrics_registry_records_publish_success() -> None:
     assert "multiscribe_publish_latency_seconds_count 1" in text
 
 
+def test_metrics_registry_notifies_publish_failure_ratio_samples() -> None:
+    registry = MetricsRegistry.create(_caps())
+    samples: list[tuple[str, float]] = []
+
+    class AlertDouble:
+        def record(self, metric: str, value: float) -> None:
+            samples.append((metric, value))
+
+    registry.alert_engine = AlertDouble()  # type: ignore[assignment]
+    registry.record_publish(True, 0.1)
+    registry.record_publish(False, 0.2)
+    assert samples == [("publish_failure", 0.0), ("publish_failure", 1.0)]
+
+
 def test_metrics_registry_records_publish_failure() -> None:
     registry = MetricsRegistry.create(_caps())
     registry.record_publish(False, 0.5)
@@ -33,6 +47,37 @@ def test_metrics_registry_records_llm_tokens_and_latency() -> None:
     assert "multiscribe_llm_calls_total 1" in text
     assert "multiscribe_llm_tokens_total 42" in text
     assert "multiscribe_llm_latency_seconds_count 1" in text
+
+
+def test_metrics_registry_notifies_llm_latency() -> None:
+    registry = MetricsRegistry.create(_caps())
+    samples: list[tuple[str, float]] = []
+
+    class AlertDouble:
+        def record(self, metric: str, value: float) -> None:
+            samples.append((metric, value))
+
+    registry.alert_engine = AlertDouble()  # type: ignore[assignment]
+    registry.record_llm_call(5, 1.25)
+    assert samples == [("llm_latency", 1.25)]
+
+
+def test_metrics_registry_records_errors_and_query_timing() -> None:
+    registry = MetricsRegistry.create(_caps())
+    samples: list[tuple[str, float]] = []
+
+    class AlertDouble:
+        def record(self, metric: str, value: float) -> None:
+            samples.append((metric, value))
+
+    registry.alert_engine = AlertDouble()  # type: ignore[assignment]
+    registry.record_error()
+    registry.record_query_timing(0.1, 1.0)
+    registry.record_query_timing(1.5, 1.0)
+    text = registry.render_prometheus()
+    assert "multiscribe_error_count_total 1" in text
+    assert "multiscribe_slow_query_total 1" in text
+    assert samples == [("error_count", 1.0), ("slow_query", 0.0), ("slow_query", 1.0)]
 
 
 def test_metrics_registry_records_tool_calls() -> None:

@@ -63,8 +63,9 @@ import {
   type WorkflowSummary,
   type WorkflowStep,
 } from './services/api'
+import { AdapterHealthPage } from './adapter-health'
 
-type NavKey = 'dashboard' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'knowledge' | 'memory' | 'plugins' | 'settings'
+type NavKey = 'dashboard' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'health' | 'knowledge' | 'memory' | 'plugins' | 'settings'
 
 interface NavigationItem { key: NavKey; label: string; icon: LucideIcon }
 interface ViewCopy { title: string; description: string }
@@ -79,6 +80,7 @@ const workbenchItems: NavigationItem[] = [
 ]
 
 const capabilityItems: NavigationItem[] = [
+  { key: 'health', label: 'Adapter health', icon: CircleAlert },
   { key: 'knowledge', label: '知识库', icon: LibraryBig },
   { key: 'memory', label: '记忆', icon: BrainCircuit },
   { key: 'plugins', label: 'Skills', icon: Blocks },
@@ -92,6 +94,7 @@ const copy: Record<NavKey, ViewCopy> = {
   content: { title: '内容', description: '查看每日流水线生成的资讯归档、AI 摘要和精选结果。' },
   publishing: { title: '发布记录', description: '查看飞书、企业微信及其他已配置发布器的投递结果。' },
   tasks: { title: '任务记录', description: '查看计划任务及其最近的运行记录，可手动触发已注册任务。' },
+  health: { title: '适配器健康', description: '查看采集适配器的连续失败、停用状态和最近运行结果。' },
   knowledge: { title: '知识库', description: '查看持久化文档、分块状态和当前检索能力。' },
   memory: { title: '记忆', description: '查看跨任务保存的偏好和可检索记忆条目。' },
   plugins: { title: 'Skills', description: '查看当前加载的内置和自定义 Skill 指令。' },
@@ -158,6 +161,7 @@ function App(): ReactElement {
         {active === 'content' && <ContentPage key={refreshVersion} />}
         {active === 'publishing' && <PublishingPage key={refreshVersion} />}
         {active === 'tasks' && <TasksPage key={refreshVersion} onNotice={setNotice} createOpen={taskModalOpen} onCreateClose={() => setTaskModalOpen(false)} />}
+        {active === 'health' && <AdapterHealthPage key={refreshVersion} onNotice={setNotice} />}
         {active === 'knowledge' && <KnowledgePage key={refreshVersion} />}
         {active === 'memory' && <MemoryPage key={refreshVersion} />}
         {active === 'plugins' && <SkillsPage key={refreshVersion} onNotice={setNotice} />}

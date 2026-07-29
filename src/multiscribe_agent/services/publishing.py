@@ -66,6 +66,7 @@ class PublishingService:
                 )
         except Exception:
             get_metrics_registry().record_publish(False, time.monotonic() - started)
+            get_metrics_registry().record_error()
             raise
         get_metrics_registry().record_publish(True, time.monotonic() - started)
         return {"status": "success", "response": response}

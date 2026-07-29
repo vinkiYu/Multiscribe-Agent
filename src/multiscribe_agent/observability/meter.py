@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from importlib import import_module
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from multiscribe_agent.observability.optional import ObservabilityCapabilities, detect
+
+if TYPE_CHECKING:
+    from multiscribe_agent.observability.alerts import AlertEngine
 
 
 @dataclass(slots=True)
@@ -18,6 +21,7 @@ class MetricsRegistry:
     _histograms: dict[str, Any] = field(default_factory=dict)
     _counts: dict[str, int] = field(default_factory=dict)
     _histogram_values: dict[str, list[float]] = field(default_factory=dict)
+    alert_engine: AlertEngine | None = None
 
     @classmethod
     def create(cls, capabilities: ObservabilityCapabilities | None = None) -> MetricsRegistry:
@@ -27,6 +31,8 @@ class MetricsRegistry:
         for name in (
             "publish_success",
             "publish_failure",
+            "error_count",
+            "slow_query",
             "llm_calls",
             "llm_tokens",
             "tool_calls",
@@ -50,6 +56,8 @@ class MetricsRegistry:
                     for name in (
                         "publish_success",
                         "publish_failure",
+                        "error_count",
+                        "slow_query",
                         "llm_calls",
                         "llm_tokens",
                         "tool_calls",
@@ -74,6 +82,7 @@ class MetricsRegistry:
         """Record one publishing outcome and latency."""
         name = "publish_success" if success else "publish_failure"
         self._record_counter(name)
+        self._notify_alert("publish_failure", 0.0 if success else 1.0)
         self._record_histogram("publish_latency", duration_seconds)
 
     def record_llm_call(self, tokens: int, duration_seconds: float) -> None:
@@ -81,6 +90,18 @@ class MetricsRegistry:
         self._record_counter("llm_calls")
         self._record_counter("llm_tokens", amount=max(tokens, 0))
         self._record_histogram("llm_latency", duration_seconds)
+        self._notify_alert("llm_latency", duration_seconds)
+
+    def record_error(self) -> None:
+        """Record one user-visible or integration error for alert evaluation."""
+        self._record_counter("error_count")
+        self._notify_alert("error_count", 1.0)
+
+    def record_query_timing(self, duration_seconds: float, threshold: float) -> None:
+        """Record every query as fast or slow for the rolling ratio alert."""
+        self._notify_alert("slow_query", 1.0 if duration_seconds >= threshold else 0.0)
+        if duration_seconds >= threshold:
+            self._record_counter("slow_query")
 
     def record_tool_call(self, tool_name: str) -> None:
         """Record one tool invocation; the name is reserved for future labels."""
@@ -137,6 +158,11 @@ class MetricsRegistry:
         instrument = self._histograms.get(name)
         if instrument is not None:
             instrument.record(value)
+
+    def _notify_alert(self, metric: str, value: float) -> None:
+        """Forward an alert sample when the application has wired an engine."""
+        if self.alert_engine is not None:
+            self.alert_engine.record(metric, value)
 
 
 _default_registry = MetricsRegistry.create()
