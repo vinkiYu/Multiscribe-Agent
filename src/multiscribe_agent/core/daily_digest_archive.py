@@ -9,6 +9,7 @@ from datetime import UTC, date, datetime
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
 from multiscribe_agent.renderers.models import CuratedDigest
 
 _TABLE_NAME = "daily_digest_archives"
@@ -45,7 +46,7 @@ class ArchivedDigest:
     approval_status: str = "published"
 
 
-class DailyDigestArchive:
+class DailyDigestArchive(ExplicitDatabaseDialectMixin):
     """Upsert and query generated daily digests through the application database."""
 
     async def upsert(
@@ -74,7 +75,8 @@ class DailyDigestArchive:
             for item in digest.items
         ]
         now = datetime.now(UTC).isoformat()
-        await db.execute(
+        await self._execute(
+            db,
             f"""
             INSERT INTO {_TABLE_NAME} (
                 digest_date, title, summary, items, total_scanned, approval_status, updated_at
@@ -107,7 +109,8 @@ class DailyDigestArchive:
     ) -> ArchivedDigest | None:
         """Return one archive, optionally hiding pending and rejected previews."""
         date.fromisoformat(digest_date)
-        row = await db.fetchone(
+        row = await self._fetchone(
+            db,
             f"""
             SELECT digest_date, title, summary, items, total_scanned, approval_status, updated_at
             FROM {_TABLE_NAME}
@@ -132,7 +135,8 @@ class DailyDigestArchive:
         """Update one archived digest status using the bounded approval state machine."""
         date.fromisoformat(digest_date)
         _validate_approval_status(status)
-        await db.execute(
+        await self._execute(
+            db,
             f"UPDATE {_TABLE_NAME} SET approval_status = ?, updated_at = ? WHERE digest_date = ?",  # noqa: S608 - table name is a module constant.
             (status, datetime.now(UTC).isoformat(), digest_date),
         )
@@ -140,7 +144,8 @@ class DailyDigestArchive:
     async def get_approval_status(self, db: Database, digest_date: str) -> str | None:
         """Return an archive approval state, or ``None`` when the date is absent."""
         date.fromisoformat(digest_date)
-        row = await db.fetchone(
+        row = await self._fetchone(
+            db,
             f"SELECT approval_status FROM {_TABLE_NAME} WHERE digest_date = ?",  # noqa: S608
             (digest_date,),
         )
@@ -164,7 +169,8 @@ class DailyDigestArchive:
         where_clause = (
             "WHERE approval_status IN ('published', 'approved')" if published_only else ""
         )
-        rows = await db.fetchall(
+        rows = await self._fetchall(
+            db,
             f"""
             SELECT digest_date, title, summary, items, total_scanned, approval_status, updated_at
             FROM {_TABLE_NAME}

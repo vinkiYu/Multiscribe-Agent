@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS curation_evaluations (
@@ -28,6 +29,9 @@ _CREATE_DATE_INDEX = """
 CREATE INDEX IF NOT EXISTS idx_curation_evaluations_date
 ON curation_evaluations(date DESC, id DESC)
 """
+_CREATE_TABLE_POSTGRES = _CREATE_TABLE.replace(
+    "id INTEGER PRIMARY KEY AUTOINCREMENT", "id BIGSERIAL PRIMARY KEY"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +51,7 @@ class CurationEvaluationRecord:
     usage: dict[str, int]
 
 
-class CurationEvaluationRepository:
+class CurationEvaluationRepository(DialectRepositoryMixin):
     """Persist and query curation loop outcomes through the application database."""
 
     def __init__(self, db: Database) -> None:
@@ -57,14 +61,16 @@ class CurationEvaluationRepository:
     async def ensure_schema(self) -> None:
         """Create the bounded evaluation schema for existing SQLite databases."""
         if not self._schema_ready:
-            await self._db.execute(_CREATE_TABLE)
-            await self._db.execute(_CREATE_DATE_INDEX)
+            await self._execute(
+                _CREATE_TABLE_POSTGRES if isinstance(self._dialect, PgDialect) else _CREATE_TABLE
+            )
+            await self._execute(_CREATE_DATE_INDEX)
             self._schema_ready = True
 
     async def upsert(self, evaluation: CurationEvaluationRecord) -> None:
         """Insert or replace one evaluation using the workflow run as its idempotency key."""
         await self.ensure_schema()
-        await self._db.execute(
+        await self._execute(
             """
             INSERT INTO curation_evaluations (
                 workflow_run_id, date, recorded_at, rounds, converged, exit_reason,
@@ -108,7 +114,7 @@ class CurationEvaluationRepository:
         filters, parameters = _date_filters(from_date, to_date)
         parameters.append(max(1, min(limit, 200)))
         where_clause = " AND ".join(filters) if filters else "1 = 1"
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             f"""
             SELECT workflow_run_id, date, recorded_at, rounds, converged, exit_reason,
                    final_score, score_delta, avg_iter_score, result_count, usage_json
@@ -128,7 +134,7 @@ class CurationEvaluationRepository:
         await self.ensure_schema()
         filters, parameters = _date_filters(from_date, to_date)
         where_clause = " AND ".join(filters) if filters else "1 = 1"
-        totals = await self._db.fetchone(
+        totals = await self._fetchone(
             f"""
             SELECT COUNT(*) AS total_runs, SUM(converged) AS converged_runs,
                    AVG(final_score) AS avg_final_score, AVG(rounds) AS avg_rounds
@@ -137,7 +143,7 @@ class CurationEvaluationRepository:
             """,  # noqa: S608
             parameters,
         )
-        reason_rows = await self._db.fetchall(
+        reason_rows = await self._fetchall(
             f"""
             SELECT exit_reason, COUNT(*) AS count
             FROM curation_evaluations

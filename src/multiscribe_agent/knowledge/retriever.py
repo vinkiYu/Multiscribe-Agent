@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
 from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
@@ -22,7 +23,7 @@ class RetrievalHit:
     source: list[str]
 
 
-class Retriever:
+class Retriever(DialectRepositoryMixin):
     """Fuse FTS5 and vector ranking with the standard reciprocal-rank formula."""
 
     RRF_K = 60
@@ -37,7 +38,9 @@ class Retriever:
         self._db = db
         self._vector_store = vector_store
         self._embedding_service = embedding_service
-        self._fts_builder = fts_builder or FtsQueryBuilder("sqlite")
+        self._fts_builder = fts_builder or FtsQueryBuilder(
+            "postgres" if isinstance(self._dialect, PgDialect) else "sqlite"
+        )
 
     async def search(
         self,
@@ -68,7 +71,7 @@ class Retriever:
         ordered = sorted(scores, key=lambda chunk_id: scores[chunk_id], reverse=True)[:top_k]
         placeholders = ",".join("?" for _ in ordered)
         statement = f"SELECT id, document_id, content FROM kb_chunks WHERE id IN ({placeholders})"  # noqa: S608
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             statement,
             ordered,
         )
@@ -93,7 +96,7 @@ class Retriever:
         search_query = query if self._fts_builder.backend == "postgres" else terms
         try:
             statement, parameters = self._fts_builder.search_chunks_sql(search_query, candidate_k)
-            rows = await self._db.fetchall(statement, parameters)
+            rows = await self._fetchall(statement, parameters)
         except Exception:
             return []
         return [str(row["id"]) for row in rows]

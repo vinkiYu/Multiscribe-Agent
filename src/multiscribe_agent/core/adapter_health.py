@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
 
 _MAX_ERROR_LENGTH = 200
 
@@ -32,7 +33,7 @@ class AdapterHealth:
         return data
 
 
-class AdapterHealthRepository:
+class AdapterHealthRepository(ExplicitDatabaseDialectMixin):
     """Read and atomically update adapter health rows in SQLite."""
 
     def __init__(self, failure_threshold: int = 3) -> None:
@@ -59,7 +60,8 @@ class AdapterHealthRepository:
             disabled = True
         status = "success" if success else "error"
         last_error = None if success else _truncate_error(error)
-        await db.execute(
+        await self._execute(
+            db,
             """
             INSERT INTO adapter_health(
                 adapter_id, consecutive_failures, disabled, last_status, last_error,
@@ -96,12 +98,14 @@ class AdapterHealthRepository:
 
     async def get(self, db: Database, *, adapter_id: str) -> AdapterHealth | None:
         """Return one adapter health row, or ``None`` when it has never run."""
-        row = await db.fetchone("SELECT * FROM adapter_health WHERE adapter_id = ?", (adapter_id,))
+        row = await self._fetchone(
+            db, "SELECT * FROM adapter_health WHERE adapter_id = ?", (adapter_id,)
+        )
         return self._from_row(row) if row is not None else None
 
     async def list_all(self, db: Database) -> list[AdapterHealth]:
         """Return all adapter health rows ordered by adapter ID."""
-        rows = await db.fetchall("SELECT * FROM adapter_health ORDER BY adapter_id")
+        rows = await self._fetchall(db, "SELECT * FROM adapter_health ORDER BY adapter_id")
         return [self._from_row(row) for row in rows]
 
     async def set_disabled(self, db: Database, *, adapter_id: str, disabled: bool) -> None:
@@ -111,7 +115,8 @@ class AdapterHealthRepository:
         failures = 0 if not disabled else (current.consecutive_failures if current else 0)
         status = current.last_status if current else "unknown"
         last_error = current.last_error if current and disabled else None
-        await db.execute(
+        await self._execute(
+            db,
             """
             INSERT INTO adapter_health(
                 adapter_id, consecutive_failures, disabled, last_status, last_error,
@@ -138,8 +143,8 @@ class AdapterHealthRepository:
 
     async def list_disabled(self, db: Database) -> set[str]:
         """Return adapter IDs currently marked as disabled."""
-        rows = await db.fetchall(
-            "SELECT adapter_id FROM adapter_health WHERE disabled = 1 ORDER BY adapter_id"
+        rows = await self._fetchall(
+            db, "SELECT adapter_id FROM adapter_health WHERE disabled = 1 ORDER BY adapter_id"
         )
         return {str(row["adapter_id"]) for row in rows}
 

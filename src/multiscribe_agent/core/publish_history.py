@@ -13,6 +13,7 @@ from uuid import uuid4
 import structlog
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
 
 _MAX_PREVIEW_LENGTH = 200
 _TABLE_NAME = "publish_history"
@@ -42,7 +43,7 @@ class PublishRecord:
     adapter_name: str | None
 
 
-class PublishHistory:
+class PublishHistory(ExplicitDatabaseDialectMixin):
     """Store and query publisher results through an injected application database."""
 
     @staticmethod
@@ -85,7 +86,8 @@ class PublishHistory:
         """Persist one normalized publisher outcome and return its generated identifier."""
         record_id = str(uuid4())
         published_at = datetime.now(UTC)
-        await db.execute(
+        await self._execute(
+            db,
             _INSERT_RECORD,
             (
                 record_id,
@@ -133,7 +135,8 @@ class PublishHistory:
             ORDER BY published_at DESC, id DESC
             LIMIT ?
             """  # noqa: S608
-        rows = await db.fetchall(
+        rows = await self._fetchall(
+            db,
             statement,
             parameters,
         )
@@ -155,7 +158,8 @@ class PublishHistory:
             filters.append("published_at <= ?")
             parameters.append(to_date.isoformat())
         where_clause = " AND ".join(filters) if filters else "1 = 1"
-        rows = await db.fetchall(
+        rows = await self._fetchall(
+            db,
             (
                 f"SELECT status, COUNT(*) AS count FROM {_TABLE_NAME} "  # noqa: S608
                 f"WHERE {where_clause} GROUP BY status"

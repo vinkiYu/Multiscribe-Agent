@@ -7,9 +7,10 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
 
 
-class ClickEventRepository:
+class ClickEventRepository(ExplicitDatabaseDialectMixin):
     """Store click events and aggregate their bounded tag signals."""
 
     async def record(
@@ -25,7 +26,8 @@ class ClickEventRepository:
     ) -> None:
         """Persist one click with normalized, de-duplicated tags."""
         tags = _normalize_tags(item_tags)
-        await db.execute(
+        await self._execute(
+            db,
             """
             INSERT INTO click_events(
                 digest_date, item_url, item_source, item_tags, clicked_at,
@@ -53,7 +55,8 @@ class ClickEventRepository:
         """Aggregate tags from clicks on or after ``since_date``."""
         if min_clicks < 1:
             raise ValueError("min_clicks must be at least 1")
-        rows = await db.fetchall(
+        rows = await self._fetchall(
+            db,
             "SELECT item_tags FROM click_events WHERE clicked_at >= ?",
             (f"{since_date}T00:00:00",),
         )

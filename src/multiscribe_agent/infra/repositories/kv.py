@@ -7,9 +7,10 @@ import time
 from typing import cast
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin
 
 
-class KvRepository:
+class KvRepository(DialectRepositoryMixin):
     """Persist JSON-compatible values by key in SQLite."""
 
     def __init__(self, db: Database) -> None:
@@ -18,7 +19,7 @@ class KvRepository:
 
     async def get(self, key: str) -> object | None:
         """Return a value or delete it first when its TTL has elapsed."""
-        row = await self._db.fetchone(
+        row = await self._fetchone(
             "SELECT value, expires_at FROM kv WHERE key = ?",
             (key,),
         )
@@ -39,7 +40,7 @@ class KvRepository:
     async def set(self, key: str, value: object, ttl_seconds: int | None = None) -> None:
         """Serialize a value and upsert it with an optional expiration timestamp."""
         expires_at = None if ttl_seconds is None else time.time() + ttl_seconds
-        await self._db.execute(
+        await self._execute(
             """
             INSERT INTO kv(key, value, expires_at) VALUES (?, ?, ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at
@@ -49,4 +50,4 @@ class KvRepository:
 
     async def delete(self, key: str) -> None:
         """Delete a key if it exists."""
-        await self._db.execute("DELETE FROM kv WHERE key = ?", (key,))
+        await self._execute("DELETE FROM kv WHERE key = ?", (key,))

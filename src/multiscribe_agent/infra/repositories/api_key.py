@@ -7,9 +7,10 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin
 
 
-class ApiKeyRepository:
+class ApiKeyRepository(DialectRepositoryMixin):
     """Persist API key hashes and lifecycle metadata without plaintext secrets."""
 
     def __init__(self, db: Database) -> None:
@@ -27,7 +28,7 @@ class ApiKeyRepository:
         status: str,
     ) -> None:
         """Insert one API key record with the current creation timestamp."""
-        await self._db.execute(
+        await self._execute(
             """
             INSERT INTO api_keys(
                 id, name, key_hash, prefix, source_fingerprint, verification_token,
@@ -48,12 +49,12 @@ class ApiKeyRepository:
 
     async def get_by_prefix(self, prefix: str) -> dict[str, Any] | None:
         """Return one API key record by its public prefix."""
-        row = await self._db.fetchone("SELECT * FROM api_keys WHERE prefix = ?", (prefix,))
+        row = await self._fetchone("SELECT * FROM api_keys WHERE prefix = ?", (prefix,))
         return None if row is None else self._to_dict(row)
 
     async def get_by_token(self, token: str) -> dict[str, Any] | None:
         """Return one API key record by its verification token."""
-        row = await self._db.fetchone(
+        row = await self._fetchone(
             "SELECT * FROM api_keys WHERE verification_token = ?",
             (token,),
         )
@@ -61,18 +62,18 @@ class ApiKeyRepository:
 
     async def update_status(self, key_id: str, status: str) -> None:
         """Change the status of an API key record."""
-        await self._db.execute("UPDATE api_keys SET status = ? WHERE id = ?", (status, key_id))
+        await self._execute("UPDATE api_keys SET status = ? WHERE id = ?", (status, key_id))
 
     async def update_last_used(self, key_id: str) -> None:
         """Record the current UTC timestamp as the key's last use."""
-        await self._db.execute(
+        await self._execute(
             "UPDATE api_keys SET last_used_at = ? WHERE id = ?",
             (self._now(), key_id),
         )
 
     async def list_all(self) -> list[dict[str, Any]]:
         """Return all API key records ordered by creation time."""
-        rows = await self._db.fetchall("SELECT * FROM api_keys ORDER BY created_at DESC")
+        rows = await self._fetchall("SELECT * FROM api_keys ORDER BY created_at DESC")
         return [self._to_dict(row) for row in rows]
 
     @staticmethod

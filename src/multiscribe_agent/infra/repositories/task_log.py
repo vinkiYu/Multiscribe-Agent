@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from multiscribe_agent.domain.models import TaskLog
 from multiscribe_agent.infra.db_protocol import DatabaseProtocol
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin
 
 _UPDATE_FIELDS = frozenset(
     {
@@ -22,7 +23,7 @@ _UPDATE_FIELDS = frozenset(
 )
 
 
-class TaskLogRepository:
+class TaskLogRepository(DialectRepositoryMixin):
     """Create, update, and retrieve task lifecycle records."""
 
     def __init__(self, db: DatabaseProtocol) -> None:
@@ -31,7 +32,7 @@ class TaskLogRepository:
 
     async def create(self, log: TaskLog) -> str:
         """Insert a task log and return its generated identifier."""
-        row_id = await self._db.execute(
+        row_id = await self._execute(
             """
             INSERT INTO task_logs(
                 task_id, task_name, start_time, end_time, duration, status,
@@ -67,7 +68,7 @@ class TaskLogRepository:
         if current is None:
             return
         updated = current.model_copy(update=fields)
-        await self._db.execute(
+        await self._execute(
             """
             UPDATE task_logs SET
                 task_name = ?, start_time = ?, end_time = ?, duration = ?, status = ?,
@@ -89,7 +90,7 @@ class TaskLogRepository:
 
     async def get(self, log_id: str) -> TaskLog | None:
         """Return a task log by identifier."""
-        row = await self._db.fetchone("SELECT * FROM task_logs WHERE id = ?", (log_id,))
+        row = await self._fetchone("SELECT * FROM task_logs WHERE id = ?", (log_id,))
         if row is None:
             return None
         return self._to_task_log(row)

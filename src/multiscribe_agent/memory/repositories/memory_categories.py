@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 
 
-class MemoryCategoryRepository:
+class MemoryCategoryRepository(DialectRepositoryMixin):
     """Read and write JSON category records without using the generic entity store."""
 
     def __init__(self, db: Database) -> None:
@@ -16,7 +17,7 @@ class MemoryCategoryRepository:
 
     async def get(self, category_id: str) -> dict[str, object] | None:
         """Return one category data object when it exists."""
-        row = await self._db.fetchone(
+        row = await self._fetchone(
             "SELECT data FROM memory_categories WHERE id = ?", (category_id,)
         )
         if row is None:
@@ -28,14 +29,20 @@ class MemoryCategoryRepository:
 
     async def save(self, category_id: str, data: dict[str, object]) -> None:
         """Create or replace one category record."""
-        await self._db.execute(
-            "INSERT OR REPLACE INTO memory_categories(id, data) VALUES (?, ?)",
+        statement = (
+            "INSERT INTO memory_categories(id, data) VALUES (?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data"
+            if isinstance(self._dialect, PgDialect)
+            else "INSERT OR REPLACE INTO memory_categories(id, data) VALUES (?, ?)"
+        )
+        await self._execute(
+            statement,
             (category_id, json.dumps(data, ensure_ascii=False, sort_keys=True)),
         )
 
     async def list_all(self) -> list[dict[str, object]]:
         """Return all category data objects with their stable identifiers."""
-        rows = await self._db.fetchall("SELECT id, data FROM memory_categories ORDER BY id")
+        rows = await self._fetchall("SELECT id, data FROM memory_categories ORDER BY id")
         values: list[dict[str, object]] = []
         for row in rows:
             data = json.loads(str(row["data"]))
@@ -46,7 +53,5 @@ class MemoryCategoryRepository:
 
     async def delete(self, category_id: str) -> bool:
         """Delete one category and report whether a record was removed."""
-        result = await self._db.execute(
-            "DELETE FROM memory_categories WHERE id = ?", (category_id,)
-        )
-        return result > 0
+        result = await self._execute("DELETE FROM memory_categories WHERE id = ?", (category_id,))
+        return (result or 0) > 0

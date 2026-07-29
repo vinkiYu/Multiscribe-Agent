@@ -9,6 +9,7 @@ from typing import Any, cast
 
 from multiscribe_agent.domain.models import SourceData, UnifiedData
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
 _DATE_RANGE_STATEMENTS = {
@@ -80,7 +81,7 @@ _FILTER_STATEMENTS = {
 }
 
 
-class SourceDataRepository:
+class SourceDataRepository(DialectRepositoryMixin):
     """Persist normalized content, structured filters, and FTS queries."""
 
     def __init__(self, db: Database) -> None:
@@ -92,7 +93,7 @@ class SourceDataRepository:
         if not items:
             return 0
 
-        count_before = await self._db.fetchone("SELECT COUNT(*) AS count FROM source_data")
+        count_before = await self._fetchone("SELECT COUNT(*) AS count FROM source_data")
         if count_before is None:
             raise RuntimeError("source_data table is unavailable")
 
@@ -117,7 +118,7 @@ class SourceDataRepository:
                 )
             )
 
-        await self._db.executemany(
+        await self._executemany(
             """
             INSERT INTO source_data(
                 id, title, url, description, published_date, source, category, author,
@@ -139,7 +140,7 @@ class SourceDataRepository:
             """,
             rows,
         )
-        count_after = await self._db.fetchone("SELECT COUNT(*) AS count FROM source_data")
+        count_after = await self._fetchone("SELECT COUNT(*) AS count FROM source_data")
         if count_after is None:
             raise RuntimeError("source_data table is unavailable")
         return int(count_after["count"]) - int(count_before["count"])
@@ -154,7 +155,7 @@ class SourceDataRepository:
         statement = _DATE_RANGE_STATEMENTS.get(query_field)
         if statement is None:
             raise ValueError(f"unsupported date field: {query_field}")
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             statement,
             (start, end),
         )
@@ -181,7 +182,7 @@ class SourceDataRepository:
         )
         statement = _FILTER_STATEMENTS[filter_key]
         parameters.extend((limit, offset))
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             statement,
             parameters,
         )
@@ -191,9 +192,11 @@ class SourceDataRepository:
         self, query: str, limit: int, fts_builder: FtsQueryBuilder | None = None
     ) -> list[SourceData]:
         """Search the FTS index and return content with highlighted descriptions."""
-        builder = fts_builder or FtsQueryBuilder("sqlite")
+        builder = fts_builder or FtsQueryBuilder(
+            "postgres" if isinstance(self._dialect, PgDialect) else "sqlite"
+        )
         statement, parameters = builder.search_source_data_sql(query, max(limit, 0))
-        rows = await self._db.fetchall(statement, parameters)
+        rows = await self._fetchall(statement, parameters)
         return [self._to_source_data(row, highlight=str(row["highlight"])) for row in rows]
 
     @staticmethod

@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from multiscribe_agent.domain.models import KBCategory, KBChunk, KBDocument
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import (
     EmbeddingService,
@@ -44,7 +45,7 @@ class KBCapabilities:
         }
 
 
-class KBService:
+class KBService(DialectRepositoryMixin):
     """Coordinate local document parsing, SQLite persistence, and hybrid retrieval."""
 
     def __init__(
@@ -78,7 +79,7 @@ class KBService:
             document_count=0,
             last_updated_at=now,
         )
-        await self._db.execute(
+        await self._execute(
             "INSERT INTO kb_categories(id, data) VALUES (?, ?)",
             (category.id, _dump_model(category)),
         )
@@ -120,7 +121,7 @@ class KBService:
         chunks: list[KBChunk] = []
         for candidate in candidates:
             digest = hashlib.sha256(candidate.text.encode()).hexdigest()
-            known = await self._db.fetchone(
+            known = await self._fetchone(
                 "SELECT chunk_id FROM kb_chunk_dedup WHERE content_hash = ?", (digest,)
             )
             if known is not None:
@@ -148,16 +149,16 @@ class KBService:
             created_at=now,
             updated_at=now,
         )
-        await self._db.execute(
+        await self._execute(
             "INSERT INTO kb_documents(id, category_id, data) VALUES (?, ?, ?)",
             (document.id, document.category_id, _dump_model(document)),
         )
         for chunk in chunks:
-            await self._db.execute(
+            await self._execute(
                 "INSERT INTO kb_chunks(id, document_id, content, metadata) VALUES (?, ?, ?, ?)",
                 (chunk.id, chunk.document_id, chunk.content, _dump_object(chunk.metadata)),
             )
-            await self._db.execute(
+            await self._execute(
                 "INSERT INTO kb_chunk_dedup(content_hash, chunk_id, created_at) VALUES (?, ?, ?)",
                 (str(chunk.metadata["sha256"]), chunk.id, datetime.now(UTC).isoformat()),
             )
@@ -183,11 +184,11 @@ class KBService:
 
     async def list_categories(self) -> list[KBCategory]:
         """Return categories with live document counts."""
-        rows = await self._db.fetchall("SELECT id, data FROM kb_categories ORDER BY id")
+        rows = await self._fetchall("SELECT id, data FROM kb_categories ORDER BY id")
         categories: list[KBCategory] = []
         for row in rows:
             raw = json.loads(str(row["data"]))
-            count = await self._db.fetchone(
+            count = await self._fetchone(
                 "SELECT COUNT(*) AS count FROM kb_documents WHERE category_id = ?", (row["id"],)
             )
             raw["document_count"] = int(count["count"]) if count is not None else 0
@@ -197,9 +198,9 @@ class KBService:
     async def list_documents(self, category_id: str | None = None) -> list[KBDocument]:
         """Return persisted document metadata, optionally restricted to a category."""
         if category_id is None:
-            rows = await self._db.fetchall("SELECT data FROM kb_documents ORDER BY id DESC")
+            rows = await self._fetchall("SELECT data FROM kb_documents ORDER BY id DESC")
         else:
-            rows = await self._db.fetchall(
+            rows = await self._fetchall(
                 "SELECT data FROM kb_documents WHERE category_id = ? ORDER BY id DESC",
                 (category_id,),
             )
@@ -207,7 +208,7 @@ class KBService:
 
     async def delete_document(self, document_id: str) -> None:
         """Delete one document, its chunks, vectors, FTS rows, and exact-dedup records."""
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             "SELECT id FROM kb_chunks WHERE document_id = ?", (document_id,)
         )
         for row in rows:
@@ -215,26 +216,28 @@ class KBService:
             if self._vector_store is not None:
                 with suppress(VectorStoreUnavailable):
                     await self._vector_store.delete(chunk_id)
-            await self._db.execute("DELETE FROM kb_chunk_dedup WHERE chunk_id = ?", (chunk_id,))
-        await self._db.execute("DELETE FROM kb_chunks WHERE document_id = ?", (document_id,))
-        await self._db.execute("DELETE FROM kb_documents WHERE id = ?", (document_id,))
+            await self._execute("DELETE FROM kb_chunk_dedup WHERE chunk_id = ?", (chunk_id,))
+        await self._execute("DELETE FROM kb_chunks WHERE document_id = ?", (document_id,))
+        await self._execute("DELETE FROM kb_documents WHERE id = ?", (document_id,))
 
     async def move_to_memory(self, document_id: str, target_memory_category: str) -> int:
         """Copy unique document chunks into P17-compatible memory records."""
-        rows = await self._db.fetchall(
-            "SELECT content FROM kb_chunks WHERE document_id = ? ORDER BY rowid", (document_id,)
+        order_column = "id" if isinstance(self._dialect, PgDialect) else "rowid"
+        rows = await self._fetchall(
+            f"SELECT content FROM kb_chunks WHERE document_id = ? ORDER BY {order_column}",  # noqa: S608 - fixed dialect expression.
+            (document_id,),
         )
         inserted = 0
         for row in rows:
             content = str(row["content"])
             digest = hashlib.sha256(content.encode()).hexdigest()
-            existing = await self._db.fetchone(
-                "SELECT id FROM agent_memories WHERE json_extract(data, '$.sha256') = ?",
+            existing = await self._fetchone(
+                f"SELECT id FROM agent_memories WHERE {self._json_extract('data', 'sha256')} = ?",  # noqa: S608 - identifiers are fixed constants.
                 (digest,),
             )
             if existing is not None:
                 continue
-            await self._db.execute(
+            await self._execute(
                 "INSERT INTO agent_memories(id, content, tags, data) VALUES (?, ?, ?, ?)",
                 (
                     str(uuid4()),
@@ -268,7 +271,7 @@ class KBService:
 
     async def _require_category(self, category_id: str) -> None:
         """Reject ingestion that references no durable category."""
-        row = await self._db.fetchone("SELECT id FROM kb_categories WHERE id = ?", (category_id,))
+        row = await self._fetchone("SELECT id FROM kb_categories WHERE id = ?", (category_id,))
         if row is None:
             raise ValueError("knowledge-base category was not found")
 
@@ -276,7 +279,7 @@ class KBService:
         self, hits: list[RetrievalHit], category_id: str
     ) -> list[RetrievalHit]:
         """Keep only retrieval results owned by the requested category."""
-        documents = await self._db.fetchall(
+        documents = await self._fetchall(
             "SELECT id FROM kb_documents WHERE category_id = ?", (category_id,)
         )
         document_ids = {str(row["id"]) for row in documents}

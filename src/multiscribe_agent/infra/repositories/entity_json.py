@@ -6,6 +6,7 @@ import json
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 
 _TABLE_STATEMENTS = {
     "agents": (
@@ -44,7 +45,7 @@ _TABLE_STATEMENTS = {
 }
 
 
-class EntityJsonRepository:
+class EntityJsonRepository(DialectRepositoryMixin):
     """Store JSON documents in a fixed set of entity tables."""
 
     def __init__(self, db: Database) -> None:
@@ -54,7 +55,7 @@ class EntityJsonRepository:
     async def get(self, table: str, entity_id: str) -> dict[str, Any] | None:
         """Return one JSON entity by table and identifier."""
         statements = self._statements_for(table)
-        row = await self._db.fetchone(
+        row = await self._fetchone(
             statements[0],
             (entity_id,),
         )
@@ -65,21 +66,24 @@ class EntityJsonRepository:
     async def save(self, table: str, entity_id: str, data: dict[str, Any]) -> None:
         """Insert or replace a JSON entity in an allowed table."""
         statements = self._statements_for(table)
-        await self._db.execute(
-            statements[1],
+        statement = statements[1]
+        if isinstance(self._dialect, PgDialect):
+            statement = _postgres_upsert(table)
+        await self._execute(
+            statement,
             (entity_id, json.dumps(data)),
         )
 
     async def list_all(self, table: str) -> list[dict[str, Any]]:
         """Return all JSON entities from an allowed table."""
         statements = self._statements_for(table)
-        rows = await self._db.fetchall(statements[2])
+        rows = await self._fetchall(statements[2])
         return [self._decode_object(str(row["data"])) for row in rows]
 
     async def delete(self, table: str, entity_id: str) -> None:
         """Delete an entity from an allowed table."""
         statements = self._statements_for(table)
-        await self._db.execute(statements[3], (entity_id,))
+        await self._execute(statements[3], (entity_id,))
 
     @staticmethod
     def _statements_for(table: str) -> tuple[str, str, str, str]:
@@ -96,3 +100,17 @@ class EntityJsonRepository:
         if not isinstance(value, dict):
             raise ValueError("stored entity data must be a JSON object")
         return cast(dict[str, Any], value)
+
+
+def _postgres_upsert(table: str) -> str:
+    """Render the fixed-table JSON upsert accepted by PostgreSQL."""
+    if table == "schedules":
+        return """
+        INSERT INTO schedules(id, data, updated_at)
+        VALUES ($1, $2, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+        """
+    return (
+        f"INSERT INTO {table}(id, data) VALUES ($1, $2) "  # noqa: S608 - table is fixed whitelist.
+        "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data"
+    )

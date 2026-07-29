@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS daily_usage (
@@ -19,6 +20,9 @@ CREATE TABLE IF NOT EXISTS daily_usage (
     recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 """
+_CREATE_TABLE_POSTGRES = _CREATE_TABLE.replace(
+    "id INTEGER PRIMARY KEY AUTOINCREMENT", "id BIGSERIAL PRIMARY KEY"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +37,7 @@ class DailyUsageRecord:
     task_count: int
 
 
-class DailyUsageRepository:
+class DailyUsageRepository(DialectRepositoryMixin):
     """Upsert and query scheduler usage without changing the core DB migration."""
 
     def __init__(self, db: Database) -> None:
@@ -43,7 +47,9 @@ class DailyUsageRepository:
     async def ensure_schema(self) -> None:
         """Create the table lazily and safely for old databases."""
         if not self._schema_ready:
-            await self._db.execute(_CREATE_TABLE)
+            await self._execute(
+                _CREATE_TABLE_POSTGRES if isinstance(self._dialect, PgDialect) else _CREATE_TABLE
+            )
             self._schema_ready = True
 
     async def upsert(self, date: str, usage: Mapping[str, object]) -> None:
@@ -53,7 +59,7 @@ class DailyUsageRepository:
             _non_negative_int(usage.get(name))
             for name in ("input_tokens", "output_tokens", "total_tokens", "llm_calls")
         )
-        await self._db.execute(
+        await self._execute(
             """
             INSERT INTO daily_usage
                 (date, input_tokens, output_tokens, total_tokens, llm_calls, task_count)
@@ -72,7 +78,7 @@ class DailyUsageRepository:
     async def query(self, from_date: str, to_date: str) -> list[DailyUsageRecord]:
         """Return daily aggregates in the inclusive date range, newest first."""
         await self.ensure_schema()
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             """
             SELECT date, input_tokens, output_tokens, total_tokens, llm_calls, task_count
             FROM daily_usage
