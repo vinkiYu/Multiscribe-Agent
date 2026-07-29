@@ -26,7 +26,7 @@ from multiscribe_agent.agents.workflow.protocols import (
     LoopReflector,
     ObservingAgentStepExecutor,
 )
-from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
+from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive, get_daily_digest_archive
 from multiscribe_agent.core.errors import WorkflowError
 from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.core.pushed_content import PushedContentRepository
@@ -127,6 +127,8 @@ class DailyDigestConfig:
     fetch_days: int = 2
     top_n: int = 12
     targets: list[str] = field(default_factory=lambda: ["feishu_bot", "wecom_bot"])
+    preview_mode: Literal["off", "preview_first"] = "off"
+    preview_targets: list[str] = field(default_factory=list)
     enable_overview: bool = True
     resolve_article_images: bool = False
     loop_max_iterations: int = 3
@@ -137,6 +139,8 @@ class DailyDigestConfig:
         """Reject invalid bounded workflow settings before scheduling execution."""
         if not self.curate_agent_id.strip():
             raise ValueError("curate_agent_id must not be empty")
+        if self.preview_mode not in {"off", "preview_first"}:
+            raise ValueError("preview_mode must be 'off' or 'preview_first'")
         if (
             min(self.fetch_days, self.top_n, self.loop_max_iterations, self.curate_candidate_limit)
             <= 0
@@ -160,12 +164,17 @@ class DailyDigestConfig:
             if not isinstance(adapter_id, str) or not isinstance(config, Mapping):
                 raise ValueError("adapter_configs must map adapter IDs to objects")
             adapter_configs[adapter_id] = config
+        raw_preview_mode = values.get("preview_mode", "off")
+        if raw_preview_mode not in {"off", "preview_first"}:
+            raise ValueError("preview_mode must be 'off' or 'preview_first'")
         return cls(
             curate_agent_id=curate_agent_id,
             adapter_ids=adapter_ids,
             fetch_days=_positive_int(values.get("fetch_days"), 2, "fetch_days"),
             top_n=_positive_int(values.get("top_n"), 12, "top_n"),
             targets=targets if raw_targets is not None else ["feishu_bot", "wecom_bot"],
+            preview_mode=raw_preview_mode,
+            preview_targets=_string_list(values.get("preview_targets"), "preview_targets"),
             enable_overview=_bool_value(values.get("enable_overview"), True, "enable_overview"),
             resolve_article_images=_bool_value(
                 values.get("resolve_article_images"), False, "resolve_article_images"
@@ -253,6 +262,7 @@ class DailyDigestPipeline:
         publish_history: PublishHistory | None = None,
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
+        archive_repo: DailyDigestArchive | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -265,6 +275,7 @@ class DailyDigestPipeline:
         self._publish_history = publish_history
         self._memory_service = memory_service
         self._pushed_content_repo = pushed_content_repo
+        self._archive_repo = archive_repo or get_daily_digest_archive()
 
     async def run(self, *, run_date: str | None = None) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
@@ -278,16 +289,21 @@ class DailyDigestPipeline:
         if not isinstance(result_count, int) or isinstance(result_count, bool):
             raise WorkflowError("daily digest final result is missing result_count")
         targets = payload.get("targets", {})
+        approval_status = payload.get("approval_status", "published")
+        if approval_status == "pending":
+            message = f"prepared {result_count} curated items for approval"
+        elif targets:
+            message = f"published {result_count} curated items"
+        else:
+            message = f"generated {result_count} curated items without publishing"
         return {
             "result_count": result_count,
-            "message": (
-                f"published {result_count} curated items"
-                if targets
-                else f"generated {result_count} curated items without publishing"
-            ),
+            "message": message,
             "targets": targets,
             "curated": payload.get("curated", []),
             "overview": payload.get("overview", ""),
+            "preview_mode": payload.get("preview_mode", "off"),
+            "approval_status": approval_status,
             "usage": usage.as_dict(),
         }
 
@@ -313,6 +329,7 @@ class DailyDigestPipeline:
             self._publish_history,
             self._memory_service,
             self._pushed_content_repo,
+            archive_repo=self._archive_repo,
         )
         return await pipeline.run()
 
@@ -333,6 +350,7 @@ class DailyDigestPipeline:
             self._memory_service,
             self._pushed_content_repo,
             usage,
+            self._archive_repo,
         )
         run_reflector = self._reflector
         set_usage_sink = getattr(run_reflector, "set_usage_sink", None)
@@ -383,6 +401,7 @@ class _DailyDigestStepExecutor:
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
         usage: _DigestUsage | None = None,
+        archive_repo: DailyDigestArchive | None = None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -395,6 +414,7 @@ class _DailyDigestStepExecutor:
         self._memory_service = memory_service
         self._pushed_content_repo = pushed_content_repo
         self._usage = usage or _DigestUsage()
+        self._archive_repo = archive_repo or get_daily_digest_archive()
         self._total_scanned = 0
         self._content_hash_by_url: dict[str, str] = {}
 
@@ -644,24 +664,31 @@ class _DailyDigestStepExecutor:
             summary=overview,
             total_scanned=self._total_scanned,
         )
+        preview_enabled = self._config.preview_mode == "preview_first" and bool(
+            self._config.preview_targets
+        )
         if self._db is not None:
-            await get_daily_digest_archive().upsert(self._db, digest)
+            await self._archive_repo.upsert(
+                self._db,
+                digest,
+                approval_status="pending" if preview_enabled else "published",
+            )
+        if preview_enabled:
+            targets = await self._publishing_service.fanout(digest, self._config.preview_targets)
+            await self._record_publish_history(digest, targets)
+            return _dump_json(
+                {
+                    "result_count": len(items),
+                    "targets": targets,
+                    "curated": [_digest_item_dict(item) for item in items],
+                    "overview": overview,
+                    "preview_mode": "preview_first",
+                    "approval_status": "pending",
+                }
+            )
+
         targets = await self._publishing_service.fanout(digest, self._config.targets)
-        if self._db is not None and self._publish_history is not None:
-            for publisher_id, result in targets.items():
-                status: Literal["success", "error"] = (
-                    "success" if result.get("status") == "success" else "error"
-                )
-                error = result.get("error")
-                await self._publish_history.add(
-                    self._db,
-                    publisher_id=publisher_id,
-                    status=status,
-                    title=digest.title,
-                    content=digest.summary,
-                    result_data=result,
-                    error_message=str(error) if status == "error" and error is not None else None,
-                )
+        await self._record_publish_history(digest, targets)
         if (
             self._db is not None
             and self._pushed_content_repo is not None
@@ -687,8 +714,31 @@ class _DailyDigestStepExecutor:
                 "targets": targets,
                 "curated": [_digest_item_dict(item) for item in items],
                 "overview": overview,
+                "preview_mode": "off",
+                "approval_status": "published",
             }
         )
+
+    async def _record_publish_history(
+        self, digest: CuratedDigest, targets: dict[str, dict[str, object]]
+    ) -> None:
+        """Record preview or final publisher outcomes without changing fan-out semantics."""
+        if self._db is None or self._publish_history is None:
+            return
+        for publisher_id, result in targets.items():
+            status: Literal["success", "error"] = (
+                "success" if result.get("status") == "success" else "error"
+            )
+            error = result.get("error")
+            await self._publish_history.add(
+                self._db,
+                publisher_id=publisher_id,
+                status=status,
+                title=digest.title,
+                content=digest.summary,
+                result_data=result,
+                error_message=str(error) if status == "error" and error is not None else None,
+            )
 
 
 def _string_list(value: object, name: str) -> list[str]:

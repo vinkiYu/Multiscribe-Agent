@@ -19,6 +19,7 @@ from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.adapter_health import AdapterHealthRepository
+from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
 from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
 from multiscribe_agent.core.event_bus import EventBus, get_event_bus
 from multiscribe_agent.core.publish_history import PublishHistory, get_publish_history
@@ -489,6 +490,7 @@ class ServiceContext:
             self.publish_history,
             self.memory_service,
             self.pushed_content,
+            archive_repo=get_daily_digest_archive(),
         )
         return await pipeline.run()
 

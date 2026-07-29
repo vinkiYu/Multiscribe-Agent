@@ -387,10 +387,19 @@ class Database:
                 summary TEXT NOT NULL,
                 items TEXT NOT NULL DEFAULT '[]',
                 total_scanned INTEGER NOT NULL DEFAULT 0,
+                approval_status TEXT NOT NULL DEFAULT 'published',
                 updated_at TEXT NOT NULL
             )
             """
         )
+        columns = await self.fetchall("PRAGMA table_info(daily_digest_archives)")
+        if not any(str(column["name"]) == "approval_status" for column in columns):
+            await self.execute(
+                """
+                ALTER TABLE daily_digest_archives
+                ADD COLUMN approval_status TEXT NOT NULL DEFAULT 'published'
+                """
+            )
         await self.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_daily_digest_archives_updated

@@ -15,6 +15,7 @@ from multiscribe_agent.renderers.models import CuratedDigest
 
 _TABLE_NAME = "daily_digest_archives"
 _MAX_QUERY_LIMIT = 366
+_APPROVAL_STATUSES = frozenset({"published", "pending", "approved", "rejected"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,14 +44,22 @@ class ArchivedDigest:
     items: list[ArchivedDigestItem]
     total_scanned: int
     updated_at: datetime
+    approval_status: str = "published"
 
 
 class DailyDigestArchive:
     """Upsert and query generated daily digests through the application database."""
 
-    async def upsert(self, db: Database, digest: CuratedDigest) -> None:
+    async def upsert(
+        self,
+        db: Database,
+        digest: CuratedDigest,
+        *,
+        approval_status: str = "published",
+    ) -> None:
         """Persist the generated digest even when downstream publishers later fail."""
         date.fromisoformat(digest.date)
+        _validate_approval_status(approval_status)
         item_payload = [
             {
                 "title": item.title,
@@ -70,13 +79,14 @@ class DailyDigestArchive:
         await db.execute(
             f"""
             INSERT INTO {_TABLE_NAME} (
-                digest_date, title, summary, items, total_scanned, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                digest_date, title, summary, items, total_scanned, approval_status, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(digest_date) DO UPDATE SET
                 title = excluded.title,
                 summary = excluded.summary,
                 items = excluded.items,
                 total_scanned = excluded.total_scanned,
+                approval_status = excluded.approval_status,
                 updated_at = excluded.updated_at
             """,  # noqa: S608 - table name is a module constant.
             (
@@ -85,6 +95,7 @@ class DailyDigestArchive:
                 digest.summary,
                 json.dumps(item_payload, ensure_ascii=False, sort_keys=True),
                 digest.total_scanned,
+                approval_status,
                 now,
             ),
         )
@@ -94,7 +105,7 @@ class DailyDigestArchive:
         date.fromisoformat(digest_date)
         row = await db.fetchone(
             f"""
-            SELECT digest_date, title, summary, items, total_scanned, updated_at
+            SELECT digest_date, title, summary, items, total_scanned, approval_status, updated_at
             FROM {_TABLE_NAME}
             WHERE digest_date = ?
             """,  # noqa: S608 - table name is a module constant.
@@ -102,12 +113,36 @@ class DailyDigestArchive:
         )
         return _record_from_row(row) if row is not None else None
 
+    async def set_approval_status(self, db: Database, digest_date: str, status: str) -> None:
+        """Update one archived digest status using the bounded approval state machine."""
+        date.fromisoformat(digest_date)
+        _validate_approval_status(status)
+        await db.execute(
+            f"UPDATE {_TABLE_NAME} SET approval_status = ?, updated_at = ? WHERE digest_date = ?",  # noqa: S608 - table name is a module constant.
+            (status, datetime.now(UTC).isoformat(), digest_date),
+        )
+
+    async def get_approval_status(self, db: Database, digest_date: str) -> str | None:
+        """Return an archive approval state, or ``None`` when the date is absent."""
+        date.fromisoformat(digest_date)
+        row = await db.fetchone(
+            f"SELECT approval_status FROM {_TABLE_NAME} WHERE digest_date = ?",  # noqa: S608
+            (digest_date,),
+        )
+        if row is None:
+            return None
+        columns = row.keys()
+        raw_status = row["approval_status"] if "approval_status" in columns else "published"
+        status = str(raw_status or "published")
+        _validate_approval_status(status)
+        return status
+
     async def list(self, db: Database, limit: int = 31) -> list[ArchivedDigest]:
         """Return newest archives first within a bounded public-page history."""
         bounded_limit = max(1, min(limit, _MAX_QUERY_LIMIT))
         rows = await db.fetchall(
             f"""
-            SELECT digest_date, title, summary, items, total_scanned, updated_at
+            SELECT digest_date, title, summary, items, total_scanned, approval_status, updated_at
             FROM {_TABLE_NAME}
             ORDER BY digest_date DESC
             LIMIT ?
@@ -145,6 +180,7 @@ def _record_from_row(row: aiosqlite.Row) -> ArchivedDigest:
             )
         )
 
+    columns = row.keys()
     return ArchivedDigest(
         date=str(row["digest_date"]),
         title=str(row["title"]),
@@ -152,7 +188,19 @@ def _record_from_row(row: aiosqlite.Row) -> ArchivedDigest:
         items=items,
         total_scanned=int(row["total_scanned"]),
         updated_at=datetime.fromisoformat(str(row["updated_at"])),
+        approval_status=(
+            str(row["approval_status"] or "published")
+            if "approval_status" in columns
+            else "published"
+        ),
     )
+
+
+def _validate_approval_status(status: str) -> None:
+    """Reject unknown approval states before they reach the archive table."""
+    if status not in _APPROVAL_STATUSES:
+        allowed = ", ".join(sorted(_APPROVAL_STATUSES))
+        raise ValueError(f"approval_status must be one of: {allowed}")
 
 
 def _required_text(item: Mapping[str, object], key: str) -> str:

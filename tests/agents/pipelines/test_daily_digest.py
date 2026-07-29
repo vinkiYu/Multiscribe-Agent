@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 import pytest
 
@@ -21,6 +21,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     register_daily_digest_executor,
 )
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
+from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.errors import AgentStepTerminalError, WorkflowError
 from multiscribe_agent.core.pushed_content import PushedContentRepository
 from multiscribe_agent.domain.models import (
@@ -304,6 +305,9 @@ def _pipeline(
     fetch_days: int = 2,
     targets: list[str] | None = None,
     reflector: object | None = None,
+    preview_mode: Literal["off", "preview_first"] = "off",
+    preview_targets: list[str] | None = None,
+    archive_repo: DailyDigestArchive | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
@@ -312,6 +316,8 @@ def _pipeline(
         fetch_days=fetch_days,
         top_n=2,
         targets=targets if targets is not None else ["good", "bad"],
+        preview_mode=preview_mode,
+        preview_targets=preview_targets or [],
         adapter_configs=adapter_configs or {"rss": {"url": "https://feed.example.test"}},
     )
     ingestion = FakeIngestionService()
@@ -343,6 +349,7 @@ def _pipeline(
             db=db,
             memory_service=memory_service,
             pushed_content_repo=pushed_content_repo,
+            archive_repo=archive_repo,
         ),
         curator,
         ingestion,
@@ -385,6 +392,16 @@ def test_explicit_empty_targets_disable_default_publishers() -> None:
 
     assert preview.targets == []
     assert default.targets == ["feishu_bot", "wecom_bot"]
+
+    preview = DailyDigestConfig.from_mapping(
+        {
+            "curate_agent_id": "curator",
+            "preview_mode": "preview_first",
+            "preview_targets": ["good"],
+        }
+    )
+    assert preview.preview_mode == "preview_first"
+    assert preview.preview_targets == ["good"]
 
 
 def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidates() -> None:
@@ -654,6 +671,35 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
     assert digest.items[1].video_url == "https://example.test/one.mp4"
     assert digest.items[1].tags == ("engineering", "technology")
     assert digest.total_scanned == 2
+
+
+@pytest.mark.asyncio
+async def test_daily_digest_preview_first_only_publishes_review_targets() -> None:
+    """Preview mode persists pending content and withholds final destinations."""
+    db = await init_db(":memory:")
+    try:
+        archive = DailyDigestArchive()
+        pushed = FakePushedContentRepository()
+        pipeline, _, _ = _pipeline(
+            [_curation_json(), _curation_json(), "overview"],
+            db=db,
+            archive_repo=archive,
+            pushed_content_repo=pushed,
+            targets=["good", "bad"],
+            preview_mode="preview_first",
+            preview_targets=["good"],
+        )
+
+        result = await pipeline.run(run_date="2026-07-17")
+
+        assert result["preview_mode"] == "preview_first"
+        assert result["approval_status"] == "pending"
+        assert set(result["targets"]) == {"good"}
+        assert len(GoodPublisher.received) == 1
+        assert pushed.records == []
+        assert await archive.get_approval_status(db, "2026-07-17") == "pending"
+    finally:
+        await db.close()
 
 
 @pytest.mark.asyncio
