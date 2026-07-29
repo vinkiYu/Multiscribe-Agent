@@ -1,7 +1,7 @@
 import { StrictMode, useCallback, useEffect, useMemo, useState, type ReactElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3, ExternalLink, FileText, Menu, RefreshCw, Rss, Sparkles, Tags, X } from 'lucide-react'
-import logoUrl from '../multiscribe-logo.svg'
+import logoUrl from '../multiscribe-logo.png'
 import './daily-news.css'
 
 interface ArchiveSummary { date: string; title: string; item_count: number; updated_at: string }

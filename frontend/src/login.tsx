@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useState, type FormEvent, type ReactElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowRight, Eye, EyeOff, KeyRound, LoaderCircle } from 'lucide-react'
-import logoUrl from '../multiscribe-logo.svg'
+import logoUrl from '../multiscribe-logo.png'
 import { loginApi } from './services/api'
 import './styles.css'
 

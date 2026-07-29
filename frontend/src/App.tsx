@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import logoUrl from '../multiscribe-logo.svg'
+import logoUrl from '../multiscribe-logo.png'
 import {
   ApiError,
   agentsApi,
