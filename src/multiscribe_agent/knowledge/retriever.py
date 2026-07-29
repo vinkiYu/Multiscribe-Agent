@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.vector_store import VectorStore, VectorStoreUnavailable
+from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
+from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
+from multiscribe_agent.knowledge.vector_store import VectorStoreUnavailable
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,12 +30,14 @@ class Retriever:
     def __init__(
         self,
         db: Database,
-        vector_store: VectorStore | None = None,
+        vector_store: VectorStorePort | None = None,
         embedding_service: EmbeddingService | None = None,
+        fts_builder: FtsQueryBuilder | None = None,
     ) -> None:
         self._db = db
         self._vector_store = vector_store
         self._embedding_service = embedding_service
+        self._fts_builder = fts_builder or FtsQueryBuilder("sqlite")
 
     async def search(
         self,
@@ -83,21 +87,13 @@ class Retriever:
 
     async def _fts_chunk_ids(self, query: str, candidate_k: int) -> list[str]:
         """Return FTS5 chunk IDs without exposing query grammar to callers."""
-        terms = " ".join(part for part in query.replace("'", " ").split() if part)
-        if not terms:
+        if not query.strip():
             return []
+        terms = " ".join(part for part in query.replace("'", " ").split() if part)
+        search_query = query if self._fts_builder.backend == "postgres" else terms
         try:
-            rows = await self._db.fetchall(
-                """
-                SELECT kb_chunks.id
-                FROM kb_chunks_fts
-                JOIN kb_chunks ON kb_chunks.rowid = kb_chunks_fts.rowid
-                WHERE kb_chunks_fts MATCH ?
-                ORDER BY bm25(kb_chunks_fts)
-                LIMIT ?
-                """,
-                (terms, candidate_k),
-            )
+            statement, parameters = self._fts_builder.search_chunks_sql(search_query, candidate_k)
+            rows = await self._db.fetchall(statement, parameters)
         except Exception:
             return []
         return [str(row["id"]) for row in rows]

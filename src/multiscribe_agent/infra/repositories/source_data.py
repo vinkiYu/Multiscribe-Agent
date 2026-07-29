@@ -9,6 +9,7 @@ from typing import Any, cast
 
 from multiscribe_agent.domain.models import SourceData, UnifiedData
 from multiscribe_agent.infra.db import Database
+from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
 _DATE_RANGE_STATEMENTS = {
     "ingestion_date": """
@@ -186,20 +187,13 @@ class SourceDataRepository:
         )
         return [self._to_source_data(row) for row in rows]
 
-    async def search_fts(self, query: str, limit: int) -> list[SourceData]:
+    async def search_fts(
+        self, query: str, limit: int, fts_builder: FtsQueryBuilder | None = None
+    ) -> list[SourceData]:
         """Search the FTS index and return content with highlighted descriptions."""
-        rows = await self._db.fetchall(
-            """
-            SELECT source_data.*,
-                snippet(source_data_fts, 1, '<mark>', '</mark>', '...', 12) AS highlight
-            FROM source_data_fts
-            JOIN source_data ON source_data_fts.rowid = source_data.rowid
-            WHERE source_data_fts MATCH ?
-            ORDER BY bm25(source_data_fts)
-            LIMIT ?
-            """,
-            (query, max(limit, 0)),
-        )
+        builder = fts_builder or FtsQueryBuilder("sqlite")
+        statement, parameters = builder.search_source_data_sql(query, max(limit, 0))
+        rows = await self._db.fetchall(statement, parameters)
         return [self._to_source_data(row, highlight=str(row["highlight"])) for row in rows]
 
     @staticmethod

@@ -9,6 +9,7 @@ from builtins import list as builtin_list
 from multiscribe_agent.domain.models import MemoryEntry
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
+from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
 
 class DuplicateEntryError(ValueError):
@@ -88,23 +89,20 @@ class MemoryEntryRepository:
         """Delete one memory record and let the existing trigger update FTS."""
         return await self._db.execute("DELETE FROM agent_memories WHERE id = ?", (entry_id,)) > 0
 
-    async def fts_search(self, query: str, limit: int = 20) -> builtin_list[MemoryEntry]:
+    async def fts_search(
+        self,
+        query: str,
+        limit: int = 20,
+        fts_builder: FtsQueryBuilder | None = None,
+    ) -> builtin_list[MemoryEntry]:
         """Find memories through the existing FTS5 table."""
-        terms = tokenize_for_fts(query.replace("'", " "))
-        if not terms:
+        if not query.strip():
             return []
-        rows = await self._db.fetchall(
-            """
-            SELECT agent_memories.id, agent_memories.content,
-                   agent_memories.tags, agent_memories.data
-            FROM agent_memories_fts
-            JOIN agent_memories ON agent_memories.rowid = agent_memories_fts.rowid
-            WHERE agent_memories_fts MATCH ?
-            ORDER BY bm25(agent_memories_fts)
-            LIMIT ?
-            """,
-            (terms, max(1, min(limit, 50))),
-        )
+        builder = fts_builder or FtsQueryBuilder("sqlite")
+        terms = tokenize_for_fts(query.replace("'", " "))
+        search_query = query if builder.backend == "postgres" else terms
+        statement, parameters = builder.search_memories_sql(search_query, max(1, min(limit, 50)))
+        rows = await self._db.fetchall(statement, parameters)
         return [self._entry_from_row(row) for row in rows]
 
     @staticmethod

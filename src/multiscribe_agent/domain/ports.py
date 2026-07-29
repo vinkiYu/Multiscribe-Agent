@@ -2,9 +2,26 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Protocol
 
 from multiscribe_agent.domain.models import SourceData, TaskLog, UnifiedData
+
+
+class VectorStorePort(Protocol):
+    """Persist and retrieve high-dimensional chunk embeddings."""
+
+    async def upsert(self, chunk_id: str, embedding: Sequence[float]) -> None:
+        """Store or update one embedding."""
+        ...
+
+    async def delete(self, chunk_id: str) -> None:
+        """Remove one embedding."""
+        ...
+
+    async def top_k(self, query: Sequence[float], k: int = 20) -> list[tuple[str, float]]:
+        """Return nearest chunk IDs and distances in ascending distance order."""
+        ...
 
 
 class KvRepository(Protocol):
