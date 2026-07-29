@@ -1,140 +1,97 @@
-# Review: `P32-上下文管理模块设计债清理`
+# Review: P32 — `_ingest` 冗余查询安全合并
 
-**执行包**：`docs/phases/P32-上下文管理模块设计债清理.md`
-**完成日期**：2026-07-24
+**执行包**：`docs/phases/P32-_ingest冗余查询合并.md`
+**完成日期**：2026-07-30
 **执行者**：Codex
+**结论**：通过，建议交 ZCode 复审
 
 ## 1. 范围核对
 
-### 1.1 实际改动文件清单（创建/修改）
+本阶段仅修改白名单内的两个代码文件：
 
-| 文件路径 | 操作 | 用途 |
-| :--- | :--- | :--- |
-| `src/multiscribe_agent/agents/token_counter.py` | 修改 | 按 Provider/配置 ID 分派计数器，新增 Claude 的 CJK-aware 估算器。 |
-| `src/multiscribe_agent/agents/artifacts.py` | 修改 | 增加只含元数据的 artifact 列举，以及当前 Agent task 的 store 解析。 |
-| `src/multiscribe_agent/plugins/builtin/tools/read_artifact.py` | 新增 | 按引用分页读取压缩前工具结果。 |
-| `src/multiscribe_agent/plugins/builtin/tools/__init__.py` | 修改 | 导出 `ReadArtifactTool`。 |
-| `src/multiscribe_agent/bootstrap.py` | 修改 | 将 `ReadArtifactTool` 注册为运行时工具实例。 |
-| `src/multiscribe_agent/agents/context_provider.py` | 修改 | Memory/Knowledge 降级分支补充脱敏结构化 warning 日志。 |
-| `src/multiscribe_agent/agents/checkpoint.py` | 修改 | 删除从未写入的 `failed_attempts`、`next_actions`。 |
-| `src/multiscribe_agent/agents/context.py` | 修改 | 仅增加 `id(message)` 生命周期约束注释。 |
-| `tests/agents/test_token_counter_accuracy.py` | 修改 | Provider 分派和 Claude 混合语言估算回归测试。 |
-| `tests/plugins/test_read_artifact_tool.py` | 新增 | Artifact 读回、分页、缺失引用测试。 |
-| `tests/agents/test_context_provider.py` | 新增 | Memory 降级日志与降级结果测试。 |
-| `tests/agents/test_context_optimization.py` | 修改 | Checkpoint 死字段不存在的回归断言。 |
-| `codex/reviews/P32-REVIEW.md` | 新增 | 本阶段自检与质量证据。 |
+| 文件 | 变更 |
+| --- | --- |
+| `src/multiscribe_agent/agents/pipelines/daily_digest.py` | 合并两个 `published_date` 查询，并在 Python 端分类 freshness |
+| `tests/agents/pipelines/test_daily_digest.py` | 增加查询次数、recent/fallback 优先级和 snapshot 回归测试 |
 
-### 1.2 白名单合规性
+未修改任务包黑名单文件、运行时配置、数据库 schema、依赖或 API 契约。
 
-- [x] 业务代码和测试文件均在 P32 白名单内。
-- [x] `executor.py`、`run_budget.py`、Provider 实现、workflow、API、frontend 和 docs 未修改。
-- [x] `codex/reviews/P32-REVIEW.md` 为执行 Prompt 要求的交付文档；`codex/` 虽被 `.gitignore` 忽略，提交时将仅对此文件显式 force-add。
-
-工作区原有且未触碰的变更：`docs/phases/README.md`、`src.zip`。
-
-## 2. 验收条件逐条对照
+## 2. 验收条件
 
 | # | 验收条件 | 状态 | 证据 |
-| :--- | :--- | :--- | :--- |
-| 1 | `resolve_token_counter("anthropic", "claude-sonnet-4-5")` 返回 `AnthropicTokenCounter` | ✅ | `test_resolve_token_counter_dispatches_by_provider_type_or_configured_id` 通过；实现见 `agents/token_counter.py:83,188`。 |
-| 2 | `resolve_token_counter("openai", "gpt-4o")` 返回 `TiktokenCounter` | ✅ | `test_resolve_token_counter_prefers_tiktoken` 通过。 |
-| 3 | `resolve_token_counter("google", "gemini-2.0-flash")` 返回 `ConservativeTokenCounter` | ✅ | `test_resolve_token_counter_dispatches_by_provider_type_or_configured_id` 通过。 |
-| 4 | Claude 混合中英文估算与 tiktoken 参考差异小于 30% | ✅ | `test_anthropic_mixed_language_estimate_stays_close_to_tiktoken_reference` 通过；采用 CJK 1.8 chars/token 与其他字符 4.0 chars/token 的保守加权估算。 |
-| 5 | 可通过 artifact 引用读回内容 | ✅ | 当前 `BaseTool` 契约为 `handler()` 而非任务包示例的旧 `invoke()`；`test_read_artifact_returns_content_from_injected_store` 通过。 |
-| 6 | 不存在 artifact 引用返回错误而非崩溃 | ✅ | `test_read_artifact_returns_non_fatal_error_for_missing_reference` 通过。 |
-| 7 | Memory 异常产生 `context_provider_memory_degraded` 日志 | ✅ | `test_memory_failure_is_logged_and_keeps_retrieval_degraded` 通过，断言事件名、截断 query、异常类型和降级 reason。 |
-| 8 | `ConversationCheckpoint` 不再含两个死字段 | ✅ | `test_checkpoint_retains_goal_decision_and_tool_evidence` 断言两个属性均不存在。 |
-| 9 | `_message_priorities` 定义处有架构约束注释 | ✅ | `agents/context.py:86` 明确其仅对进程内消息对象有效，并规定 checkpoint/resume 前必须改用稳定 sequence/UUID。 |
-| 10 | 全量 pytest、ruff、mypy 通过 | ✅ | 第 3 节完整原始输出。 |
+| --- | --- | --- | --- |
+| 1 | `_recent_daily_candidates` 由 3 次 DB 查询降为 2 次 | 通过 | `daily_digest.py:608-613`；`test_recent_daily_candidates_uses_two_queries`（`test_daily_digest.py:846`）断言字段顺序与宽窗口边界 |
+| 2 | recent 仅出现在两天窗口 | 通过 | `daily_digest.py:621` 使用 `published_date >= start`；`test_recent_label_confined_to_two_day_window`（`test_daily_digest.py:873`） |
+| 3 | fallback 填补 2-7 天窗口且不覆盖 recent | 通过 | `daily_digest.py:627` 使用 `setdefault`；`test_fallback_label_fills_gaps_without_overwriting_recent`（`test_daily_digest.py:898`）覆盖同 ID 重叠顺序 |
+| 4 | snapshot 仍只从 `fetched_at` 查询进入 | 通过 | `daily_digest.py:619` 跳过 published snapshot，`daily_digest.py:628-631` 保留 fetched 查询；`test_snapshot_label_unchanged`（`test_daily_digest.py:923`） |
+| 5 | 候选集行为无回归 | 通过 | 现有 daily digest 全套测试与全量 pytest 均通过 |
+| 6 | 全量 pytest、ruff、format、mypy 通过 | 通过 | 见第 3 节原始输出 |
 
-## 3. 测试与质量门（原始输出）
+## 3. 测试与质量门
 
-### 3.1 P32 定向测试（按 tests/agents 与 tests/plugins 分域执行）
+### 定向测试
 
 ```text
-tests/agents/test_token_counter_accuracy.py ... 6 passed
-tests/agents/test_context_provider.py ... 1 passed
-tests/agents/test_context_optimization.py ... 6 passed
-============================= 13 passed in 0.62s =============================
-
-tests/plugins/test_read_artifact_tool.py ... 3 passed
-============================== 3 passed in 0.21s ==============================
+42 passed in 0.68s
 ```
 
-说明：将 `tests/agents` 与 `tests/plugins` 的文件放在同一条 pytest 命令会触发现存的两个同名 `conftest.py` 顶层导入歧义（`test_context_optimization.py` 的既有 `from conftest import ...` 指向 plugins conftest）。未为该命令路径问题修改非 P32 范围的测试布局，按测试域分别执行后均通过。
+命令：
 
-### 3.2 `uv run ruff check .`
+```text
+.venv\Scripts\python.exe -m pytest tests/agents/pipelines/test_daily_digest.py -q -p no:cacheprovider --basetemp .pytest-tmp-p32-final-target
+```
+
+### Ruff
 
 ```text
 All checks passed!
 ```
 
-### 3.3 `uv run ruff format --check .`
+命令：`.venv\Scripts\python.exe -m ruff check src tests`
+
+### Format
 
 ```text
-285 files already formatted
+353 files already formatted
 ```
 
-### 3.4 `uv run mypy src`
+命令：`.venv\Scripts\python.exe -m ruff format --check src tests`
+
+### Mypy
 
 ```text
-Success: no issues found in 154 source files
+Success: no issues found in 182 source files
 ```
 
-### 3.5 `uv run pytest -q`
+命令：`.venv\Scripts\python.exe -m mypy src`
+
+### 全量测试
+
+使用本地模型缓存离线运行，避免知识库测试联网下载模型：
 
 ```text
-........................................................................ [ 18%]
-........................................................................ [ 36%]
-........................................................................ [ 55%]
-........................................................................ [ 73%]
-........................................................................ [ 91%]
-................................                                         [100%]
-============================== warnings summary ===============================
-.venv\Lib\site-packages\fastapi\testclient.py:1
-  F:\software\Multiscribe\MultiscribeAgent-main\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
-    from starlette.testclient import TestClient as TestClient  # noqa
-
-392 passed, 4 deselected, 1 warning in 34.16s
+587 passed, 6 deselected, 1 warning in 22.29s
 ```
 
-## 4. 详细任务完成情况
+命令：
 
-- **T1 Provider-aware token counter**：`resolve_token_counter()` 不再丢弃 provider，支持 `default-openai`、`default-anthropic` 这类配置 ID；OpenAI 保留 tiktoken，Anthropic 使用明确标注 degraded reason 的 CJK-aware 估算，Google/Ollama/未知端点回退保守计数。
-- **T2 Artifact 读取闭环**：`InMemoryArtifactStore` 提供不含正文的 `list_artifacts()`；`ReadArtifactTool` 提供 `artifact_ref`、`offset`、`limit` 分页读取。因 P32 禁止修改执行器，store 通过 task-local `ContextVar` 在 Executor 创建后由同一 Agent run 的工具解析，避免跨并发运行串读。
-- **T3 ContextProvider 可观测性**：Memory 和 Knowledge 的可恢复失败均记录 `structlog.warning`，仅写 query 前 80 字和异常文本前 200 字，不写完整检索内容或凭据。
-- **T4 Checkpoint 清理**：移除未被生产路径填充或渲染的两个字段，保留现有目标、约束、结论、动作、证据和待办输出。
-- **T5 生命周期约束显式化**：不在当前无持久化调用方的情况下重构优先级索引，只将迁移条件写在索引定义处，防止未来 checkpoint/resume 误用对象内存地址。
+```text
+$env:HF_HUB_OFFLINE='1'; .venv\Scripts\python.exe -m pytest -q -p no:cacheprovider --basetemp .pytest-tmp-p32-full-rerun
+```
 
-## 5. 规范符合性自检
+唯一 warning 为依赖侧 `StarletteDeprecationWarning`（`httpx` 与 Starlette TestClient 的兼容提示），与本阶段改动无关。
 
-- [x] 全量类型注解，无新增裸 `Any`。
-- [x] 新工具只做内存读取，无阻塞 I/O；`handler()` 为 async。
-- [x] 降级异常有 structlog warning，日志字段有长度边界。
-- [x] 未记录 artifact 正文、Prompt、Memory 或凭据。
-- [x] 无新增运行时依赖、无网络测试。
-- [x] 分层依赖未反向：Tool 依赖 agents 的 ArtifactStore，未影响 domain 层。
+## 4. 实现摘要
 
-## 6. 新增依赖
+原先分别查询两天和七天 `published_date` 窗口。现在一次查询七天宽窗口，再根据 `published_date >= start` 赋予 `recent`，否则用 `setdefault` 赋予 `fallback`，因此保留原先 recent 覆盖 fallback 的优先级。`github_trending` 等 snapshot 适配器在 published 查询中跳过，继续仅由两天 `fetched_at` 查询提供，避免改变快照语义。数据库接口、`IngestionRunner` 签名和外部 API 均未改变。
 
-无。
+## 5. 风险与取舍
 
-## 7. 风险、遗留与取舍
+- 净收益是减少 1 次数据库往返（3 次降为 2 次），`fetched_at` 查询因字段和 snapshot 语义不同无法合并。
+- 仍使用仓储返回的日期字符串进行 ISO 时间比较；现有数据由统一 UTC ISO 格式写入，保持原实现行为。
+- OTel console exporter 在部分 pytest 进程关闭输出流后可能打印 `ValueError: I/O operation on closed file`，属于现有测试基础设施噪声，不影响断言和退出码。
+- 未实施任务包明确排除的 `run_all` 返回 items、ArtifactStore 持久化或其他架构债清理。
 
-- **风险**：ArtifactStore 仍为内存、单进程、带 TTL 的临时存储；进程重启后 artifact 引用必然失效。这是 P32 明确不扩展到持久化的边界。
-- **取舍**：P32 禁止改动 `executor.py`，所以采用 `ContextVar` 使注册的工具获取同一个运行 task 中创建的 store。并发 Agent task 相互隔离；在同一 async task 的 Agent run 结束后，最后一次 store 引用会保留到下一次 store 创建，运行时工具仅在 Agent run 内调用，后续若开放脱离 Agent 的直接工具调用，应加显式绑定/清理生命周期。
-- **遗留**：Google/Gemini 没有可用的官方 Python tokenizer，继续使用 CJK-aware 保守回退。
-- **未做的事**：未重构 `id(message)` 为稳定 ID，未修改黑名单执行器、预算、Provider、workflow、API 文件，未做自动模型切换或 artifact 持久化。
+## 6. 自评
 
-## 8. BLOCKED 项
-
-无。
-
-## 9. 对后续包的提示
-
-- 任何需要恢复历史 tool-result 正文的 Agent，应在 `AgentDefinition.tool_ids` 显式加入 `read_artifact`；该工具默认注册但不会自动暴露给所有 Agent。
-- 若后续实现跨进程 checkpoint/resume，应将 `_message_priorities` 迁移到稳定 message sequence/UUID，并同时定义 Artifact 的持久化策略。
-
-## 10. 自评
-
-- 我认为本包**满足** `P32-上下文管理模块设计债清理.md` 的完成定义：✅
+本阶段满足任务包的范围、语义等价性、测试和质量门要求，结论为**通过**，等待 ZCode 复审。

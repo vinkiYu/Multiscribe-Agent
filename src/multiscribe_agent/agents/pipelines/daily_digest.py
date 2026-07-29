@@ -602,26 +602,28 @@ class _DailyDigestStepExecutor:
         the snapshot was fetched. Other records with an unknown publication date
         stay out of the digest rather than becoming current merely by re-ingestion.
         """
-        published_items = await self._source_data_repo.get_by_date_range(
-            start, end, query_field="published_date"
-        )
-        fallback_items = await self._source_data_repo.get_by_date_range(
+        # The fallback window contains the recent window, so one broad query is
+        # enough.  Keep the two freshness labels equivalent to the former
+        # narrow-query-plus-fallback implementation in Python.
+        all_published = await self._source_data_repo.get_by_date_range(
             fallback_start, end, query_field="published_date"
         )
         fetched_items = await self._source_data_repo.get_by_date_range(
             start, end, query_field="fetched_at"
         )
         configured_adapters = set(self._config.adapter_ids)
-        candidates = {
-            item.id: self._with_digest_freshness(item, "recent")
-            for item in published_items
-            if item.adapter_name in configured_adapters
-        }
-        for item in fallback_items:
-            if (
-                item.adapter_name in configured_adapters
-                and item.adapter_name not in _SNAPSHOT_ADAPTER_IDS
-            ):
+        candidates: dict[str, SourceData] = {}
+        for item in all_published:
+            if item.adapter_name not in configured_adapters:
+                continue
+            if item.adapter_name in _SNAPSHOT_ADAPTER_IDS:
+                continue  # snapshots are selected from the fetched_at query below
+            if item.published_date and item.published_date >= start:
+                # Recent data wins even if the same id also appears in the
+                # broad fallback window.
+                candidates[item.id] = self._with_digest_freshness(item, "recent")
+            else:
+                # Preserve the old fallback semantics: only fill a missing id.
                 candidates.setdefault(item.id, self._with_digest_freshness(item, "fallback"))
         for item in fetched_items:
             if (

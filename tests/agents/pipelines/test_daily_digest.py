@@ -15,6 +15,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     DailyDigestPipeline,
     _article_preview_image,
     _curate_item_dict,
+    _DailyDigestStepExecutor,
     _prioritize_digest_sections,
     _score_value,
     _supplement_curated_items,
@@ -839,6 +840,113 @@ async def test_daily_digest_uses_publication_dates_but_keeps_current_trending_sn
     assert "Trending project" in curator.inputs[0]
     assert "Stale RSS" not in curator.inputs[0]
     assert "Unverified search" not in curator.inputs[0]
+
+
+@pytest.mark.asyncio
+async def test_recent_daily_candidates_uses_two_queries() -> None:
+    """The published-date windows share one broad query; snapshots keep their own query."""
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        source_data_by_field={"published_date": [], "fetched_at": []},
+    )
+    repository = pipeline._source_data_repo
+    assert isinstance(repository, FakeSourceDataRepository)
+    engine, _ = pipeline._engine("2026-07-17")
+    executor = engine._executor
+    assert isinstance(executor, _DailyDigestStepExecutor)
+
+    await executor._recent_daily_candidates(
+        "2026-07-16T00:00:00+00:00",
+        "2026-07-11T00:00:00+00:00",
+        "2026-07-17T23:59:59.999999+00:00",
+    )
+
+    assert len(repository.ranges) == 2
+    assert [query[2] for query in repository.ranges] == ["published_date", "fetched_at"]
+    assert repository.ranges[0][:2] == (
+        "2026-07-11T00:00:00+00:00",
+        "2026-07-17T23:59:59.999999+00:00",
+    )
+
+
+@pytest.mark.asyncio
+async def test_recent_label_confined_to_two_day_window() -> None:
+    """Only publications inside the two-day window receive the recent label."""
+    recent = _source("recent", "https://example.test/recent", "Recent")
+    fallback = _source("fallback", "https://example.test/fallback", "Fallback").model_copy(
+        update={"published_date": "2026-07-15T08:00:00+00:00"}
+    )
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        source_data_by_field={"published_date": [recent, fallback], "fetched_at": []},
+    )
+    engine, _ = pipeline._engine("2026-07-17")
+    executor = engine._executor
+    assert isinstance(executor, _DailyDigestStepExecutor)
+
+    candidates = await executor._recent_daily_candidates(
+        "2026-07-16T00:00:00+00:00",
+        "2026-07-11T00:00:00+00:00",
+        "2026-07-17T23:59:59.999999+00:00",
+    )
+
+    freshness = {item.id: item.metadata["digest_freshness"] for item in candidates}
+    assert freshness == {"recent": "recent", "fallback": "fallback"}
+
+
+@pytest.mark.asyncio
+async def test_fallback_label_fills_gaps_without_overwriting_recent() -> None:
+    """Fallback rows fill missing IDs and cannot overwrite a recent row."""
+    recent = _source("recent", "https://example.test/recent", "Recent")
+    overlapping_fallback = recent.model_copy(update={"published_date": "2026-07-15T08:00:00+00:00"})
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        source_data_by_field={
+            "published_date": [overlapping_fallback, recent],
+            "fetched_at": [],
+        },
+    )
+    engine, _ = pipeline._engine("2026-07-17")
+    executor = engine._executor
+    assert isinstance(executor, _DailyDigestStepExecutor)
+    candidates = await executor._recent_daily_candidates(
+        "2026-07-16T00:00:00+00:00",
+        "2026-07-11T00:00:00+00:00",
+        "2026-07-17T23:59:59.999999+00:00",
+    )
+    assert {item.id: item.metadata["digest_freshness"] for item in candidates} == {
+        "recent": "recent"
+    }
+
+
+@pytest.mark.asyncio
+async def test_snapshot_label_unchanged() -> None:
+    """Snapshot adapters are excluded from publication-date candidates."""
+    snapshot = _source("trend", "https://github.com/example/project", "Trending")
+    snapshot = snapshot.model_copy(
+        update={
+            "published_date": "1970-01-01T00:00:00+00:00",
+            "adapter_name": "github_trending",
+            "source": "github_trending",
+        }
+    )
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        adapter_ids=["github_trending"],
+        source_data_by_field={"published_date": [snapshot], "fetched_at": [snapshot]},
+    )
+    engine, _ = pipeline._engine("2026-07-17")
+    executor = engine._executor
+    assert isinstance(executor, _DailyDigestStepExecutor)
+
+    candidates = await executor._recent_daily_candidates(
+        "2026-07-16T00:00:00+00:00",
+        "2026-07-11T00:00:00+00:00",
+        "2026-07-17T23:59:59.999999+00:00",
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].metadata["digest_freshness"] == "snapshot"
 
 
 @pytest.mark.asyncio
