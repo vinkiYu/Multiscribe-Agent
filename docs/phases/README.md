@@ -200,5 +200,5 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | P30 | 上下文窗口生产链路修复 | 🟢 已通过 | curate投影补url/source + ConservativeTokenCounter显式degraded + 566全量 + ruff/mypy clean |
 | P31.1 | 每日资讯 P2 收尾（score_threshold 字段化 + publish_history 加 digest_date UNIQUE + Reflection 截断可配） | 🟢 已通过 | 业务代码4 + 测试3；定向50 + 全量572 passed；ruff/mypy clean |
 | P31.2 | 每日资讯全链路 P0 修复（幂等预检 / 全失败保护 / 空候选拦截 / LLM 契约） | 🟢 已通过 | 业务代码2 + 测试1；定向38 + 全量583 passed；ruff/mypy clean；deb9ff0 |
-| P32 | _ingest 冗余查询安全合并（债 5 收窄版：合并 2 次 published_date 查询，零行为变化）| 🔄 进行中 | 任务包已就绪，待 Codex 执行；债 3 ArtifactStore 暂缓（等 checkpoint/resume）|
+| P32 | _ingest 冗余查询安全合并（债 5 收窄版：合并 2 次 published_date 查询，零行为变化）| 🟢 已通过 | 业务代码1 + 测试1；定向42 + 全量587 passed；3→2 查询；ruff/mypy clean；277080e |
 | — | P2剩余4项: id()索引(债9,等resume)/google+ollama空壳(债10)/archive topic字段(债11)/ArtifactStore持久化(债3,等resume) | 🔄 待处理 | 需配套功能落地或独立排期 |
