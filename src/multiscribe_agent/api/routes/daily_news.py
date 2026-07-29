@@ -25,10 +25,10 @@ async def read_daily_news(
         raise HTTPException(status_code=503, detail="services unavailable")
 
     archive = get_daily_digest_archive()
-    records = await archive.list(context.db, limit=limit)
+    records = await archive.list(context.db, limit=limit, published_only=True)
     selected: ArchivedDigest | None
     if digest_date is not None:
-        selected = await archive.get(context.db, digest_date.isoformat())
+        selected = await archive.get(context.db, digest_date.isoformat(), published_only=True)
         if selected is None:
             raise HTTPException(status_code=404, detail="daily digest not found")
     else:

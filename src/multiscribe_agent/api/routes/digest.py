@@ -15,6 +15,7 @@ from multiscribe_agent.core.daily_digest_archive import ArchivedDigest, get_dail
 from multiscribe_agent.domain.models import ScheduleTask
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from multiscribe_agent.services.scheduler_lock import AcquireResult
 
 router = APIRouter(prefix="/api/digest", tags=["digest"], dependencies=[Depends(get_current_user)])
 
@@ -44,16 +45,36 @@ async def approve_digest(
     payload: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Approve a pending preview and publish it to the remaining targets."""
-    archived = await _pending_archive(context, date)
-    targets = await _resolve_broadcast_targets(context, payload)
-    db = context.db
-    if context.publishing is None or db is None:
-        raise HTTPException(status_code=503, detail="digest services are unavailable")
-    digest = _rebuild_curated_digest(archived)
-    results = await context.publishing.fanout(digest, targets)
-    await get_daily_digest_archive().set_approval_status(db, date, "approved")
-    await _record_approved_content(context, archived, results)
-    return {"status": "approved", "targets": results}
+    lock = getattr(context, "scheduler_lock", None)
+    lock_result: AcquireResult | None = None
+    if lock is not None:
+        lock_result = await lock.acquire(f"multiscribe:digest:approve:{date}", ttl_seconds=300)
+        if not lock_result.acquired and not lock_result.allow_without_lock:
+            detail = (
+                "digest is already being approved"
+                if lock_result.reason == "already_locked"
+                else "digest approval lock is unavailable"
+            )
+            raise HTTPException(status_code=409, detail=detail)
+    try:
+        archived = await _pending_archive(context, date)
+        targets = await _resolve_broadcast_targets(context, payload)
+        db = context.db
+        if context.publishing is None or db is None:
+            raise HTTPException(status_code=503, detail="digest services are unavailable")
+        digest = _rebuild_curated_digest(archived)
+        results = await context.publishing.fanout(digest, targets)
+        await get_daily_digest_archive().set_approval_status(db, date, "approved")
+        await _record_approved_content(context, archived, results)
+        return {"status": "approved", "targets": results}
+    finally:
+        if (
+            lock is not None
+            and lock_result is not None
+            and lock_result.acquired
+            and lock_result.token is not None
+        ):
+            await lock.release(f"multiscribe:digest:approve:{date}", lock_result.token)
 
 
 @router.post("/{date}/reject")

@@ -100,8 +100,14 @@ class DailyDigestArchive:
             ),
         )
 
-    async def get(self, db: Database, digest_date: str) -> ArchivedDigest | None:
-        """Return one exact archive date, or ``None`` when no digest was generated."""
+    async def get(
+        self,
+        db: Database,
+        digest_date: str,
+        *,
+        published_only: bool = False,
+    ) -> ArchivedDigest | None:
+        """Return one archive, optionally hiding pending and rejected previews."""
         date.fromisoformat(digest_date)
         row = await db.fetchone(
             f"""
@@ -111,7 +117,18 @@ class DailyDigestArchive:
             """,  # noqa: S608 - table name is a module constant.
             (digest_date,),
         )
-        return _record_from_row(row) if row is not None else None
+        record = _record_from_row(row) if row is not None else None
+        if (
+            published_only
+            and record is not None
+            and record.approval_status
+            not in {
+                "published",
+                "approved",
+            }
+        ):
+            return None
+        return record
 
     async def set_approval_status(self, db: Database, digest_date: str, status: str) -> None:
         """Update one archived digest status using the bounded approval state machine."""
@@ -137,13 +154,23 @@ class DailyDigestArchive:
         _validate_approval_status(status)
         return status
 
-    async def list(self, db: Database, limit: int = 31) -> list[ArchivedDigest]:
-        """Return newest archives first within a bounded public-page history."""
+    async def list(
+        self,
+        db: Database,
+        limit: int = 31,
+        *,
+        published_only: bool = False,
+    ) -> list[ArchivedDigest]:
+        """Return newest archives, optionally excluding non-public approval states."""
         bounded_limit = max(1, min(limit, _MAX_QUERY_LIMIT))
+        where_clause = (
+            "WHERE approval_status IN ('published', 'approved')" if published_only else ""
+        )
         rows = await db.fetchall(
             f"""
             SELECT digest_date, title, summary, items, total_scanned, approval_status, updated_at
             FROM {_TABLE_NAME}
+            {where_clause}
             ORDER BY digest_date DESC
             LIMIT ?
             """,  # noqa: S608 - table name is a module constant.

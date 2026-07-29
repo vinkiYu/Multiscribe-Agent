@@ -71,7 +71,7 @@ from multiscribe_agent.services.interop_registry import (
 )
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import SchedulerService, TaskExecutorRegistry
-from multiscribe_agent.services.scheduler_lock import RedisSchedulerLock
+from multiscribe_agent.services.scheduler_lock import RedisSchedulerLock, SchedulerLock
 from multiscribe_agent.skills.builtin_loader import load_builtin_skills
 from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
 from multiscribe_agent.skills.registry import get_skill_registry
@@ -241,6 +241,7 @@ class ServiceContext:
         self.agent_executor: AgentExecutor | None = None
         self.workflow_engine: WorkflowEngine | None = None
         self.scheduler: SchedulerService | None = None
+        self.scheduler_lock: SchedulerLock | None = None
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
         self.pushed_content: PushedContentRepository | None = None
@@ -359,14 +360,16 @@ class ServiceContext:
         )
         registry = TaskExecutorRegistry()
         registry.register("daily_digest", self.run_daily_digest_task)
+        scheduler_lock = RedisSchedulerLock(
+            self.settings.redis_url,
+            strict_mode=self.settings.scheduler_lock_strict_mode,
+        )
+        self.scheduler_lock = scheduler_lock
         self.scheduler = SchedulerService(
             task_logs,
             entities,
             executor_registry=registry,
-            lock=RedisSchedulerLock(
-                self.settings.redis_url,
-                strict_mode=self.settings.scheduler_lock_strict_mode,
-            ),
+            lock=scheduler_lock,
             lock_ttl_seconds=self.settings.scheduler_lock_ttl_seconds,
             lock_strict_mode=self.settings.scheduler_lock_strict_mode,
         )

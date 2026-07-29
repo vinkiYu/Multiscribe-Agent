@@ -86,3 +86,25 @@ async def test_archive_migration_adds_status_to_legacy_table() -> None:
         assert any(column["name"] == "approval_status" for column in columns)
     finally:
         await db.close()
+
+
+@pytest.mark.asyncio
+async def test_archive_published_only_hides_preview_and_rejected_states() -> None:
+    """Public archive queries include only normal and approved publications."""
+    db = await init_db(":memory:")
+    try:
+        archive = DailyDigestArchive()
+        await archive.upsert(db, _digest("2026-07-26"), approval_status="pending")
+        await archive.upsert(db, _digest("2026-07-27"), approval_status="rejected")
+        await archive.upsert(db, _digest("2026-07-28"), approval_status="published")
+        await archive.upsert(db, _digest("2026-07-29"), approval_status="approved")
+
+        records = await archive.list(db, published_only=True)
+
+        assert [record.date for record in records] == ["2026-07-29", "2026-07-28"]
+        assert await archive.get(db, "2026-07-26", published_only=True) is None
+        assert await archive.get(db, "2026-07-27", published_only=True) is None
+        assert await archive.get(db, "2026-07-29", published_only=True) is not None
+        assert len(await archive.list(db)) == 4
+    finally:
+        await db.close()
