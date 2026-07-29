@@ -64,14 +64,16 @@ import {
   type WorkflowStep,
 } from './services/api'
 import { AdapterHealthPage } from './adapter-health'
+import { OperationsDashboardPage } from './operations-dashboard'
 
-type NavKey = 'dashboard' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'health' | 'knowledge' | 'memory' | 'plugins' | 'settings'
+type NavKey = 'dashboard' | 'operations' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'health' | 'knowledge' | 'memory' | 'plugins' | 'settings'
 
 interface NavigationItem { key: NavKey; label: string; icon: LucideIcon }
 interface ViewCopy { title: string; description: string }
 
 const workbenchItems: NavigationItem[] = [
   { key: 'dashboard', label: '概览', icon: LayoutDashboard },
+  { key: 'operations', label: '运营中心', icon: ListChecks },
   { key: 'sources', label: '数据源', icon: RadioTower },
   { key: 'workflows', label: '工作流', icon: Workflow },
   { key: 'content', label: '内容', icon: Files },
@@ -89,6 +91,7 @@ const capabilityItems: NavigationItem[] = [
 
 const copy: Record<NavKey, ViewCopy> = {
   dashboard: { title: '今日概览', description: '查看内容从采集、精选到发布的运行状态，并处理需要关注的任务。' },
+  operations: { title: '运营中心', description: '查看每日 Token 消耗、发布成功率、Loop 迭代和任务运行记录。' },
   sources: { title: '数据源', description: '当前版本由服务端配置采集器；控制台展示已采集内容和运行结果。' },
   workflows: { title: '工作流', description: '已保存的 DAG 工作流定义。运行过程会以 SSE 事件流返回。' },
   content: { title: '内容', description: '查看每日流水线生成的资讯归档、AI 摘要和精选结果。' },
@@ -157,6 +160,7 @@ function App(): ReactElement {
       <main>
         <section className="page-header"><div><h1>{view.title}</h1><p>{view.description}</p></div><div className="header-actions">{active === 'tasks' && <button className="button pink" onClick={() => setTaskModalOpen(true)}><Plus />新增任务</button>}<button className="button" onClick={refreshActiveView}><RefreshCw />刷新</button></div></section>
         {active === 'dashboard' && <Dashboard loading={loading} stats={stats} logs={logs} error={error} onRetry={loadDashboard} />}
+        {active === 'operations' && <OperationsDashboardPage key={refreshVersion} />}
         {active === 'workflows' && <WorkflowsPage key={refreshVersion} />}
         {active === 'content' && <ContentPage key={refreshVersion} />}
         {active === 'publishing' && <PublishingPage key={refreshVersion} />}

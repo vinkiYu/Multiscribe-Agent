@@ -25,6 +25,11 @@ export interface TaskLog {
   finished_at?: string
 }
 
+export interface DailyUsageRecord { date: string; input_tokens: number; output_tokens: number; total_tokens: number; llm_calls: number; task_count: number }
+export interface PublishSummary { total: number; success: number; error: number }
+export interface IterationRecord { workflow_run_id: string; step_id: string; round: number; score: number | null; converged: boolean; reason: string }
+export interface OperationsOverview { usage: DailyUsageRecord; publish: PublishSummary; iterations: IterationRecord[]; task_logs: TaskLog[] }
+
 export interface WorkflowSummary {
   id: string
   name: string
@@ -233,6 +238,10 @@ async function publicRequest<T>(path: string): Promise<T> {
 export const dashboardApi = {
   getStats: (): Promise<DashboardStats> => request<DashboardStats>('/dashboard/stats'),
   getLogs: (): Promise<TaskLog[]> => request<TaskLog[]>('/dashboard/logs?limit=8'),
+}
+
+export const operationsApi = {
+  getOverview: (): Promise<OperationsOverview> => request<OperationsOverview>('/dashboard/overview'),
 }
 
 export const workflowsApi = {

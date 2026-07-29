@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from time import perf_counter
 from typing import Literal
@@ -16,6 +16,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from multiscribe_agent.domain.models import ScheduleTask, TaskLog
 from multiscribe_agent.domain.ports import EntityJsonRepository, TaskLogRepository
+from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
 from multiscribe_agent.services.scheduler_lock import (
     AcquireResult,
     NoOpSchedulerLock,
@@ -54,6 +55,7 @@ class SchedulerService:
         lock: SchedulerLock | None = None,
         lock_ttl_seconds: int = 7_200,
         lock_strict_mode: bool = True,
+        daily_usage_repo: DailyUsageRepository | None = None,
     ) -> None:
         """Create a scheduler backed by task logs and persisted schedule data."""
         self._task_log_repo = task_log_repo
@@ -64,6 +66,7 @@ class SchedulerService:
         self._lock = lock or NoOpSchedulerLock()
         self._lock_ttl_seconds = lock_ttl_seconds
         self._lock_strict_mode = lock_strict_mode
+        self._daily_usage_repo = daily_usage_repo
         self._tasks: dict[str, ScheduleTask] = {}
 
     async def start(self) -> None:
@@ -184,6 +187,17 @@ class SchedulerService:
                 result_count=self._result_count(result),
                 message=self._message(result),
             )
+            if self._daily_usage_repo is not None:
+                usage = result.get("usage")
+                if isinstance(usage, Mapping):
+                    try:
+                        await self._daily_usage_repo.upsert(run_date, usage)
+                    except Exception as exc:
+                        log.warning(
+                            "scheduler_usage_persistence_failed",
+                            task_id=task.id,
+                            error_type=type(exc).__name__,
+                        )
         finally:
             if lock_result.acquired and lock_result.token is not None:
                 await self._lock.release(lock_key, lock_result.token)

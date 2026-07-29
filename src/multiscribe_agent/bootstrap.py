@@ -34,6 +34,7 @@ from multiscribe_agent.domain.models import (
 )
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.infra.redis_client import close_redis
+from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
 from multiscribe_agent.infra.repositories.kv import KvRepository
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
@@ -246,6 +247,7 @@ class ServiceContext:
         self.workflow_engine: WorkflowEngine | None = None
         self.iteration_store: IterationStore | None = None
         self.scheduler: SchedulerService | None = None
+        self.daily_usage: DailyUsageRepository | None = None
         self.scheduler_lock: SchedulerLock | None = None
         self.config_service: ConfigService | None = None
         self.publish_history: PublishHistory | None = None
@@ -279,6 +281,8 @@ class ServiceContext:
             use_pool=True,
         )
         self.iteration_store = IterationStore(self.db)
+        self.daily_usage = DailyUsageRepository(self.db)
+        await self.daily_usage.ensure_schema()
         if self.settings.enable_sql_audit:
             self.sql_audit = SqlAuditLogger(self.db)
             self.db.set_audit_logger(self.sql_audit)
@@ -393,6 +397,7 @@ class ServiceContext:
             lock=scheduler_lock,
             lock_ttl_seconds=self.settings.scheduler_lock_ttl_seconds,
             lock_strict_mode=self.settings.scheduler_lock_strict_mode,
+            daily_usage_repo=self.daily_usage,
         )
         self.entities = entities
         self.task_logs = task_logs

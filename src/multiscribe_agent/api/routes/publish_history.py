@@ -39,6 +39,18 @@ async def list_publish_history(
     return [_record_to_response(record) for record in records]
 
 
+@router.get("/summary")
+async def publish_history_summary(
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+    context: ServiceContext = Depends(get_context),  # noqa: B008
+) -> dict[str, object]:
+    """Return aggregate delivery counts for an optional date window."""
+    if context.db is None or context.publish_history is None:
+        raise HTTPException(status_code=503, detail="services unavailable")
+    return await context.publish_history.summary(context.db, from_date, to_date)
+
+
 def _record_to_response(record: PublishRecord) -> dict[str, object]:
     """Serialize one typed record without exposing database implementation details."""
     return {

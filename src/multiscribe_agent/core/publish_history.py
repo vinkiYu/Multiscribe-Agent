@@ -139,6 +139,36 @@ class PublishHistory:
         )
         return [_record_from_row(row) for row in rows]
 
+    async def summary(
+        self,
+        db: Database,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> dict[str, object]:
+        """Return total, successful, and failed deliveries for an optional window."""
+        filters: list[str] = []
+        parameters: list[object] = []
+        if from_date is not None:
+            filters.append("published_at >= ?")
+            parameters.append(from_date.isoformat())
+        if to_date is not None:
+            filters.append("published_at <= ?")
+            parameters.append(to_date.isoformat())
+        where_clause = " AND ".join(filters) if filters else "1 = 1"
+        rows = await db.fetchall(
+            (
+                f"SELECT status, COUNT(*) AS count FROM {_TABLE_NAME} "  # noqa: S608
+                f"WHERE {where_clause} GROUP BY status"
+            ),
+            parameters,
+        )
+        counts = {"success": 0, "error": 0}
+        for row in rows:
+            status = str(row["status"])
+            if status in counts:
+                counts[status] = int(row["count"])
+        return {"total": counts["success"] + counts["error"], **counts}
+
 
 def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
     """Convert a trusted SQLite row into a typed published-record value."""
