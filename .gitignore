@@ -14,6 +14,8 @@ dist/
 *.egg-info/
 node_modules/
 logs/
+# Migration reports contain local operational data and remain untracked.
+logs/migration-*.json
 # 临时文件/锁文件(测试或运行时产物;注意 uv.lock 必须提交,故不忽略 *.lock)
 .commit-tmp/
 
