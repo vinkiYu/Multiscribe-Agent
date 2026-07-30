@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {"id": "cr2-a1", "title": "Agent Harness 引入工具结果压缩", "description": "上下文管理器把长工具输出存入 Artifact，并向模型提供结构化预览。", "url": "https://example.test/cr2-a1", "source": "rss"},
+    {"id": "cr2-a2", "title": "企业微信升级管理后台", "description": "企业微信管理后台优化了通讯录和审批页面。", "url": "https://example.test/cr2-a2", "source": "rss"},
+    {"id": "cr2-a3", "title": "向量数据库增加过滤索引", "description": "新增元数据过滤和向量索引组合能力，改善 RAG 检索延迟。", "url": "https://example.test/cr2-a3", "source": "rss"},
+    {"id": "cr2-a4", "title": "Java Web 框架发布补丁", "description": "传统 Web 框架修复了路由边界问题，但不涉及 AI 或 Agent。", "url": "https://example.test/cr2-a4", "source": "rss"},
+    {"id": "cr2-a5", "title": "LLM 评测集加入工具使用任务", "description": "新的基准覆盖规划、函数调用和多轮反馈，评估 Agent 的真实完成率。", "url": "https://example.test/cr2-a5", "source": "rss"},
+    {"id": "cr2-a6", "title": "消息队列发布吞吐量白皮书", "description": "消息中间件团队分享集群扩容和吞吐量测试数据。", "url": "https://example.test/cr2-a6", "source": "rss"},
+    {"id": "cr2-a7", "title": "知识库混合检索支持中文分词", "description": "FTS 与 embedding 结果通过 RRF 融合，中文知识问答召回更加稳定。", "url": "https://example.test/cr2-a7", "source": "rss"},
+    {"id": "cr2-a8", "title": "开发者大会公布日程", "description": "技术大会公布演讲时间和会场安排。", "url": "https://example.test/cr2-a8", "source": "rss"},
+    {"id": "cr2-a9", "title": "MCP 服务端增加权限声明", "description": "MCP 工具服务器可以声明风险级别和审批要求，便于 Agent 安全编排。", "url": "https://example.test/cr2-a9", "source": "rss"},
+    {"id": "cr2-a10", "title": "Redis 发布稳定性报告", "description": "缓存系统社区发布故障复盘和运维建议。", "url": "https://example.test/cr2-a10", "source": "rss"}
+  ],
+  "expected_selected_ids": ["cr2-a1", "cr2-a3", "cr2-a5", "cr2-a7", "cr2-a9"],
+  "expected_rejected_ids": ["cr2-a2", "cr2-a4", "cr2-a6", "cr2-a8", "cr2-a10"]
+}

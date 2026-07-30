@@ -1,0 +1,18 @@
+name: curation-recall
+description: 带人工标注的每日 AI 资讯候选池，用于策展 Precision/Recall 回归。
+samples:
+  - id: cr-001
+    input_path: tests/eval/fixtures/cr_001.json
+    notes: 混合 LLM 发布、普通软件更新和消费电子干扰项。
+  - id: cr-002
+    input_path: tests/eval/fixtures/cr_002.json
+    notes: 混合 Agent 工程、RAG 和传统后端资讯。
+  - id: cr-003
+    input_path: tests/eval/fixtures/cr_003.json
+    notes: 混合开源模型、研究论文和非 AI 开源项目。
+  - id: cr-004
+    input_path: tests/eval/fixtures/cr_004.json
+    notes: 混合 AI 基础设施、推理优化和普通云产品。
+  - id: cr-005
+    input_path: tests/eval/fixtures/cr_005.json
+    notes: 混合 AI 行业政策、应用案例和泛行业新闻。

@@ -16,6 +16,8 @@ from multiscribe_agent.bootstrap import DEFAULT_CURATION_AGENT_ID, ServiceContex
 from multiscribe_agent.config import SystemSettings, get_settings
 from multiscribe_agent.domain.models import ScheduleTask
 from multiscribe_agent.eval.benchmark import run_benchmark
+from multiscribe_agent.eval.curation_benchmark import run_curation_benchmark
+from multiscribe_agent.eval.curation_dataset import load_curation_dataset
 from multiscribe_agent.eval.dataset import load_dataset
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.mcp.server import run_sse_server, run_stdio_server
@@ -227,6 +229,55 @@ def evaluate(
     except (OSError, ValueError, RuntimeError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(f"OK {summary.dataset_name} overall={summary.overall:.2f}")
+
+
+@main.command(name="eval-curation")
+@click.option(
+    "--dataset",
+    "dataset_name",
+    required=True,
+    help="策展标注数据集名称 (位于 data/eval/datasets/)。",
+)
+@click.option(
+    "--datasets-dir",
+    default="data/eval/datasets",
+    show_default=True,
+    type=click.Path(exists=True, file_okay=False),
+)
+@click.option("--reports-dir", default="data/eval/reports", show_default=True)
+@click.option("--baseline", default="data/eval/baselines/curation_recall.json", show_default=True)
+@click.option("--target-count", default=12, show_default=True, type=click.IntRange(min=1))
+@click.option("--regression-threshold", default=0.10, show_default=True, type=float)
+def evaluate_curation(
+    dataset_name: str,
+    datasets_dir: str,
+    reports_dir: str,
+    baseline: str,
+    target_count: int,
+    regression_threshold: float,
+) -> None:
+    """Run the ground-truth curation Precision/Recall benchmark."""
+    settings = get_settings()
+    provider = _resolve_eval_provider(settings)
+    dataset_path = _resolve_dataset_path(Path(datasets_dir), dataset_name)
+    try:
+        dataset = load_curation_dataset(dataset_path)
+        summary = asyncio.run(
+            run_curation_benchmark(
+                provider,
+                dataset,
+                reports_dir=Path(reports_dir),
+                baseline_path=Path(baseline) if baseline else None,
+                threshold=regression_threshold,
+                target_count=target_count,
+            )
+        )
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(
+        f"OK {summary.dataset_name} precision={summary.avg_precision:.2f} "
+        f"recall={summary.avg_recall:.2f} f1={summary.avg_f1:.2f}"
+    )
 
 
 def _resolve_dataset_path(datasets_dir: Path, dataset_name: str) -> Path:

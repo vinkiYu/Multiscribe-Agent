@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {"id": "cr3-a1", "title": "开源中文大模型发布新版本", "description": "模型开放权重和推理脚本，在中文指令跟随任务上提升效果。", "url": "https://example.test/cr3-a1", "source": "rss"},
+    {"id": "cr3-a2", "title": "前端组件库发布图标包", "description": "前端项目新增一批图标和主题变量。", "url": "https://example.test/cr3-a2", "source": "rss"},
+    {"id": "cr3-a3", "title": "Transformer 推理优化论文", "description": "研究提出 KV cache 压缩方法，降低长上下文推理的显存占用。", "url": "https://example.test/cr3-a3", "source": "rss"},
+    {"id": "cr3-a4", "title": "开源监控平台支持新面板", "description": "可观测性平台增加新的图表组件和告警模板。", "url": "https://example.test/cr3-a4", "source": "rss"},
+    {"id": "cr3-a5", "title": "GitHub Trending 出现 AI 编程工具", "description": "开源代码 Agent 支持仓库分析、补丁生成和测试执行。", "url": "https://example.test/cr3-a5", "source": "github_trending"},
+    {"id": "cr3-a6", "title": "摄影社区举办春季活动", "description": "摄影社区公布线上作品征集活动和奖项设置。", "url": "https://example.test/cr3-a6", "source": "rss"},
+    {"id": "cr3-a7", "title": "扩散模型图像编辑基准更新", "description": "新数据集覆盖主体替换和局部编辑，方便比较多模态模型能力。", "url": "https://example.test/cr3-a7", "source": "rss"},
+    {"id": "cr3-a8", "title": "Linux 内核发布维护版", "description": "Linux 社区发布常规维护版本并修复驱动问题。", "url": "https://example.test/cr3-a8", "source": "rss"},
+    {"id": "cr3-a9", "title": "AI 开源社区新增模型许可证指南", "description": "指南比较常见模型许可证对商用、再分发和训练数据的限制。", "url": "https://example.test/cr3-a9", "source": "rss"},
+    {"id": "cr3-a10", "title": "云厂商调整存储价格", "description": "云服务商公布对象存储价格和计费规则变化。", "url": "https://example.test/cr3-a10", "source": "rss"}
+  ],
+  "expected_selected_ids": ["cr3-a1", "cr3-a3", "cr3-a5", "cr3-a7", "cr3-a9"],
+  "expected_rejected_ids": ["cr3-a2", "cr3-a4", "cr3-a6", "cr3-a8", "cr3-a10"]
+}

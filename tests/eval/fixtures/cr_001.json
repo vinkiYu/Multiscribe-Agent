@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {"id": "cr1-a1", "title": "OpenAI 发布新一代推理模型", "description": "新模型提升复杂推理和工具调用能力，开发者可通过 API 使用。", "url": "https://example.test/cr1-a1", "source": "rss"},
+    {"id": "cr1-a2", "title": "LangGraph 增加持久化检查点", "description": "工作流可以保存状态并在进程重启后恢复，适合构建长运行 Agent。", "url": "https://example.test/cr1-a2", "source": "rss"},
+    {"id": "cr1-a3", "title": "某办公套件发布界面主题", "description": "普通办公软件更新了配色和图标，不涉及人工智能能力。", "url": "https://example.test/cr1-a3", "source": "rss"},
+    {"id": "cr1-a4", "title": "RAG 检索服务新增混合召回", "description": "向量检索与 BM25 融合后，企业知识库的召回覆盖率得到提升。", "url": "https://example.test/cr1-a4", "source": "rss"},
+    {"id": "cr1-a5", "title": "智能手机推出新配色", "description": "消费电子厂商公布春季手机配色和外观设计。", "url": "https://example.test/cr1-a5", "source": "rss"},
+    {"id": "cr1-a6", "title": "多模态模型支持图像工具调用", "description": "模型能够理解图片并调用搜索、代码执行等外部工具完成任务。", "url": "https://example.test/cr1-a6", "source": "rss"},
+    {"id": "cr1-a7", "title": "数据库发布季度性能报告", "description": "数据库厂商公布普通 OLTP 基准测试结果和版本路线图。", "url": "https://example.test/cr1-a7", "source": "rss"},
+    {"id": "cr1-a8", "title": "AI Agent 安全沙箱方案开源", "description": "项目通过权限隔离和审计日志限制 Agent 工具调用风险。", "url": "https://example.test/cr1-a8", "source": "rss"},
+    {"id": "cr1-a9", "title": "电商平台调整会员积分规则", "description": "电商平台公布新的积分兑换政策和会员权益。", "url": "https://example.test/cr1-a9", "source": "rss"},
+    {"id": "cr1-a10", "title": "Python 发布小版本修复", "description": "Python 社区发布维护版本，主要包含标准库缺陷修复。", "url": "https://example.test/cr1-a10", "source": "rss"}
+  ],
+  "expected_selected_ids": ["cr1-a1", "cr1-a2", "cr1-a4", "cr1-a6", "cr1-a8"],
+  "expected_rejected_ids": ["cr1-a3", "cr1-a5", "cr1-a7", "cr1-a9", "cr1-a10"]
+}

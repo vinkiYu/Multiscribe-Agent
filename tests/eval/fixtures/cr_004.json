@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {"id": "cr4-a1", "title": "推理服务支持连续批处理", "description": "Serving 引擎通过 continuous batching 提高多用户 LLM 推理吞吐。", "url": "https://example.test/cr4-a1", "source": "rss"},
+    {"id": "cr4-a2", "title": "对象存储增加生命周期规则", "description": "云存储产品新增归档和过期删除规则配置。", "url": "https://example.test/cr4-a2", "source": "rss"},
+    {"id": "cr4-a3", "title": "GPU 推出新一代显存架构", "description": "芯片厂商介绍面向 AI 训练和推理的新显存互联架构。", "url": "https://example.test/cr4-a3", "source": "rss"},
+    {"id": "cr4-a4", "title": "团队协作软件改进搜索", "description": "协作软件优化了文档搜索和评论筛选。", "url": "https://example.test/cr4-a4", "source": "rss"},
+    {"id": "cr4-a5", "title": "量化模型在边缘设备运行", "description": "研究团队展示 4-bit 量化模型在消费级 GPU 上的低延迟推理。", "url": "https://example.test/cr4-a5", "source": "rss"},
+    {"id": "cr4-a6", "title": "数据库备份功能改版", "description": "数据库产品更新备份配置页面并增加导出选项。", "url": "https://example.test/cr4-a6", "source": "rss"},
+    {"id": "cr4-a7", "title": "多模态推理加入音频输入", "description": "模型服务新增音频理解接口，可将语音与图像联合输入。", "url": "https://example.test/cr4-a7", "source": "rss"},
+    {"id": "cr4-a8", "title": "数据中心公布节能指标", "description": "云服务商分享数据中心电力使用效率和节能建设进展。", "url": "https://example.test/cr4-a8", "source": "rss"},
+    {"id": "cr4-a9", "title": "LLM Gateway 增加路由降级", "description": "网关可按模型健康度和预算自动切换 provider，降低 Agent 调用失败率。", "url": "https://example.test/cr4-a9", "source": "rss"},
+    {"id": "cr4-a10", "title": "容器运行时发布安全补丁", "description": "容器社区修复一个权限问题并发布补丁版本。", "url": "https://example.test/cr4-a10", "source": "rss"}
+  ],
+  "expected_selected_ids": ["cr4-a1", "cr4-a3", "cr4-a5", "cr4-a7", "cr4-a9"],
+  "expected_rejected_ids": ["cr4-a2", "cr4-a4", "cr4-a6", "cr4-a8", "cr4-a10"]
+}

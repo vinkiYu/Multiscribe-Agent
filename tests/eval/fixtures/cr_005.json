@@ -1,0 +1,16 @@
+{
+  "candidates": [
+    {"id": "cr5-a1", "title": "监管机构发布生成式 AI 指南", "description": "新指南明确模型服务的透明度、风险评估和内容标识要求。", "url": "https://example.test/cr5-a1", "source": "rss"},
+    {"id": "cr5-a2", "title": "旅游平台公布暑期活动", "description": "旅游平台公布暑期促销活动和目的地推荐。", "url": "https://example.test/cr5-a2", "source": "rss"},
+    {"id": "cr5-a3", "title": "医疗 Agent 辅助分诊试点", "description": "医院试点使用带审计和人工确认的 Agent 辅助分诊流程。", "url": "https://example.test/cr5-a3", "source": "rss"},
+    {"id": "cr5-a4", "title": "制造业采购指数公布", "description": "行业协会发布当月制造业采购经理指数。", "url": "https://example.test/cr5-a4", "source": "rss"},
+    {"id": "cr5-a5", "title": "企业知识助手落地客服中心", "description": "客服中心使用 RAG 知识助手生成回答草稿并保留来源引用。", "url": "https://example.test/cr5-a5", "source": "rss"},
+    {"id": "cr5-a6", "title": "银行发布年度经营报告", "description": "商业银行披露年度营收、资产和分支机构数据。", "url": "https://example.test/cr5-a6", "source": "rss"},
+    {"id": "cr5-a7", "title": "AI 版权诉讼出现新判例", "description": "法院判例讨论训练数据授权和生成内容版权归属，对模型公司有参考价值。", "url": "https://example.test/cr5-a7", "source": "rss"},
+    {"id": "cr5-a8", "title": "零售品牌推出夏季新品", "description": "零售品牌发布服装和家居类夏季新品。", "url": "https://example.test/cr5-a8", "source": "rss"},
+    {"id": "cr5-a9", "title": "开源医疗模型开放评测结果", "description": "研究团队公开医疗问答模型的评测数据、限制和安全卡片。", "url": "https://example.test/cr5-a9", "source": "rss"},
+    {"id": "cr5-a10", "title": "物流公司调整配送范围", "description": "物流服务商公布新的区域配送和时效规则。", "url": "https://example.test/cr5-a10", "source": "rss"}
+  ],
+  "expected_selected_ids": ["cr5-a1", "cr5-a3", "cr5-a5", "cr5-a7", "cr5-a9"],
+  "expected_rejected_ids": ["cr5-a2", "cr5-a4", "cr5-a6", "cr5-a8", "cr5-a10"]
+}
