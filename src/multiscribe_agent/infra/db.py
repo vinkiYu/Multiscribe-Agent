@@ -687,6 +687,22 @@ CREATE TABLE IF NOT EXISTS sql_audit_log (
 CREATE INDEX IF NOT EXISTS idx_sql_audit_suspicious ON sql_audit_log(suspicious);
 CREATE INDEX IF NOT EXISTS idx_sql_audit_recorded_at ON sql_audit_log(recorded_at);
 
+CREATE TABLE IF NOT EXISTS alert_history (
+    id TEXT PRIMARY KEY,
+    rule_name TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    threshold REAL NOT NULL,
+    value REAL NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    fired_at INTEGER NOT NULL,
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    acknowledged_by TEXT,
+    acknowledged_at INTEGER,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_alert_history_fired_at ON alert_history(fired_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alert_history_rule ON alert_history(rule_name);
+
 CREATE TABLE IF NOT EXISTS api_keys (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -805,6 +821,27 @@ CREATE TRIGGER IF NOT EXISTS trg_kb_chunks_au AFTER UPDATE ON kb_chunks BEGIN
     INSERT INTO kb_chunks_fts(rowid, content) VALUES (new.rowid, new.content);
 END;
 """
+
+_ALERT_HISTORY_POSTGRES_TABLE = """
+CREATE TABLE IF NOT EXISTS alert_history (
+    id TEXT PRIMARY KEY,
+    rule_name TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    threshold DOUBLE PRECISION NOT NULL,
+    value DOUBLE PRECISION NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    fired_at BIGINT NOT NULL,
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    acknowledged_by TEXT,
+    acknowledged_at BIGINT,
+    metadata TEXT NOT NULL DEFAULT '{}'
+)
+"""
+_ALERT_HISTORY_POSTGRES_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_alert_history_fired_at "
+    "ON alert_history(fired_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_alert_history_rule ON alert_history(rule_name)",
+)
 # Backward-compatible public name. New backend implementations should target
 # ``DatabaseProtocol`` instead of inheriting from this SQLite implementation.
 Database = SqliteDatabase
@@ -938,6 +975,9 @@ async def init_database(
             await connection.execute(KB_CHUNKS_FTS_INDEX)
             await connection.execute(AGENT_MEMORIES_FTS_TABLE)
             for statement in AGENT_MEMORIES_FTS_INDEXES:
+                await connection.execute(statement)
+            await connection.execute(_ALERT_HISTORY_POSTGRES_TABLE)
+            for statement in _ALERT_HISTORY_POSTGRES_INDEXES:
                 await connection.execute(statement)
 
         # ``Database`` is the historical SQLite alias used by existing

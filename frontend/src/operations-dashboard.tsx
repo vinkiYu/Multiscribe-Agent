@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react'
-import { CheckCircle2, CircleAlert, Cpu, History, ListChecks } from 'lucide-react'
-import { ApiError, operationsApi, type OperationsOverview, type TaskLog } from './services/api'
+import { Bell, CheckCircle2, CircleAlert, Cpu, History, ListChecks } from 'lucide-react'
+import { alertsApi, ApiError, operationsApi, type AlertRecord, type OperationsOverview, type TaskLog } from './services/api'
 
 function formatNumber(value: number): string { return value.toLocaleString('zh-CN') }
 function taskLabel(log: TaskLog): string { return log.task_name || log.task_type || '后台任务' }
@@ -9,11 +9,17 @@ function exitReason(reason?: string): string { return ({ threshold: '达到评�
 
 export function OperationsDashboardPage(): ReactElement {
   const [data, setData] = useState<OperationsOverview | null>(null)
+  const [alerts, setAlerts] = useState<AlertRecord[]>([])
   const [error, setError] = useState<ApiError | null>(null)
   useEffect(() => { void operationsApi.getOverview().then(setData).catch((caught) => setError(caught instanceof ApiError ? caught : new ApiError('unknown', '读取运营数据失败。'))) }, [])
+  useEffect(() => { void alertsApi.list({ limit: 20 }).then(setAlerts).catch(() => setAlerts([])) }, [])
   if (error) return <section className="data-panel"><p>{error.message}</p></section>
   if (!data) return <section className="data-panel"><p>正在加载运营数据…</p></section>
-  return <OperationsDashboard data={data} />
+  return <><OperationsDashboard data={data} /><AlertHistoryPanel alerts={alerts} /></>
+}
+
+function AlertHistoryPanel({ alerts }: { alerts: AlertRecord[] }): ReactElement {
+  return <section className="data-panel"><div className="data-summary"><Bell /><span>告警历史（近 20 条）</span><span className="row-meta">{alerts.length} 条</span></div>{alerts.length === 0 ? <p className="empty-inline">暂无告警</p> : <div className="table-wrap"><table><thead><tr><th>时间</th><th>规则</th><th>指标</th><th>阈值</th><th>当前值</th><th>状态</th></tr></thead><tbody>{alerts.map((alert) => <tr key={alert.id}><td>{new Date(alert.fired_at * 1000).toLocaleString('zh-CN')}</td><td>{alert.rule_name}</td><td>{alert.metric}</td><td>{alert.threshold}</td><td>{alert.value.toFixed(2)}</td><td><span className={`status-label ${alert.acknowledged ? 'ready' : 'running'}`}>{alert.acknowledged ? `已确认 · ${alert.acknowledged_by ?? '系统'}` : '待处理'}</span></td></tr>)}</tbody></table></div>}</section>
 }
 
 function OperationsDashboard({ data }: { data: OperationsOverview }): ReactElement {

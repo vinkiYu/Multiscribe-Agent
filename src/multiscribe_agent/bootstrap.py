@@ -21,6 +21,7 @@ from multiscribe_agent.agents.workflow.iteration_store import IterationStore
 from multiscribe_agent.agents.workflow.protocols import LoopAssessment
 from multiscribe_agent.config import ConfigService, SystemSettings, get_settings
 from multiscribe_agent.core.adapter_health import AdapterHealthRepository
+from multiscribe_agent.core.alert_history import AlertHistoryRepository
 from multiscribe_agent.core.click_events import ClickEventRepository
 from multiscribe_agent.core.daily_digest_archive import get_daily_digest_archive
 from multiscribe_agent.core.errors import AgentStepTerminalError, ProviderError
@@ -275,6 +276,7 @@ class ServiceContext:
         self.tracer: object | None = None
         self.event_bus: EventBus | None = None
         self.alerts: AlertEngine | None = None
+        self.alert_history: AlertHistoryRepository | None = None
         self.sql_audit: SqlAuditLogger | None = None
         self._initialized = False
 
@@ -301,6 +303,8 @@ class ServiceContext:
             self.db.set_audit_logger(self.sql_audit)
         rules_path = Path(__file__).parent / "observability" / "alert_rules.yaml"
         self.alerts = AlertEngine(load_rules(rules_path))
+        self.alert_history = AlertHistoryRepository(self.db)
+        self.alerts.attach_alert_history(self.alert_history)
         self.observability_capabilities = detect()
         self.metrics = MetricsRegistry.create(self.observability_capabilities)
         self.metrics.alert_engine = self.alerts

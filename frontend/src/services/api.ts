@@ -182,6 +182,19 @@ export interface AdapterHealth {
   last_error: string | null
   last_run_at: string | null
 }
+export interface AlertRecord {
+  id: string
+  rule_name: string
+  metric: string
+  threshold: number
+  value: number
+  description: string
+  fired_at: number
+  acknowledged: boolean
+  acknowledged_by: string | null
+  acknowledged_at: number | null
+  metadata: Record<string, unknown>
+}
 export interface SettingsProvider { id: string; name: string; type: string; enabled: boolean; api_key: string; base_url: string; models: string[]; context_window_tokens: Record<string, number>; default_output_tokens: Record<string, number> }
 export interface SettingsPublisher { id: string; type: string; enabled: boolean; config: Record<string, unknown> }
 export interface RuntimeSettings { ai_providers: SettingsProvider[]; publishers: SettingsPublisher[]; http_proxy: string; optional_dependencies: Record<string, boolean> }
@@ -253,6 +266,16 @@ export const dashboardApi = {
 
 export const operationsApi = {
   getOverview: (): Promise<OperationsOverview> => request<OperationsOverview>('/dashboard/overview'),
+}
+
+export const alertsApi = {
+  list: (options?: { limit?: number; acknowledged?: boolean }): Promise<AlertRecord[]> => {
+    const params = new URLSearchParams()
+    if (options?.limit !== undefined) params.set('limit', String(options.limit))
+    if (options?.acknowledged !== undefined) params.set('acknowledged', String(options.acknowledged))
+    const query = params.toString()
+    return request<AlertRecord[]>(`/alerts${query ? `?${query}` : ''}`)
+  },
 }
 
 export const curationStatsApi = {
