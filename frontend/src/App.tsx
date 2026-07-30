@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
-import { ArrowLeft, Blocks, BrainCircuit, CheckCircle2, CircleAlert, Files, LayoutDashboard, LibraryBig, ListChecks, Menu, Plus, RadioTower, RefreshCw, Send, Settings2, Sparkles, Workflow, X } from 'lucide-react'
+import { ArrowLeft, Blocks, BrainCircuit, CircleAlert, Files, LayoutDashboard, LibraryBig, ListChecks, Menu, Plus, RadioTower, RefreshCw, Send, Settings2, Sparkles, Workflow, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import logoUrl from '../multiscribe-logo.png'
 import { ApiError, dashboardApi, type DashboardStats, type TaskLog } from './services/api'
@@ -40,7 +40,6 @@ function App(): ReactElement {
   const [logs, setLogs] = useState<TaskLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<ApiError | null>(null)
-  const [notice, setNotice] = useState('')
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [taskModalOpen, setTaskModalOpen] = useState(false)
 
@@ -91,16 +90,15 @@ function App(): ReactElement {
         {active === 'workflows' && <WorkflowsPage key={refreshVersion} />}
         {active === 'content' && <ContentPage key={refreshVersion} />}
         {active === 'publishing' && <PublishingPage key={refreshVersion} />}
-        {active === 'tasks' && <TasksPage key={refreshVersion} onNotice={setNotice} createOpen={taskModalOpen} onCreateClose={() => setTaskModalOpen(false)} />}
-        {active === 'health' && <AdapterHealthPage key={refreshVersion} onNotice={setNotice} />}
+        {active === 'tasks' && <TasksPage key={refreshVersion} createOpen={taskModalOpen} onCreateClose={() => setTaskModalOpen(false)} />}
+        {active === 'health' && <AdapterHealthPage key={refreshVersion} />}
         {active === 'knowledge' && <KnowledgePage key={refreshVersion} />}
         {active === 'memory' && <MemoryPage key={refreshVersion} />}
-        {active === 'plugins' && <SkillsPage key={refreshVersion} onNotice={setNotice} />}
-        {active === 'sources' && <SourceConfigurationPageV2 key={refreshVersion} onNotice={setNotice} />}
-        {active === 'settings' && <SettingsPageV3 key={refreshVersion} onNotice={setNotice} />}
+        {active === 'plugins' && <SkillsPage key={refreshVersion} />}
+        {active === 'sources' && <SourceConfigurationPageV2 key={refreshVersion} />}
+        {active === 'settings' && <SettingsPageV3 key={refreshVersion} />}
       </main>
     </div>
-    {notice && <div className="toast" role="status"><CheckCircle2 /><span>{notice}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X /></button></div>}
   </div>
 }
 

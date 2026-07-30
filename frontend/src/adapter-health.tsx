@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import { CheckCircle2, CircleAlert, RadioTower, RefreshCw } from 'lucide-react'
 import { adapterHealthApi, ApiError, type AdapterHealth } from './services/api'
-
-interface AdapterHealthPageProps { onNotice: (message: string) => void }
+import { toast } from 'sonner'
 
 function formatRunAt(value: string | null): string {
   if (!value) return '暂无记录'
@@ -10,7 +9,7 @@ function formatRunAt(value: string | null): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN')
 }
 
-export function AdapterHealthPage({ onNotice }: AdapterHealthPageProps): ReactElement {
+export function AdapterHealthPage(): ReactElement {
   const [items, setItems] = useState<AdapterHealth[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<ApiError | null>(null)
@@ -29,9 +28,9 @@ export function AdapterHealthPage({ onNotice }: AdapterHealthPageProps): ReactEl
     try {
       if (item.disabled) await adapterHealthApi.enable(item.adapter_id)
       else await adapterHealthApi.disable(item.adapter_id)
-      onNotice(item.disabled ? `已启用 ${item.adapter_id}` : `已停用 ${item.adapter_id}`)
+      toast.success(item.disabled ? `已启用 ${item.adapter_id}` : `已停用 ${item.adapter_id}`)
       await load()
-    } catch (caught) { onNotice(caught instanceof Error ? caught.message : '更新适配器状态失败') } finally { setPending(null) }
+    } catch (caught) { toast.error(caught instanceof Error ? caught.message : '更新适配器状态失败') } finally { setPending(null) }
   }
 
   if (loading) return <section className="state-panel"><RefreshCw className="spin" /><h2>正在读取健康状态</h2><p>正在加载采集适配器的连续失败和运行记录。</p></section>
