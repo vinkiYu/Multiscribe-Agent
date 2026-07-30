@@ -93,9 +93,21 @@ class SourceDataRepository(DialectRepositoryMixin):
         if not items:
             return 0
 
-        count_before = await self._fetchone("SELECT COUNT(*) AS count FROM source_data")
-        if count_before is None:
-            raise RuntimeError("source_data table is unavailable")
+        # Read only the IDs in this batch.  A pair of full-table COUNT(*) scans made
+        # ingestion progressively slower as the normalized source table grew.
+        item_ids = {item.id for item in items}
+        existing_ids: set[str] = set()
+        # Keep bind lists below SQLite's default variable limit while retaining one
+        # query per chunk for unusually large adapter batches.
+        item_id_list = list(item_ids)
+        for offset in range(0, len(item_id_list), 500):
+            chunk = item_id_list[offset : offset + 500]
+            placeholders = ", ".join("?" for _ in chunk)
+            existing_rows = await self._fetchall(
+                f"SELECT id FROM source_data WHERE id IN ({placeholders})",  # noqa: S608
+                chunk,
+            )
+            existing_ids.update(str(row["id"]) for row in existing_rows)
 
         fetched_at = datetime.now(UTC).isoformat()
         rows: list[tuple[object, ...]] = []
@@ -140,10 +152,31 @@ class SourceDataRepository(DialectRepositoryMixin):
             """,
             rows,
         )
-        count_after = await self._fetchone("SELECT COUNT(*) AS count FROM source_data")
-        if count_after is None:
-            raise RuntimeError("source_data table is unavailable")
-        return int(count_after["count"]) - int(count_before["count"])
+        return len(item_ids - existing_ids)
+
+    async def get_recent_candidates(
+        self,
+        fetch_start: str,
+        fetch_end: str,
+        published_start: str,
+        published_end: str,
+    ) -> list[SourceData]:
+        """Return rows eligible by either publication or fetch time in one query.
+
+        The digest pipeline applies adapter-specific freshness semantics after this
+        broad query.  Keeping the OR in the repository removes a second database
+        round-trip while preserving the former publication and snapshot windows.
+        """
+        rows = await self._fetchall(
+            """
+            SELECT * FROM source_data
+            WHERE (published_date BETWEEN ? AND ?)
+               OR (fetched_at BETWEEN ? AND ?)
+            ORDER BY published_date, fetched_at
+            """,
+            [published_start, published_end, fetch_start, fetch_end],
+        )
+        return [self._to_source_data(row) for row in rows]
 
     async def get_by_date_range(
         self,

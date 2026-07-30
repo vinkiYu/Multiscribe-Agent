@@ -215,8 +215,11 @@ class SqliteDatabase:
             self._record_query_observability(statement, (), time.monotonic() - started)
             token = _active_write_connection.set(connection)
             try:
-                for parameters in materialized:
-                    await self._audit_write(statement, parameters)
+                # One audit event represents the batch.  Flattening the bound
+                # values preserves an accurate aggregate parameter count while
+                # avoiding an N-row audit INSERT and N database round-trips.
+                batch_parameters = [value for parameters in materialized for value in parameters]
+                await self._audit_write(statement, batch_parameters)
             finally:
                 _active_write_connection.reset(token)
 

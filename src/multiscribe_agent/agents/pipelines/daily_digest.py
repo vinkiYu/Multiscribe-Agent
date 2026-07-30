@@ -610,15 +610,24 @@ class _DailyDigestStepExecutor:
         the snapshot was fetched. Other records with an unknown publication date
         stay out of the digest rather than becoming current merely by re-ingestion.
         """
-        # The fallback window contains the recent window, so one broad query is
-        # enough.  Keep the two freshness labels equivalent to the former
-        # narrow-query-plus-fallback implementation in Python.
-        all_published = await self._source_data_repo.get_by_date_range(
-            fallback_start, end, query_field="published_date"
-        )
-        fetched_items = await self._source_data_repo.get_by_date_range(
-            start, end, query_field="fetched_at"
-        )
+        # The concrete repository performs this as one OR query.  Keep a fallback
+        # for lightweight test doubles and older repository implementations.
+        get_recent_candidates = getattr(self._source_data_repo, "get_recent_candidates", None)
+        if callable(get_recent_candidates):
+            recent_rows = await get_recent_candidates(start, end, fallback_start, end)
+            all_published = [
+                item
+                for item in recent_rows
+                if item.published_date is not None and fallback_start <= item.published_date <= end
+            ]
+            fetched_items = [item for item in recent_rows if start <= item.fetched_at <= end]
+        else:
+            all_published = await self._source_data_repo.get_by_date_range(
+                fallback_start, end, query_field="published_date"
+            )
+            fetched_items = await self._source_data_repo.get_by_date_range(
+                start, end, query_field="fetched_at"
+            )
         configured_adapters = set(self._config.adapter_ids)
         candidates: dict[str, SourceData] = {}
         for item in all_published:
