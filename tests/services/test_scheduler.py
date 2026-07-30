@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime
 
 import pytest
 
@@ -71,6 +72,24 @@ async def test_register_run_now_and_unregister_create_complete_log() -> None:
     service.unregister("daily")
     with pytest.raises(ValueError, match="unknown"):
         await service.run_now("daily")
+
+
+@pytest.mark.asyncio
+async def test_scheduler_passes_deterministic_run_id() -> None:
+    """Repeated execution of one task on one UTC day receives the same run ID."""
+    logs = MemoryTaskLogs()
+    service = SchedulerService(logs, MemorySchedules())
+    run_ids: list[str] = []
+
+    async def callback(_: ScheduleTask, *, run_id: str) -> dict[str, object]:
+        run_ids.append(run_id)
+        return {"result_count": 1}
+
+    await service.execute_task(task("stable"), callback)
+    await service.execute_task(task("stable"), callback)
+
+    expected = f"stable:{datetime.now(UTC).strftime('%Y-%m-%d')}"
+    assert run_ids == [expected, expected]
 
 
 @pytest.mark.asyncio

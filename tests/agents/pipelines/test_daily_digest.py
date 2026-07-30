@@ -1025,6 +1025,16 @@ async def test_daily_digest_degrades_when_memory_is_unavailable() -> None:
 
 
 @pytest.mark.asyncio
+async def test_pipeline_run_accepts_workflow_run_id() -> None:
+    """A supplied workflow run ID survives the daily pipeline execution."""
+    pipeline, _, _ = _pipeline([_curation_json(), _curation_json(), "overview"])
+
+    result = await pipeline.run(run_date="2026-07-17", workflow_run_id="daily:2026-07-17")
+
+    assert result["workflow_run_id"] == "daily:2026-07-17"
+
+
+@pytest.mark.asyncio
 async def test_registered_scheduler_callback_runs_daily_digest_task() -> None:
     """P9 registry receives the daily-digest callback and can invoke it directly."""
     pipeline, _, _ = _pipeline([_curation_json(), _curation_json(), "overview"])

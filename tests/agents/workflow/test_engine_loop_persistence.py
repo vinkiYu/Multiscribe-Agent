@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from uuid import UUID
 
 import pytest
 
@@ -89,6 +90,78 @@ async def test_engine_persists_loop_rounds_and_same_run_resumes() -> None:
         records = await store.list_for_step("run-1", "loop")
         assert [record.round for record in records] == [1, 2, 3]
         assert executor.calls == 3
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_stream_uses_supplied_run_id() -> None:
+    """A caller-provided run ID is reused on every workflow event."""
+    engine = WorkflowEngine(SequenceExecutor(["output"]), MemoryWorkflowStore(_workflow(1)))
+
+    events = [
+        event async for event in engine.stream("loop-workflow", "task", run_id="daily:2026-07-30")
+    ]
+
+    assert events
+    assert {event.trace_id for event in events} == {"daily:2026-07-30"}
+
+
+@pytest.mark.asyncio
+async def test_engine_stream_falls_back_to_uuid_when_no_run_id() -> None:
+    """Direct engine callers without a run ID retain the UUID trace behavior."""
+    engine = WorkflowEngine(SequenceExecutor(["output"]), MemoryWorkflowStore(_workflow(1)))
+
+    events = [event async for event in engine.stream("loop-workflow", "task")]
+
+    assert events
+    assert UUID(events[0].trace_id).hex == events[0].trace_id
+    assert len({event.trace_id for event in events}) == 1
+
+
+@pytest.mark.asyncio
+async def test_deterministic_run_id_resumes_across_invocations() -> None:
+    """Two engine invocations with one run ID continue the persisted loop rounds."""
+    db = await init_db(":memory:")
+    try:
+        store = IterationStore(db)
+        run_id = "daily:2026-07-30"
+        first_engine = WorkflowEngine(
+            SequenceExecutor(["first"]),
+            MemoryWorkflowStore(_workflow(1)),
+            iteration_store=store,
+        )
+        first_events = [
+            event async for event in first_engine.stream("loop-workflow", "task", run_id=run_id)
+        ]
+        assert [
+            event.data["iteration"] for event in first_events if event.type == "loop_iteration"
+        ] == [1]
+
+        second_engine = WorkflowEngine(
+            SequenceExecutor(["second", "third"]),
+            MemoryWorkflowStore(_workflow(3)),
+            iteration_store=store,
+        )
+        second_events = [
+            event async for event in second_engine.stream("loop-workflow", "task", run_id=run_id)
+        ]
+
+        assert [
+            event.data["iteration"] for event in second_events if event.type == "loop_iteration"
+        ] == [
+            1,
+            2,
+            3,
+        ]
+        assert (
+            next(
+                event.data["final"] for event in second_events if event.type == "workflow_complete"
+            )
+            == "third"
+        )
+        records = await store.list_for_step(run_id, "loop")
+        assert [record.round for record in records] == [1, 2, 3]
     finally:
         await db.close()
 

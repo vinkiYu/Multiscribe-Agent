@@ -47,11 +47,14 @@ class WorkflowEngine:
         *,
         date: str | None = None,
         timeout: float = DEFAULT_WORKFLOW_TIMEOUT_SECONDS,
+        run_id: str | None = None,
     ) -> dict[str, object]:
         """Return completed step outputs and final output."""
         outputs: dict[str, object] = {}
         final = input_data
-        async for event in self.stream(workflow_id, input_data, date=date, timeout=timeout):
+        async for event in self.stream(
+            workflow_id, input_data, date=date, timeout=timeout, run_id=run_id
+        ):
             if event.type == "workflow_error":
                 raise WorkflowError(str(event.data["message"]), event.data)
             if event.type == "step_complete":
@@ -67,15 +70,15 @@ class WorkflowEngine:
         *,
         date: str | None = None,
         timeout: float = DEFAULT_WORKFLOW_TIMEOUT_SECONDS,
+        run_id: str | None = None,
     ) -> AsyncIterator[WorkflowEvent]:
         """Yield workflow and step lifecycle events in topological order."""
         if timeout <= 0:
             raise ValueError("timeout must be positive")
-        del date
         raw = await self._workflow_store.get("workflows", workflow_id)
         if raw is None:
             raise WorkflowError(f"workflow not found: {workflow_id}")
-        trace_id = uuid4().hex
+        trace_id = run_id or uuid4().hex
         results: dict[str, object] = {"start": input_data}
         yield WorkflowEvent(
             "workflow_start", {"workflow_id": workflow_id, "timeout": timeout}, trace_id

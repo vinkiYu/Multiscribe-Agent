@@ -530,8 +530,10 @@ class ServiceContext:
         await load_builtin_skills(self.skill_service)
 
     #
-    async def run_daily_digest_task(self, task: ScheduleTask) -> dict[str, object]:
-        """Build and run P11 from the persisted schedule task configuration."""
+    async def run_daily_digest_task(
+        self, task: ScheduleTask, *, run_id: str | None = None
+    ) -> dict[str, object]:
+        """Build and run P11, resuming the deterministic scheduler run when supplied."""
         self._require_initialized()
         config = DailyDigestConfig.from_mapping(task.config)
         raw = await self.entities.get("agents", config.curate_agent_id)  # type: ignore[union-attr]
@@ -554,7 +556,8 @@ class ServiceContext:
             iteration_store=self.iteration_store,
             curation_evaluations=self.curation_evaluations,
         )
-        return await pipeline.run()
+        run_date = run_id.split(":", 1)[1] if run_id is not None and ":" in run_id else None
+        return await pipeline.run(run_date=run_date, workflow_run_id=run_id)
 
     def _provider_for_agent(self, definition: AgentDefinition) -> AIProvider:
         """Resolve the provider settings requested by one stored agent definition."""

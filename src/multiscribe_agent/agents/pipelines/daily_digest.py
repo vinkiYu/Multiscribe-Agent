@@ -355,17 +355,20 @@ class DailyDigestPipeline:
         self._iteration_store = iteration_store
         self._curation_evaluations = curation_evaluations
 
-    async def run(self, *, run_date: str | None = None) -> dict[str, object]:
+    async def run(
+        self, *, run_date: str | None = None, workflow_run_id: str | None = None
+    ) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
         if self._preference_feedback is not None and self._db is not None:
             await self._preference_feedback.apply_click_feedback(self._db)
         date_value = run_date or datetime.now(UTC).date().isoformat()
         engine, usage = self._engine(date_value)
         loop_summary = _LoopIterationAccumulator()
-        workflow_run_id = ""
+        resolved_run_id = workflow_run_id or ""
         final: object = ""
-        async for event in engine.stream(WORKFLOW_ID, "", date=date_value):
-            workflow_run_id = event.trace_id
+        async for event in engine.stream(WORKFLOW_ID, "", date=date_value, run_id=workflow_run_id):
+            if not resolved_run_id:
+                resolved_run_id = event.trace_id
             if event.type == "workflow_error":
                 raise WorkflowError(str(event.data["message"]), event.data)
             if event.type == "loop_iteration" and event.data.get("step_id") == "curate":
@@ -389,10 +392,10 @@ class DailyDigestPipeline:
         else:
             message = f"generated {result_count} curated items without publishing"
         serialized_loop_summary = loop_summary.as_dict()
-        if self._curation_evaluations is not None and workflow_run_id:
+        if self._curation_evaluations is not None and resolved_run_id:
             await self._curation_evaluations.upsert(
                 CurationEvaluationRecord(
-                    workflow_run_id=workflow_run_id,
+                    workflow_run_id=resolved_run_id,
                     date=date_value,
                     recorded_at=int(datetime.now(UTC).timestamp()),
                     rounds=loop_summary.rounds,
@@ -421,17 +424,21 @@ class DailyDigestPipeline:
             "fetched_counts": payload.get("fetched_counts", {}),
             "usage": usage.as_dict(),
             "loop_summary": serialized_loop_summary,
-            "workflow_run_id": workflow_run_id,
+            "workflow_run_id": resolved_run_id,
         }
 
-    async def stream(self, *, run_date: str | None = None) -> AsyncIterator[WorkflowEvent]:
+    async def stream(
+        self, *, run_date: str | None = None, workflow_run_id: str | None = None
+    ) -> AsyncIterator[WorkflowEvent]:
         """Expose P10 lifecycle events, including loop iterations, for observability."""
         engine, _ = self._engine(run_date)
-        async for event in engine.stream(WORKFLOW_ID, "", date=run_date):
+        async for event in engine.stream(WORKFLOW_ID, "", date=run_date, run_id=workflow_run_id):
             yield event
 
-    async def daily_digest_executor(self, task: ScheduleTask) -> dict[str, object]:
-        """Adapt a persisted daily-digest schedule task to the P9 callback contract."""
+    async def daily_digest_executor(
+        self, task: ScheduleTask, *, run_id: str | None = None
+    ) -> dict[str, object]:
+        """Adapt a persisted daily-digest task while preserving its optional run ID."""
         if task.task_type != "daily_digest":
             raise ValueError(f"unsupported task type for daily digest executor: {task.task_type}")
         config = DailyDigestConfig.from_mapping(task.config)
@@ -451,7 +458,8 @@ class DailyDigestPipeline:
             iteration_store=self._iteration_store,
             curation_evaluations=self._curation_evaluations,
         )
-        return await pipeline.run()
+        run_date = run_id.split(":", 1)[1] if run_id is not None and ":" in run_id else None
+        return await pipeline.run(run_date=run_date, workflow_run_id=run_id)
 
     def _engine(self, run_date: str | None) -> tuple[WorkflowEngine, _DigestUsage]:
         """Build isolated per-run workflow state so concurrent schedules do not share outputs."""

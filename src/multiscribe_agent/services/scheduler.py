@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import UTC, datetime
 from time import perf_counter
-from typing import Literal
+from typing import Literal, Protocol, cast
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -23,7 +24,17 @@ from multiscribe_agent.services.scheduler_lock import (
     SchedulerLock,
 )
 
-TaskCallback = Callable[[ScheduleTask], Awaitable[dict[str, object]]]
+
+class RunIdTaskCallback(Protocol):
+    """Scheduler callback contract carrying the deterministic workflow run ID."""
+
+    def __call__(self, task: ScheduleTask, *, run_id: str) -> Awaitable[dict[str, object]]: ...
+
+
+LegacyTaskCallback = Callable[[ScheduleTask], Awaitable[dict[str, object]]]
+TaskCallback = RunIdTaskCallback | LegacyTaskCallback
+
+
 log = structlog.get_logger(__name__)
 
 
@@ -167,7 +178,8 @@ class SchedulerService:
             try:
                 if callback is None:
                     raise LookupError(f"no executor registered for task type: {task.task_type}")
-                result = await callback(task)
+                run_id = f"{task.id}:{run_date}"
+                result = await self._invoke_callback(callback, task, run_id)
             except Exception as exc:
                 log.warning("scheduled_task_failed", task_id=task.id, error_type=type(exc).__name__)
                 await self._task_log_repo.update(
@@ -201,6 +213,26 @@ class SchedulerService:
         finally:
             if lock_result.acquired and lock_result.token is not None:
                 await self._lock.release(lock_key, lock_result.token)
+
+    @staticmethod
+    async def _invoke_callback(
+        callback: TaskCallback, task: ScheduleTask, run_id: str
+    ) -> dict[str, object]:
+        """Invoke callbacks with a deterministic run ID while keeping legacy callbacks usable."""
+        try:
+            parameters = inspect.signature(callback).parameters.values()
+        except (TypeError, ValueError):
+            accepts_run_id = True
+        else:
+            accepts_run_id = any(
+                parameter.name == "run_id" or parameter.kind == inspect.Parameter.VAR_KEYWORD
+                for parameter in parameters
+            )
+        if accepts_run_id:
+            callback_with_run_id = cast(RunIdTaskCallback, callback)
+            return await callback_with_run_id(task, run_id=run_id)
+        legacy_callback = cast(LegacyTaskCallback, callback)
+        return await legacy_callback(task)
 
     async def _try_acquire(self, lock_key: str) -> AcquireResult:
         """Acquire a lock and normalize connection failures into lock outcomes."""
