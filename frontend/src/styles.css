@@ -1,4 +1,4 @@
-:root { --cream:#fffaf0; --paper:#fffdf8; --ink:#191818; --muted:#6d6a67; --line:#191818; --pink:#fa1d68; --blue:#2457e6; --sun:#ffbf19; --mint:#a5e6cb; --danger:#d82d3b; --shadow:4px 4px 0 var(--ink); font-family:"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif; color:var(--ink); background:var(--cream); }
+@import "./styles/tokens.css";
 * { box-sizing:border-box; }
 body { min-width:320px; margin:0; background:var(--cream); }
 .login-page { display:grid; min-height:100vh; place-items:center; padding:24px; background:var(--cream); }
@@ -210,3 +210,12 @@ main > * { animation:workspace-enter 220ms cubic-bezier(.2,.8,.2,1) both; }.metr
 @media (max-width:900px) { .source-workspace { grid-template-columns:1fr; }.source-sidebar { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); }.source-sidebar > header { grid-column:1 / -1; }.source-sidebar > button { border-right:1px solid #e6e2dc; }.source-config-body { grid-template-columns:1fr; }.source-config-note { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 14px; }.source-config-note h3,.source-config-note p { grid-column:1 / -1; } }
 @media (max-width:560px) { .source-page-header { display:grid; }.source-field-grid { grid-template-columns:1fr; }.source-form-field.wide { grid-column:auto; }.source-config-note { grid-template-columns:1fr; }.source-card-header { align-items:flex-start; }.source-savebar { align-items:flex-start; flex-direction:column; }.source-savebar .button { width:100%; justify-content:center; } }
 @media (max-width:520px) { .model-catalog { grid-template-columns:1fr; } }
+
+/* Shared operations dashboard primitives and Radix dialog states. */
+.metric-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; }
+.table-wrap { overflow-x:auto; border:2px solid var(--line); background:var(--paper); }
+.metric.purple { --metric-color:var(--purple); }
+[data-radix-dialog-overlay] { animation:dialog-fade-in 160ms ease-out; }
+[data-radix-dialog-overlay][data-state="closed"] { animation:dialog-fade-out 120ms ease-in; }
+@keyframes dialog-fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes dialog-fade-out { from { opacity:1; } to { opacity:0; } }
