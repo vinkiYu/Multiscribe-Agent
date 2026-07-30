@@ -289,3 +289,12 @@ main > * { animation:workspace-enter 220ms cubic-bezier(.2,.8,.2,1) both; }.metr
 /* End of settings control primitives. */
 .pagination-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-top:2px solid var(--line); background:var(--cream); }
 .pagination-info { font-size:14px; font-weight:850; color:var(--muted); }
+
+/* Source-data FTS search controls and highlighted snippets. */
+.search-bar { display:flex; gap:8px; padding:12px 16px; border-bottom:2px solid var(--line); }
+.search-bar input { flex:1; min-width:0; padding:8px 12px; border:2px solid var(--ink); border-radius:5px; background:var(--paper); color:var(--ink); font-size:14px; font-weight:600; }
+.search-bar input:focus { outline:3px solid var(--sun); outline-offset:0; }
+.source-search-error { color:var(--danger); }
+.source-search-result { grid-template-columns:minmax(0,1fr) minmax(120px,auto); }
+.source-search-result mark { padding:1px 3px; border-radius:3px; background:var(--sun); color:var(--ink); }
+@media (max-width:560px) { .search-bar { align-items:stretch; flex-direction:column; }.search-bar .button { justify-content:center; } .source-search-result { grid-template-columns:1fr; gap:8px; } }

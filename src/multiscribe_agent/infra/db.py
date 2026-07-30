@@ -838,8 +838,7 @@ CREATE TABLE IF NOT EXISTS alert_history (
 )
 """
 _ALERT_HISTORY_POSTGRES_INDEXES = (
-    "CREATE INDEX IF NOT EXISTS idx_alert_history_fired_at "
-    "ON alert_history(fired_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_alert_history_fired_at ON alert_history(fired_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_alert_history_rule ON alert_history(rule_name)",
 )
 # Backward-compatible public name. New backend implementations should target

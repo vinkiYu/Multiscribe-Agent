@@ -96,6 +96,18 @@ export interface DailyNewsResponse {
   digest: DailyDigest | null
 }
 
+export interface SourceData {
+  id: string
+  title: string
+  url: string
+  description: string
+  source: string
+  category: string
+  published_date: string
+  ingestion_date: string
+  adapter_name: string
+}
+
 export interface PublishHistoryRecord {
   id: string
   publisher_id: string
@@ -358,6 +370,10 @@ export const skillsApi = {
 export const sourcesApi = {
   list: (): Promise<SourcesResponse> => request<SourcesResponse>('/sources'),
   save: (id: string, source: Omit<SourceConfiguration, 'id'>): Promise<SourceConfiguration> => request<SourceConfiguration>(`/sources/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(source) }),
+}
+
+export const sourceDataApi = {
+  search: (query: string, limit = 20): Promise<SourceData[]> => request<SourceData[]>(`/source-data/search?q=${encodeURIComponent(query)}&limit=${limit}`),
 }
 
 export const adapterHealthApi = {

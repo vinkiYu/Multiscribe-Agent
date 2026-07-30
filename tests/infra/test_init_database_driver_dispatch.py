@@ -137,7 +137,7 @@ async def test_init_database_postgres_applies_fts_schema_in_order(
         "command_timeout": 30,
     }
     statements = pool.connection.statements
-    assert len(statements) == 11
+    assert len(statements) == 14
     assert statements[0].startswith("CREATE EXTENSION")
     assert "chunk_vectors" in statements[1]
     assert "source_data_fts" in statements[2]
@@ -151,6 +151,9 @@ async def test_init_database_postgres_applies_fts_schema_in_order(
     assert "agent_memories_fts" in statements[8]
     assert "idx_amf_content" in statements[9]
     assert "idx_amf_tags" in statements[10]
+    assert "alert_history" in statements[11]
+    assert "idx_alert_history_fired_at" in statements[12]
+    assert "idx_alert_history_rule" in statements[13]
 
 
 @pytest.mark.asyncio
