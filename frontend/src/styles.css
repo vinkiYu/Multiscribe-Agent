@@ -287,3 +287,5 @@ main > * { animation:workspace-enter 220ms cubic-bezier(.2,.8,.2,1) both; }.metr
 
 
 /* End of settings control primitives. */
+.pagination-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border-top:2px solid var(--line); background:var(--cream); }
+.pagination-info { font-size:14px; font-weight:850; color:var(--muted); }

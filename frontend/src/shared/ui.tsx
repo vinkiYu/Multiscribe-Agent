@@ -10,6 +10,7 @@ import {
   BookOpen,
   BrainCircuit,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   CircleAlert,
   Eye,
@@ -153,9 +154,17 @@ function ContentPage(): ReactElement {
 }
 
 function PublishingPage(): ReactElement {
-  const remote = useRemoteData(publishHistoryApi.list); const status = DataStatus({ remote, empty: remote.data?.length === 0 })
-  if (status) return status; const records = remote.data ?? []
-  return <section className="data-panel"><div className="data-summary"><Send /><span>最近 {records.length} 条投递记录</span></div><div className="data-list">{records.map((record: PublishHistoryRecord) => <article className="data-row" key={record.id}><div><strong>{record.title || '未命名发布内容'}</strong><p>{record.error_message || record.content_preview || '已记录发布结果。'}</p></div><span className={`status-label ${statusClass(record.status)}`}>{statusText(record.status)}</span><time>{record.publisher_id} · {formatDate(record.published_at)}</time></article>)}</div></section>
+  const [offset, setOffset] = useState(0)
+  const limit = 50
+  const loadPage = useCallback(() => publishHistoryApi.list({ limit, offset }), [offset])
+  const remote = useRemoteData(loadPage)
+  const status = DataStatus({ remote, empty: (remote.data?.records.length ?? 0) === 0 })
+  if (status) return status
+  const response = remote.data!
+  const records = response.records
+  const currentPage = Math.floor(offset / limit) + 1
+  const totalPages = response.total === 0 ? 1 : Math.ceil(response.total / limit)
+  return <section className="data-panel"><div className="data-summary"><Send /><span>投递记录 第 {currentPage} / {totalPages} 页（共 {response.total} 条）</span></div><div className="data-list">{records.map((record: PublishHistoryRecord) => <article className="data-row" key={record.id}><div><strong>{record.title || '未命名发布内容'}</strong><p>{record.error_message || record.content_preview || '已记录发布结果。'}</p></div><span className={`status-label ${statusClass(record.status)}`}>{statusText(record.status)}</span><time>{record.publisher_id} · {formatDate(record.published_at)}</time></article>)}</div><div className="pagination-row"><button type="button" className="button compact" disabled={offset === 0} onClick={() => setOffset((current) => Math.max(0, current - limit))}><ChevronLeft size={16} />上一页</button><span className="pagination-info">第 {currentPage} / {totalPages} 页</span><button type="button" className="button compact blue" disabled={!response.has_more} onClick={() => setOffset((current) => current + limit)}>下一页<ChevronRight size={16} /></button></div></section>
 }
 
 function TasksPage({ createOpen, onCreateClose }: { createOpen: boolean; onCreateClose: () => void }): ReactElement {

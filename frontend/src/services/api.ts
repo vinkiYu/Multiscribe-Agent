@@ -108,6 +108,14 @@ export interface PublishHistoryRecord {
   adapter_name: string | null
 }
 
+export interface PublishHistoryResponse {
+  records: PublishHistoryRecord[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+}
+
 export interface KnowledgeCategory {
   id: string
   name: string
@@ -292,7 +300,11 @@ export const dailyNewsApi = {
 }
 
 export const publishHistoryApi = {
-  list: (): Promise<PublishHistoryRecord[]> => request<PublishHistoryRecord[]>('/publish-history?limit=50'),
+  list: (options?: { limit?: number; offset?: number }): Promise<PublishHistoryResponse> => {
+    const limit = options?.limit ?? 50
+    const offset = options?.offset ?? 0
+    return request<PublishHistoryResponse>(`/publish-history?limit=${limit}&offset=${offset}`)
+  },
 }
 
 export const knowledgeApi = {

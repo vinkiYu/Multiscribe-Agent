@@ -312,7 +312,7 @@ async def test_api_returns_authenticated_history_records(tmp_path) -> None:
             )
 
         assert response.status_code == 200
-        assert response.json()[0]["title"] == "API record"
+        assert response.json()["records"][0]["title"] == "API record"
     finally:
         await context.close()
 

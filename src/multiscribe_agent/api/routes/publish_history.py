@@ -24,19 +24,33 @@ async def list_publish_history(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     context: ServiceContext = Depends(get_context),  # noqa: B008
-) -> list[dict[str, object]]:
+) -> dict[str, object]:
     """Return persisted outcomes, newest first, for authorized callers."""
     if context.db is None or context.publish_history is None:
         raise HTTPException(status_code=503, detail="services unavailable")
+    total = await context.publish_history.count(
+        context.db,
+        publisher_id=publisher_id,
+        from_date=from_date,
+        to_date=to_date,
+    )
     records = await context.publish_history.query(
         context.db,
         publisher_id=publisher_id,
         from_date=from_date,
         to_date=to_date,
         limit=limit,
+        offset=offset,
     )
-    return [_record_to_response(record) for record in records]
+    return {
+        "records": [_record_to_response(record) for record in records],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + len(records) < total,
+    }
 
 
 @router.get("/summary")

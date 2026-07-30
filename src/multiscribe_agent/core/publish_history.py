@@ -131,26 +131,19 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         from_date: datetime | None = None,
         to_date: datetime | None = None,
         limit: int = 50,
+        offset: int = 0,
         digest_date: str | None = None,
     ) -> list[PublishRecord]:
         """Return newest records after applying optional publisher and time filters."""
-        filters: list[str] = []
-        parameters: list[object] = []
-        if publisher_id is not None:
-            filters.append("publisher_id = ?")
-            parameters.append(publisher_id)
-        if from_date is not None:
-            filters.append("published_at >= ?")
-            parameters.append(from_date.isoformat())
-        if to_date is not None:
-            filters.append("published_at <= ?")
-            parameters.append(to_date.isoformat())
-        if digest_date is not None:
-            _validate_digest_date(digest_date)
-            filters.append("digest_date = ?")
-            parameters.append(digest_date)
+        filters, parameters = _build_filters(
+            publisher_id=publisher_id,
+            from_date=from_date,
+            to_date=to_date,
+            digest_date=digest_date,
+        )
         where_clause = " AND ".join(filters) if filters else "1 = 1"
         parameters.append(max(1, min(limit, _MAX_QUERY_LIMIT)))
+        parameters.append(max(0, offset))
         # where_clause consists only of static clauses defined above; all values use placeholders.
         statement = f"""
             SELECT id, publisher_id, status, title, content_preview, result_data,
@@ -159,6 +152,7 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
             WHERE {where_clause}
             ORDER BY published_at DESC, id DESC
             LIMIT ?
+            OFFSET ?
             """  # noqa: S608
         rows = await self._fetchall(
             db,
@@ -166,6 +160,29 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
             parameters,
         )
         return [_record_from_row(row) for row in rows]
+
+    async def count(
+        self,
+        db: Database,
+        publisher_id: str | None = None,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+        digest_date: str | None = None,
+    ) -> int:
+        """Return the number of records matching the given filters."""
+        filters, parameters = _build_filters(
+            publisher_id=publisher_id,
+            from_date=from_date,
+            to_date=to_date,
+            digest_date=digest_date,
+        )
+        where_clause = " AND ".join(filters) if filters else "1 = 1"
+        row = await self._fetchone(
+            db,
+            f"SELECT COUNT(*) AS count FROM {_TABLE_NAME} WHERE {where_clause}",  # noqa: S608
+            parameters,
+        )
+        return int(row["count"]) if row is not None else 0
 
     async def summary(
         self,
@@ -219,6 +236,32 @@ def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
         adapter_name=_optional_row_text(row["adapter_name"]),
         digest_date=_optional_row_text(row.get("digest_date")),
     )
+
+
+def _build_filters(
+    *,
+    publisher_id: str | None,
+    from_date: datetime | None,
+    to_date: datetime | None,
+    digest_date: str | None,
+) -> tuple[list[str], list[object]]:
+    """Build the shared publish-history predicates and bind values."""
+    filters: list[str] = []
+    parameters: list[object] = []
+    if publisher_id is not None:
+        filters.append("publisher_id = ?")
+        parameters.append(publisher_id)
+    if from_date is not None:
+        filters.append("published_at >= ?")
+        parameters.append(from_date.isoformat())
+    if to_date is not None:
+        filters.append("published_at <= ?")
+        parameters.append(to_date.isoformat())
+    if digest_date is not None:
+        _validate_digest_date(digest_date)
+        filters.append("digest_date = ?")
+        parameters.append(digest_date)
+    return filters, parameters
 
 
 def _validate_digest_date(value: str | None) -> None:
