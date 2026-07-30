@@ -205,4 +205,4 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | P50 | 策展 Precision/Recall 回归测试（方向 4：ground-truth 候选池 + 真实策展人 LLM + F1 回归检测）| 🟢 已通过 | 新增源3+测试3+fixture5+yaml1；定向27 + 全量602 passed；ruff/mypy clean；a76860a |
 | P51 | 前端基础设施（Radix/recharts/sonner 依赖 + 设计 token 提取 + 拆分 87KB App.tsx + Bug 修复）| ✅ **已通过**（2026-07-30）| ✅ ba53ec4 | 4 子任务 + 12 条验收；App.tsx 515→107 行；10 个 pages/ + shared/{ui,format,dialog}.tsx；602 passed；ruff/mypy clean；零行为变化 |
 | P52-A | 策展质量运营页（消费 recharts + Radix Dialog：3 metric + 4 chart + 1 表格 + 1 Drawer + 1 个 archives×evaluations join 端点）| ✅ **已通过**（2026-07-30）| ✅ f694704 | 4 子任务 + 13 条验收；后端新端点 `GET /api/curation-stats/by-period`（LEFT JOIN）；前端首张图表页 + 详情抽屉；602 passed；ruff/mypy clean；零回归 |
-| — | P2剩余4项: id()索引(债9,等resume)/google+ollama空壳(债10)/archive topic字段(债11)/ArtifactStore持久化(债3,等resume) | 🔄 待处理 | 需配套功能落地或独立排期 |
+| P52-B | Toast 通知统一（sonner：main.tsx Toaster 挂载 + 替换 App.tsx 手写 toast + 迁移 onNotice/setMessage 约 27 处调用 + 删除 5 个 inline p + 删除 7 个 onNotice prop）| 🔄 进行中 | 任务包已就绪，待 Codex 执行；12 条验收；零行为变化 |
