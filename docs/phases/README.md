@@ -202,4 +202,5 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | P31.2 | 每日资讯全链路 P0 修复（幂等预检 / 全失败保护 / 空候选拦截 / LLM 契约） | 🟢 已通过 | 业务代码2 + 测试1；定向38 + 全量583 passed；ruff/mypy clean；deb9ff0 |
 | P32 | _ingest 冗余查询安全合并（债 5 收窄版：合并 2 次 published_date 查询，零行为变化）| 🟢 已通过 | 业务代码1 + 测试1；定向42 + 全量587 passed；3→2 查询；ruff/mypy clean；277080e |
 | P49 | Loop 续跑 run_id 复用修复（方向 1 加固：确定性 run_id = task_id:run_date，让崩溃同日重跑真正续跑）| 🟢 已通过 | 业务代码4 + 测试3；定向58 + 全量592 passed；ruff/mypy clean；785d32e；注：原编号 P33 与前端 P33 冲突，改为 P49 |
+| P50 | 策展 Precision/Recall 回归测试（方向 4：ground-truth 候选池 + 真实策展人 LLM + F1 回归检测）| 🔄 进行中 | 任务包已就绪，待 Codex 执行；4 子任务 + 10 条验收；不改 P21 框架/不接 CuratorJudge |
 | — | P2剩余4项: id()索引(债9,等resume)/google+ollama空壳(债10)/archive topic字段(债11)/ArtifactStore持久化(债3,等resume) | 🔄 待处理 | 需配套功能落地或独立排期 |
