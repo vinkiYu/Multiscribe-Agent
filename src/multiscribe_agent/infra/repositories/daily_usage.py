@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS daily_usage (
@@ -59,20 +59,38 @@ class DailyUsageRepository(DialectRepositoryMixin):
             _non_negative_int(usage.get(name))
             for name in ("input_tokens", "output_tokens", "total_tokens", "llm_calls")
         )
+        columns = (
+            "date",
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "llm_calls",
+            "task_count",
+        )
         await self._execute(
-            """
-            INSERT INTO daily_usage
-                (date, input_tokens, output_tokens, total_tokens, llm_calls, task_count)
-            VALUES (?, ?, ?, ?, ?, 1)
-            ON CONFLICT(date) DO UPDATE SET
-                input_tokens = input_tokens + excluded.input_tokens,
-                output_tokens = output_tokens + excluded.output_tokens,
-                total_tokens = total_tokens + excluded.total_tokens,
-                llm_calls = llm_calls + excluded.llm_calls,
-                task_count = task_count + 1,
-                recorded_at = CURRENT_TIMESTAMP
-            """,
-            (date, *values),
+            self._upsert_sql(
+                table="daily_usage",
+                columns=columns,
+                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
+                conflict_target=("date",),
+                update_columns=(
+                    "input_tokens",
+                    "output_tokens",
+                    "total_tokens",
+                    "llm_calls",
+                    "task_count",
+                    "recorded_at",
+                ),
+                update_expressions={
+                    "input_tokens": "input_tokens + excluded.input_tokens",
+                    "output_tokens": "output_tokens + excluded.output_tokens",
+                    "total_tokens": "total_tokens + excluded.total_tokens",
+                    "llm_calls": "llm_calls + excluded.llm_calls",
+                    "task_count": "task_count + excluded.task_count",
+                    "recorded_at": "CURRENT_TIMESTAMP",
+                },
+            ),
+            (date, *values, 1),
         )
 
     async def query(self, from_date: str, to_date: str) -> list[DailyUsageRecord]:

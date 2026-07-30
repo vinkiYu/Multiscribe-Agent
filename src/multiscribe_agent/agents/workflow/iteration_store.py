@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,26 +22,32 @@ class IterationRecord:
     reason: str
 
 
-class IterationStore:
+class IterationStore(DialectRepositoryMixin):
     """CRUD wrapper for the ``workflow_iterations`` table."""
 
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: DatabaseProtocol) -> None:
         self._db = db
 
     async def append(self, record: IterationRecord) -> None:
         """Insert one iteration row, replacing an interrupted duplicate round."""
-        await self._db.execute(
-            """
-            INSERT INTO workflow_iterations
-                (workflow_run_id, step_id, round, output, score, feedback, converged, reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(workflow_run_id, step_id, round) DO UPDATE SET
-                output = excluded.output,
-                score = excluded.score,
-                feedback = excluded.feedback,
-                converged = excluded.converged,
-                reason = excluded.reason
-            """,
+        columns = (
+            "workflow_run_id",
+            "step_id",
+            "round",
+            "output",
+            "score",
+            "feedback",
+            "converged",
+            "reason",
+        )
+        await self._execute(
+            self._upsert_sql(
+                table="workflow_iterations",
+                columns=columns,
+                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
+                conflict_target=("workflow_run_id", "step_id", "round"),
+                update_columns=("output", "score", "feedback", "converged", "reason"),
+            ),
             (
                 record.workflow_run_id,
                 record.step_id,
@@ -55,7 +62,7 @@ class IterationStore:
 
     async def list_for_step(self, workflow_run_id: str, step_id: str) -> list[IterationRecord]:
         """Return all iterations for one step, ordered by round."""
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             """
             SELECT workflow_run_id, step_id, round, output, score, feedback, converged, reason
             FROM workflow_iterations
@@ -69,7 +76,7 @@ class IterationStore:
     async def list_recent(self, limit: int = 20) -> list[IterationRecord]:
         """Return the most recently recorded iterations across workflow runs."""
         bounded_limit = max(1, min(limit, 100))
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             """
             SELECT workflow_run_id, step_id, round, output, score, feedback, converged, reason
             FROM workflow_iterations
@@ -82,7 +89,7 @@ class IterationStore:
 
     async def latest_for_step(self, workflow_run_id: str, step_id: str) -> IterationRecord | None:
         """Return the latest durable iteration for a step, if one exists."""
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             """
             SELECT workflow_run_id, step_id, round, output, score, feedback, converged, reason
             FROM workflow_iterations
@@ -104,7 +111,7 @@ class IterationStore:
         """
         if step_id is not None:
             return await self.latest_for_step(workflow_run_id, step_id)
-        rows = await self._db.fetchall(
+        rows = await self._fetchall(
             """
             SELECT workflow_run_id, step_id, round, output, score, feedback, converged, reason
             FROM workflow_iterations

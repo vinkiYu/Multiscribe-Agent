@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS curation_evaluations (
@@ -70,24 +70,28 @@ class CurationEvaluationRepository(DialectRepositoryMixin):
     async def upsert(self, evaluation: CurationEvaluationRecord) -> None:
         """Insert or replace one evaluation using the workflow run as its idempotency key."""
         await self.ensure_schema()
+        columns = (
+            "workflow_run_id",
+            "date",
+            "recorded_at",
+            "rounds",
+            "converged",
+            "exit_reason",
+            "final_score",
+            "score_delta",
+            "avg_iter_score",
+            "result_count",
+            "usage_json",
+        )
+        sql = self._upsert_sql(
+            table="curation_evaluations",
+            columns=columns,
+            style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
+            conflict_target=("workflow_run_id",),
+            update_columns=columns[1:],
+        )
         await self._execute(
-            """
-            INSERT INTO curation_evaluations (
-                workflow_run_id, date, recorded_at, rounds, converged, exit_reason,
-                final_score, score_delta, avg_iter_score, result_count, usage_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(workflow_run_id) DO UPDATE SET
-                date = excluded.date,
-                recorded_at = excluded.recorded_at,
-                rounds = excluded.rounds,
-                converged = excluded.converged,
-                exit_reason = excluded.exit_reason,
-                final_score = excluded.final_score,
-                score_delta = excluded.score_delta,
-                avg_iter_score = excluded.avg_iter_score,
-                result_count = excluded.result_count,
-                usage_json = excluded.usage_json
-            """,
+            sql,
             (
                 evaluation.workflow_run_id,
                 evaluation.date,

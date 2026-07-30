@@ -7,7 +7,7 @@ import time
 from typing import cast
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
 
 
 class KvRepository(DialectRepositoryMixin):
@@ -40,11 +40,15 @@ class KvRepository(DialectRepositoryMixin):
     async def set(self, key: str, value: object, ttl_seconds: int | None = None) -> None:
         """Serialize a value and upsert it with an optional expiration timestamp."""
         expires_at = None if ttl_seconds is None else time.time() + ttl_seconds
+        columns = ("key", "value", "expires_at")
         await self._execute(
-            """
-            INSERT INTO kv(key, value, expires_at) VALUES (?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at
-            """,
+            self._upsert_sql(
+                table="kv",
+                columns=columns,
+                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
+                conflict_target=("key",),
+                update_columns=("value", "expires_at"),
+            ),
             (key, json.dumps(value), expires_at),
         )
 
