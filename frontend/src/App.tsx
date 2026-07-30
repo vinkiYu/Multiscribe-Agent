@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
-import { ArrowLeft, Blocks, BrainCircuit, CheckCircle2, CircleAlert, Files, LayoutDashboard, LibraryBig, ListChecks, Menu, Plus, RadioTower, RefreshCw, Send, Settings2, Workflow, X } from 'lucide-react'
+import { ArrowLeft, Blocks, BrainCircuit, CheckCircle2, CircleAlert, Files, LayoutDashboard, LibraryBig, ListChecks, Menu, Plus, RadioTower, RefreshCw, Send, Settings2, Sparkles, Workflow, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import logoUrl from '../multiscribe-logo.png'
 import { ApiError, dashboardApi, type DashboardStats, type TaskLog } from './services/api'
 import { AdapterHealthPage } from './adapter-health'
 import { OperationsDashboardPage } from './operations-dashboard'
 import { ContentPage } from './pages/content'
+import { CurationQualityPage } from './pages/curation-quality'
 import { Dashboard } from './pages/dashboard'
 import { KnowledgePage } from './pages/knowledge'
 import { MemoryPage } from './pages/memory'
@@ -16,7 +17,7 @@ import { SourceConfigurationPageV2 } from './pages/sources'
 import { TasksPage } from './pages/tasks'
 import { WorkflowsPage } from './pages/workflows'
 
-export type NavKey = 'dashboard' | 'operations' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'health' | 'knowledge' | 'memory' | 'plugins' | 'settings'
+export type NavKey = 'dashboard' | 'operations' | 'sources' | 'workflows' | 'content' | 'publishing' | 'tasks' | 'health' | 'knowledge' | 'memory' | 'plugins' | 'settings' | 'curation'
 
 interface NavigationItem { key: NavKey; label: string; icon: LucideIcon }
 interface ViewCopy { title: string; description: string }
@@ -25,12 +26,14 @@ const workbenchItems: NavigationItem[] = [{ key: 'dashboard', label: '概览', i
 
 const capabilityItems: NavigationItem[] = [{ key: 'health', label: 'Adapter health', icon: CircleAlert }, { key: 'knowledge', label: '知识库', icon: LibraryBig }, { key: 'memory', label: '记忆', icon: BrainCircuit }, { key: 'plugins', label: 'Skills', icon: Blocks }, { key: 'settings', label: '设置', icon: Settings2 }]
 
-const copy: Record<NavKey, ViewCopy> = { dashboard: { title: '今日概览', description: '查看内容从采集、精选到发布的运行状态。' }, operations: { title: '运营中心', description: '查看 Token 消耗、发布成功率和任务运行记录。' }, sources: { title: '数据源', description: '管理服务端配置的数据采集器。' }, workflows: { title: '工作流', description: '查看和运行已保存的 DAG 工作流。' }, content: { title: '内容', description: '查看资讯归档、AI 摘要和精选结果。' }, publishing: { title: '发布记录', description: '查看各渠道的投递结果。' }, tasks: { title: '任务记录', description: '查看计划任务和最近的执行日志。' }, health: { title: '适配器健康', description: '查看采集适配器的失败与降级状态。' }, knowledge: { title: '知识库', description: '管理持久化文档和检索索引。' }, memory: { title: '记忆', description: '管理跨任务复用的偏好和记忆条目。' }, plugins: { title: 'Skills', description: '查看已加载的内置和自定义 Skill。' }, settings: { title: '设置', description: '管理模型、凭据、采集器和发布器配置。' } }
+const copy: Record<string, ViewCopy> = { dashboard: { title: '今日概览', description: '查看内容从采集、精选到发布的运行状态。' }, operations: { title: '运营中心', description: '查看 Token 消耗、发布成功率和任务运行记录。' }, sources: { title: '数据源', description: '管理服务端配置的数据采集器。' }, workflows: { title: '工作流', description: '查看和运行已保存的 DAG 工作流。' }, content: { title: '内容', description: '查看资讯归档、AI 摘要和精选结果。' }, publishing: { title: '发布记录', description: '查看各渠道的投递结果。' }, tasks: { title: '任务记录', description: '查看计划任务和最近的执行日志。' }, health: { title: '适配器健康', description: '查看采集适配器的失败与降级状态。' }, knowledge: { title: '知识库', description: '管理持久化文档和检索索引。' }, memory: { title: '记忆', description: '管理跨任务复用的偏好和记忆条目。' }, plugins: { title: 'Skills', description: '查看已加载的内置和自定义 Skill。' }, settings: { title: '设置', description: '管理模型、凭据、采集器和发布器配置。' } }
+
+workbenchItems.push({ key: 'curation', label: '策展质量', icon: Sparkles })
 
 function App(): ReactElement {
   const [active, setActive] = useState<NavKey>(() => {
     const saved = window.localStorage.getItem('multiscribe_active_view')
-    return saved && saved in copy ? saved as NavKey : 'dashboard'
+    return saved === 'curation' || (saved !== null && saved in copy) ? saved as NavKey : 'dashboard'
   })
   const [menuOpen, setMenuOpen] = useState(false)
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -68,7 +71,7 @@ function App(): ReactElement {
     setMenuOpen(false)
   }
   const refreshActiveView = (): void => active === 'dashboard' ? void loadDashboard() : setRefreshVersion((value) => value + 1)
-  const view = copy[active]
+  const view = active === 'curation' ? { title: '策展质量', description: '查看每日策展运行质量与趋势。' } : copy[active]
   if (!window.localStorage.getItem('multiscribe_token')) return <main className="access-redirect">正在前往登录页面...</main>
 
   return <div className="app-shell">
@@ -84,6 +87,7 @@ function App(): ReactElement {
         <section className="page-header"><div><h1>{view.title}</h1><p>{view.description}</p></div><div className="header-actions">{active === 'tasks' && <button className="button pink" onClick={() => setTaskModalOpen(true)}><Plus />新增任务</button>}<button className="button" onClick={refreshActiveView}><RefreshCw />刷新</button></div></section>
         {active === 'dashboard' && <Dashboard loading={loading} stats={stats} logs={logs} error={error} onRetry={loadDashboard} />}
         {active === 'operations' && <OperationsDashboardPage key={refreshVersion} />}
+        {active === 'curation' && <CurationQualityPage key={refreshVersion} />}
         {active === 'workflows' && <WorkflowsPage key={refreshVersion} />}
         {active === 'content' && <ContentPage key={refreshVersion} />}
         {active === 'publishing' && <PublishingPage key={refreshVersion} />}

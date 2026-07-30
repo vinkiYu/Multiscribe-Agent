@@ -21,6 +21,7 @@ from multiscribe_agent.api.routes import (
     ai_v1,
     auth,
     curation_evaluations,
+    curation_stats,
     daily_news,
     dashboard,
     digest,
@@ -130,6 +131,7 @@ def create_app(settings: SystemSettings, context: ServiceContext | None = None) 
     for router in (
         auth.router,
         curation_evaluations.router,
+        curation_stats.router,
         ai_v1.router,
         metrics.router,
         daily_news.router,
