@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from multiscribe_agent.api.deps import get_context
 from multiscribe_agent.api.security import get_current_user
 from multiscribe_agent.bootstrap import ServiceContext
+from multiscribe_agent.config import estimate_cost_usd
 
 router = APIRouter(
     prefix="/api/dashboard", tags=["dashboard"], dependencies=[Depends(get_current_user)]
@@ -54,6 +55,32 @@ async def overview(context: ServiceContext = Depends(get_context)) -> dict[str, 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     usage_rows = await context.daily_usage.query(today, today)
     usage = usage_rows[0] if usage_rows else None
+    usage_by_model: list[dict[str, object]] = []
+    if context.daily_usage_by_model is not None:
+        by_model_rows = await context.daily_usage_by_model.query(today, today)
+        usage_by_model = [
+            {
+                "date": row.date,
+                "model_name": row.model_name,
+                "input_tokens": row.input_tokens,
+                "output_tokens": row.output_tokens,
+                "total_tokens": row.total_tokens,
+                "llm_calls": row.llm_calls,
+                "cost_usd": round(
+                    estimate_cost_usd(row.model_name, row.input_tokens, row.output_tokens), 6
+                ),
+            }
+            for row in by_model_rows
+        ]
+    else:
+        by_model_rows = []
+    total_cost = round(
+        sum(
+            estimate_cost_usd(row.model_name, row.input_tokens, row.output_tokens)
+            for row in by_model_rows
+        ),
+        6,
+    )
     from_date = datetime.strptime(today, "%Y-%m-%d").replace(tzinfo=UTC)
     publish = await context.publish_history.summary(context.db, from_date, datetime.now(UTC))
     iterations: list[dict[str, object]] = []
@@ -98,6 +125,8 @@ async def overview(context: ServiceContext = Depends(get_context)) -> dict[str, 
             "llm_calls": usage.llm_calls if usage else 0,
             "task_count": usage.task_count if usage else 0,
         },
+        "cost_usd": total_cost,
+        "usage_by_model": usage_by_model,
         "publish": publish,
         "iterations": iterations,
         "evaluation": evaluation,

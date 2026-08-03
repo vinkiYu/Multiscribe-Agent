@@ -322,11 +322,10 @@ def _read_usage(message: BaseMessage) -> TokenUsage | None:
     """Normalize LangChain usage metadata across provider response formats."""
     usage_metadata = getattr(message, "usage_metadata", None)
     usage = usage_metadata if isinstance(usage_metadata, Mapping) else None
-    if usage is None:
-        response_metadata = getattr(message, "response_metadata", None)
-        if isinstance(response_metadata, Mapping):
-            candidate = response_metadata.get("token_usage")
-            usage = candidate if isinstance(candidate, Mapping) else None
+    response_metadata = getattr(message, "response_metadata", None)
+    if usage is None and isinstance(response_metadata, Mapping):
+        candidate = response_metadata.get("token_usage")
+        usage = candidate if isinstance(candidate, Mapping) else None
     if usage is None:
         return None
 
@@ -339,6 +338,7 @@ def _read_usage(message: BaseMessage) -> TokenUsage | None:
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         total_tokens=total_tokens if total_tokens is not None else input_tokens + output_tokens,
+        model_name=_read_model_name(response_metadata),
     )
 
 
@@ -349,6 +349,17 @@ def _read_int(metadata: Mapping[str, object], *keys: str) -> int | None:
         if isinstance(value, int):
             return value
     return None
+
+
+def _read_model_name(response_metadata: object) -> str:
+    """Read the provider-reported model name from LangChain response metadata."""
+    if not isinstance(response_metadata, Mapping):
+        return ""
+    for key in ("model_name", "model"):
+        value = response_metadata.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
 
 
 def _find_tool_call(tool_calls: list[ToolCall], target: ToolCall) -> int | None:

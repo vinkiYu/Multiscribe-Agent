@@ -43,6 +43,9 @@ from multiscribe_agent.infra.repositories.curation_evaluations import (
     CurationEvaluationRepository,
 )
 from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
+from multiscribe_agent.infra.repositories.daily_usage_by_model import (
+    DailyUsageByModelRepository,
+)
 from multiscribe_agent.infra.repositories.entity_json import EntityJsonRepository
 from multiscribe_agent.infra.repositories.kv import KvRepository
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
@@ -268,6 +271,7 @@ class ServiceContext:
         self.iteration_store: IterationStore | None = None
         self.scheduler: SchedulerService | None = None
         self.daily_usage: DailyUsageRepository | None = None
+        self.daily_usage_by_model: DailyUsageByModelRepository | None = None
         self.curation_evaluations: CurationEvaluationRepository | None = None
         self.scheduler_lock: SchedulerLock | None = None
         self.config_service: ConfigService | None = None
@@ -308,6 +312,8 @@ class ServiceContext:
         self.iteration_store = IterationStore(self.db)
         self.daily_usage = DailyUsageRepository(self.db)
         await self.daily_usage.ensure_schema()
+        self.daily_usage_by_model = DailyUsageByModelRepository(self.db)
+        await self.daily_usage_by_model.ensure_schema()
         self.curation_evaluations = CurationEvaluationRepository(self.db)
         await self.curation_evaluations.ensure_schema()
         if self.settings.enable_sql_audit:
@@ -427,6 +433,7 @@ class ServiceContext:
             lock_ttl_seconds=self.settings.scheduler_lock_ttl_seconds,
             lock_strict_mode=self.settings.scheduler_lock_strict_mode,
             daily_usage_repo=self.daily_usage,
+            daily_usage_by_model_repo=self.daily_usage_by_model,
         )
         self.entities = entities
         self.task_logs = task_logs

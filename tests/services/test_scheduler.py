@@ -47,6 +47,18 @@ class MemorySchedules:
         return list(self.tasks.values())
 
 
+class MemoryUsageByModel:
+    """Capture per-model scheduler writes without a database dependency."""
+
+    def __init__(self) -> None:
+        self.records: list[tuple[str, dict[str, object]]] = []
+
+    async def upsert(self, date: str, by_model: object) -> None:
+        """Record the serialized model buckets passed by SchedulerService."""
+        assert isinstance(by_model, dict)
+        self.records.append((date, by_model))
+
+
 def task(task_id: str = "daily") -> ScheduleTask:
     """Build a valid daily-digest schedule task."""
     return ScheduleTask(id=task_id, name="Daily", task_type="daily_digest", cron="0 9 * * *")
@@ -72,6 +84,37 @@ async def test_register_run_now_and_unregister_create_complete_log() -> None:
     service.unregister("daily")
     with pytest.raises(ValueError, match="unknown"):
         await service.run_now("daily")
+
+
+@pytest.mark.asyncio
+async def test_scheduler_persists_per_model_usage_after_success() -> None:
+    """A successful task forwards model buckets independently of daily totals."""
+    logs = MemoryTaskLogs()
+    usage_repo = MemoryUsageByModel()
+    service = SchedulerService(
+        logs,
+        MemorySchedules(),
+        daily_usage_by_model_repo=usage_repo,  # type: ignore[arg-type]
+    )
+
+    async def callback(_: ScheduleTask) -> dict[str, object]:
+        return {
+            "usage": {
+                "by_model": {
+                    "gpt-4o": {
+                        "input_tokens": 10,
+                        "output_tokens": 2,
+                        "total_tokens": 12,
+                        "llm_calls": 1,
+                    }
+                }
+            }
+        }
+
+    await service.execute_task(task(), callback)
+
+    assert len(usage_repo.records) == 1
+    assert usage_repo.records[0][1]["gpt-4o"] is not None
 
 
 @pytest.mark.asyncio

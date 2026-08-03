@@ -75,6 +75,6 @@ async def test_loop_history_serializes_reflector_usage() -> None:
 
     assert output == "final"
     assert [entry["usage"] for entry in history] == [
-        {"input_tokens": 11, "output_tokens": 3, "total_tokens": 14},
-        {"input_tokens": 11, "output_tokens": 3, "total_tokens": 14},
+        {"input_tokens": 11, "output_tokens": 3, "total_tokens": 14, "model_name": ""},
+        {"input_tokens": 11, "output_tokens": 3, "total_tokens": 14, "model_name": ""},
     ]

@@ -37,6 +37,39 @@ _KNOWN_MODEL_OUTPUT_TOKENS: dict[str, int] = {
     "claude-3-5-haiku-latest": 8_192,
 }
 
+# Per-million-token prices in USD. This table is intentionally hand-maintained:
+# provider pricing is not guaranteed to be exposed by API responses.
+_KNOWN_MODEL_PRICING: dict[str, tuple[float, float]] = {
+    "gpt-4o": (2.50, 10.00),
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4-turbo": (10.00, 30.00),
+    "claude-sonnet-4-5": (3.00, 15.00),
+    "claude-3-5-sonnet": (3.00, 15.00),
+    "gemini-2.0-flash": (0.10, 0.40),
+}
+
+
+def estimate_cost_usd(model_name: str, input_tokens: int, output_tokens: int) -> float:
+    """Estimate USD cost from token counts using the maintained model price table.
+
+    Unknown models remain observable with a zero estimate instead of causing a
+    digest run or dashboard request to fail. Exact names take precedence over
+    versioned prefixes, and prefixes are checked longest-first.
+    """
+    normalized_model = model_name.strip()
+    pricing = _KNOWN_MODEL_PRICING.get(normalized_model)
+    if pricing is None:
+        for prefix in sorted(_KNOWN_MODEL_PRICING, key=len, reverse=True):
+            if normalized_model.startswith(prefix):
+                pricing = _KNOWN_MODEL_PRICING[prefix]
+                break
+    if pricing is None:
+        return 0.0
+    input_price, output_price = pricing
+    return (max(input_tokens, 0) / 1_000_000) * input_price + (
+        max(output_tokens, 0) / 1_000_000
+    ) * output_price
+
 
 class ProviderConfig(BaseModel):
     """Configuration for one AI provider endpoint.

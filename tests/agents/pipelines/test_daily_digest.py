@@ -16,6 +16,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     _article_preview_image,
     _curate_item_dict,
     _DailyDigestStepExecutor,
+    _DigestUsage,
     _prioritize_digest_sections,
     _score_value,
     _supplement_curated_items,
@@ -743,6 +744,7 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
         "output_tokens": 0,
         "total_tokens": 0,
         "llm_calls": 0,
+        "by_model": {},
     }
     assert [item["title"] for item in result["curated"]] == ["Three", "One"]
     assert result["overview"] == "今日重点资讯概览"
@@ -821,6 +823,14 @@ async def test_daily_digest_returns_per_run_token_usage_for_agents_and_reflector
         "output_tokens": 8,
         "total_tokens": 48,
         "llm_calls": 5,
+        "by_model": {
+            "unknown": {
+                "input_tokens": 40,
+                "output_tokens": 8,
+                "total_tokens": 48,
+                "llm_calls": 5,
+            }
+        },
     }
 
 
@@ -840,6 +850,40 @@ async def test_daily_digest_usage_accumulator_is_isolated_per_run() -> None:
     second = await pipeline.run(run_date="2026-07-18")
 
     assert first["usage"] == second["usage"]
+
+
+def test_digest_usage_preserves_model_buckets_and_serialized_loop_usage() -> None:
+    """Direct and serialized usage paths produce the same per-model buckets."""
+    usage = _DigestUsage()
+    usage.add(TokenUsage(input_tokens=10, output_tokens=2, total_tokens=12, model_name="gpt-4o"))
+    usage.add_mapping(
+        {
+            "input_tokens": 3,
+            "output_tokens": 1,
+            "total_tokens": 4,
+            "llm_calls": 1,
+            "model_name": "gpt-4o",
+        }
+    )
+    usage.add_mapping(
+        {
+            "input_tokens": 4,
+            "output_tokens": 1,
+            "total_tokens": 5,
+            "llm_calls": 1,
+            "model_name": "claude-sonnet-4-5",
+        }
+    )
+
+    assert usage.as_dict()["by_model"] == {
+        "gpt-4o": {"input_tokens": 13, "output_tokens": 3, "total_tokens": 16, "llm_calls": 2},
+        "claude-sonnet-4-5": {
+            "input_tokens": 4,
+            "output_tokens": 1,
+            "total_tokens": 5,
+            "llm_calls": 1,
+        },
+    }
 
 
 @pytest.mark.asyncio

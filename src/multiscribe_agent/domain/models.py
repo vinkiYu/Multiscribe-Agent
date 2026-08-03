@@ -53,6 +53,7 @@ class TokenUsage(_DomainModel):
     input_tokens: int
     output_tokens: int
     total_tokens: int
+    model_name: str = ""
 
 
 class InteropKey(_DomainModel):

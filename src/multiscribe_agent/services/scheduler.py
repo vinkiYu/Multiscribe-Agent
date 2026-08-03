@@ -18,6 +18,9 @@ from apscheduler.triggers.cron import CronTrigger
 from multiscribe_agent.domain.models import ScheduleTask, TaskLog
 from multiscribe_agent.domain.ports import EntityJsonRepository, TaskLogRepository
 from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
+from multiscribe_agent.infra.repositories.daily_usage_by_model import (
+    DailyUsageByModelRepository,
+)
 from multiscribe_agent.services.scheduler_lock import (
     AcquireResult,
     NoOpSchedulerLock,
@@ -68,6 +71,7 @@ class SchedulerService:
         lock_ttl_seconds: int = 7_200,
         lock_strict_mode: bool = True,
         daily_usage_repo: DailyUsageRepository | None = None,
+        daily_usage_by_model_repo: DailyUsageByModelRepository | None = None,
     ) -> None:
         """Create a scheduler backed by task logs and persisted schedule data."""
         self._task_log_repo = task_log_repo
@@ -79,6 +83,7 @@ class SchedulerService:
         self._lock_ttl_seconds = lock_ttl_seconds
         self._lock_strict_mode = lock_strict_mode
         self._daily_usage_repo = daily_usage_repo
+        self._daily_usage_by_model_repo = daily_usage_by_model_repo
         self._tasks: dict[str, ScheduleTask] = {}
 
     async def start(self) -> None:
@@ -256,14 +261,24 @@ class SchedulerService:
                 result_count=self._result_count(result),
                 message=self._message(result),
             )
-            if self._daily_usage_repo is not None:
-                usage = result.get("usage")
-                if isinstance(usage, Mapping):
+            usage = result.get("usage")
+            if isinstance(usage, Mapping):
+                if self._daily_usage_repo is not None:
                     try:
                         await self._daily_usage_repo.upsert(run_date, usage)
                     except Exception as exc:
                         log.warning(
                             "scheduler_usage_persistence_failed",
+                            task_id=task.id,
+                            error_type=type(exc).__name__,
+                        )
+                by_model = usage.get("by_model")
+                if isinstance(by_model, Mapping):
+                    try:
+                        await self._persist_usage_by_model(run_date, by_model)
+                    except Exception as exc:
+                        log.warning(
+                            "scheduler_usage_by_model_persistence_failed",
                             task_id=task.id,
                             error_type=type(exc).__name__,
                         )
@@ -278,6 +293,17 @@ class SchedulerService:
                 and type_lock_result.token is not None
             ):
                 await self._lock.release(type_lock_key, type_lock_result.token)
+
+    async def _persist_usage_by_model(self, run_date: str, by_model: Mapping[str, object]) -> None:
+        """Persist validated per-model usage without exposing dynamic payloads to SQL."""
+        if self._daily_usage_by_model_repo is None:
+            return
+        normalized: dict[str, Mapping[str, object]] = {}
+        for model_name, bucket in by_model.items():
+            if isinstance(model_name, str) and isinstance(bucket, Mapping):
+                normalized[model_name] = bucket
+        if normalized:
+            await self._daily_usage_by_model_repo.upsert(run_date, normalized)
 
     @staticmethod
     async def _invoke_callback(

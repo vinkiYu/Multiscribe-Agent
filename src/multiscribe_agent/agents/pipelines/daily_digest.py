@@ -116,6 +116,7 @@ class _DigestUsage:
     output_tokens: int = 0
     total_tokens: int = 0
     llm_calls: int = 0
+    by_model: dict[str, dict[str, int]] = field(default_factory=dict)
 
     def add(self, usage: TokenUsage | None) -> None:
         """Add one provider usage record when the execution surface exposes it."""
@@ -125,14 +126,21 @@ class _DigestUsage:
         self.output_tokens += usage.output_tokens
         self.total_tokens += usage.total_tokens
         self.llm_calls += 1
+        self._add_model(
+            usage.model_name,
+            usage.input_tokens,
+            usage.output_tokens,
+            usage.total_tokens,
+        )
 
-    def as_dict(self) -> dict[str, int]:
+    def as_dict(self) -> dict[str, object]:
         """Return the stable scheduler/API payload shape."""
         return {
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
             "llm_calls": self.llm_calls,
+            "by_model": {model: dict(bucket) for model, bucket in self.by_model.items()},
         }
 
     def add_mapping(self, usage: Mapping[str, object]) -> None:
@@ -141,6 +149,30 @@ class _DigestUsage:
         self.output_tokens += _usage_int(usage.get("output_tokens"))
         self.total_tokens += _usage_int(usage.get("total_tokens"))
         self.llm_calls += 1 if usage else 0
+        if not usage:
+            return
+        model_name = usage.get("model_name")
+        model = model_name if isinstance(model_name, str) else ""
+        self._add_model(
+            model,
+            _usage_int(usage.get("input_tokens")),
+            _usage_int(usage.get("output_tokens")),
+            _usage_int(usage.get("total_tokens")),
+        )
+
+    def _add_model(
+        self, model_name: str, input_tokens: int, output_tokens: int, total_tokens: int
+    ) -> None:
+        """Accumulate one call in a stable model bucket, including unknown models."""
+        model = model_name.strip() or "unknown"
+        bucket = self.by_model.setdefault(
+            model,
+            {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "llm_calls": 0},
+        )
+        bucket["input_tokens"] += input_tokens
+        bucket["output_tokens"] += output_tokens
+        bucket["total_tokens"] += total_tokens
+        bucket["llm_calls"] += 1
 
 
 @dataclass(slots=True)
@@ -403,6 +435,11 @@ class DailyDigestPipeline:
             message = f"generated {result_count} curated items without publishing"
         serialized_loop_summary = loop_summary.as_dict()
         if self._curation_evaluations is not None and resolved_run_id:
+            evaluation_usage = {
+                key: value
+                for key, value in loop_summary.usage.as_dict().items()
+                if isinstance(value, int)
+            }
             await self._curation_evaluations.upsert(
                 CurationEvaluationRecord(
                     workflow_run_id=resolved_run_id,
@@ -419,7 +456,7 @@ class DailyDigestPipeline:
                         else None
                     ),
                     result_count=result_count,
-                    usage=loop_summary.usage.as_dict(),
+                    usage=evaluation_usage,
                 )
             )
         return {
