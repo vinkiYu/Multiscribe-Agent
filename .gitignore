@@ -1,5 +1,14 @@
 .env
 data/
+# Keep only checked-in curation baselines under the otherwise runtime-only data tree.
+!data/
+data/*
+!data/eval/
+data/eval/*
+!data/eval/baselines/
+data/eval/baselines/*
+!data/eval/baselines/*.json
+!data/eval/baselines/.gitkeep
 __pycache__/
 *.pyc
 .venv/

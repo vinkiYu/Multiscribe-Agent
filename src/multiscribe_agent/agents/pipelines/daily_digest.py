@@ -53,7 +53,10 @@ from multiscribe_agent.services.preference_feedback import PreferenceFeedbackSer
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 
-_CURATE_SUMMARY_CHAR_LIMIT = 150
+# Shared with the curation benchmark so evaluation and production use one projection contract.
+CURATE_SUMMARY_CHAR_LIMIT = 150
+# Backwards-compatible alias for existing callers; use CURATE_SUMMARY_CHAR_LIMIT for new code.
+_CURATE_SUMMARY_CHAR_LIMIT = CURATE_SUMMARY_CHAR_LIMIT
 _ARTICLE_IMAGE_TIMEOUT_SECONDS = 8.0
 
 INGEST_AGENT_ID = "daily_digest_ingest"
@@ -1538,7 +1541,7 @@ def _curate_item_dict(item: UnifiedData) -> dict[str, object]:
     projected: dict[str, object] = {
         "id": item.id,
         "title": item.title,
-        "summary": item.description[:_CURATE_SUMMARY_CHAR_LIMIT],
+        "summary": item.description[:CURATE_SUMMARY_CHAR_LIMIT],
         "url": item.url,
         "source": item.source,
     }

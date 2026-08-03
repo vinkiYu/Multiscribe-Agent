@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
+from multiscribe_agent.agents.pipelines.daily_digest import CURATE_SUMMARY_CHAR_LIMIT
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT
 from multiscribe_agent.domain.models import AIMessage
 from multiscribe_agent.eval.benchmark import RegressionDetected
@@ -115,12 +116,14 @@ def _project_candidate(candidate: object) -> dict[str, object]:
     projected: dict[str, object] = {
         "id": candidate_id,
         "title": title,
-        "summary": description[:150],
+        "summary": description[:CURATE_SUMMARY_CHAR_LIMIT],
         "url": url,
         "source": source,
     }
     if source == "github_trending":
         projected["g"] = True
+    # Static curation fixtures do not model the runtime freshness fallback metadata.
+    # The fallback branch is covered by daily_digest projection tests instead.
     return projected
 
 

@@ -1,0 +1,38 @@
+name: curation-eval-regression
+
+on:
+  pull_request:
+    paths:
+      - "src/multiscribe_agent/agents/pipelines/prompts.py"
+      - "src/multiscribe_agent/agents/pipelines/daily_digest.py"
+      - "src/multiscribe_agent/eval/**"
+      - "data/eval/**"
+      - ".github/workflows/eval-regression.yml"
+  workflow_dispatch:
+
+jobs:
+  curation-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Run curation regression benchmark
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: >-
+          uv run multiscribe-agent eval-curation
+          --dataset curation-recall
+          --baseline data/eval/baselines/curation_recall.json
+          --regression-threshold 0.10
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curation-eval-report
+          path: data/eval/reports/

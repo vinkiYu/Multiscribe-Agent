@@ -1,0 +1,27 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Run eval unit tests (FakeProvider)
+        run: uv run pytest tests/eval/ -q
+      - name: Run projection contract tests
+        run: uv run pytest tests/eval/test_projection_contract.py -q
+      - name: Lint and type-check
+        run: |
+          uv run ruff check src tests
+          uv run mypy src
