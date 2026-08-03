@@ -208,7 +208,13 @@ def _dump_iteration(iteration: LoopIteration) -> dict[str, object]:
 
 
 def _iteration_from_record(record: IterationRecord) -> LoopIteration:
-    """Restore a persisted record into the in-memory workflow history shape."""
+    """Restore a persisted record into the in-memory workflow history shape.
+
+    ``workflow_iterations`` does not persist historical ``delta`` or ``usage``.
+    The resumed loop recomputes the next delta from the restored previous score,
+    so exit classification remains correct; only those historical diagnostics
+    are unavailable after a restart.
+    """
     return LoopIteration(
         round=record.round,
         output=record.output,
