@@ -76,7 +76,7 @@ WECOM_WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key
 uv run python -m multiscribe_agent digest
 ```
 
-The default source is BBC News RSS. It curates Top-5 items and pushes to configured Feishu and WeCom bots.
+The default source is the Hugging Face Blog RSS feed. It curates Top-12 items and pushes to configured Feishu and WeCom bots.
 
 ---
 
@@ -148,7 +148,7 @@ curl http://127.0.0.1:8000/api/dashboard/stats \
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     publishing layer                         │
-│   Feishu  ·  WeCom  ·  WeChat Official  ·  Xiaohongshu  ·  DingTalk  ·  RSS   │
+│   Feishu  ·  WeCom  ·  WeChat Official  ·  Xiaohongshu  ·  DingTalk   │
 └──────────────────────────────┬──────────────────────────────┘
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -176,28 +176,29 @@ curl http://127.0.0.1:8000/api/dashboard/stats \
 | ✅ API + CLI | FastAPI + JWT + structlog |
 | ✅ Docker Deploy | `docker compose up` in one line |
 
-### Stage 1 — In Progress 🚧
+### Stage 1 — Completed ✅
 
-| Feature | Status |
+| Feature | Description |
 |---|---|
-| 🟡 GitHub Trending Adapter | In progress |
-| 🟡 AI Search (Perplexity / Phind) | In progress |
-| 🟡 WeChat Official Account Publishing | In progress |
-| 🟡 Xiaohongshu Note Publishing | In progress |
-| 🟡 DingTalk Bot Publishing | In progress |
-| 🟡 Frontend Dashboard (Knowledge + Memory) | In progress |
+| ✅ GitHub Trending Adapter | Daily trending snapshot ingestion |
+| ✅ AI Search | LLM-backed search adapter for additional candidates |
+| ✅ Follow OPML Import | Subscribe to Follow OPML exports as a digest source |
+| ✅ WeChat Official Account Publishing | Markdown card publishing |
+| ✅ Xiaohongshu Note Publishing | Note publishing |
+| ✅ DingTalk Bot Publishing | Bot publishing |
+| ✅ Frontend Dashboard | Console for sources, schedules, agents, knowledge, and memory |
 
-### Stage 2+ — Planned 📋
+### Stage 2+ — Completed ✅
 
-| Feature | Planned Version |
+| Feature | Description |
 |---|---|
-| 📋 RAG Knowledge Base (sqlite-vec + FTS5 + RRF) | v0.2 |
-| 📋 User Preference Memory | v0.2 |
-| 📋 MCP External Interface | v0.3 |
-| 📋 Built-in Skills (Tech Weekly / Multi-Source / Smart Rec) | v0.3 |
-| 📋 LLM-as-Judge Evaluation | v0.4 |
-| 📋 Full-Stack OTel Observability | v0.4 |
-| 📋 Multi-Round Loop Self-Reflection | v0.5 |
+| ✅ RAG Knowledge Base | sqlite-vec + FTS5 + RRF hybrid retrieval |
+| ✅ User Preference Memory | Preference profile + durable memory entries |
+| ✅ MCP External Interface | JWT-protected MCP tools for Claude Desktop / Cursor |
+| ✅ Built-in Skills | Bundled + custom skill loading |
+| ✅ LLM-as-Judge Evaluation | Summary / curation precision-recall benchmarks |
+| ✅ Full-Stack Observability | structlog + OpenTelemetry + Prometheus + alert history |
+| ✅ Multi-Round Loop Self-Reflection | Convergence-based curation loop |
 
 ---
 
@@ -206,16 +207,19 @@ curl http://127.0.0.1:8000/api/dashboard/stats \
 ```
 MultiscribeAgent/
 ├── src/multiscribe_agent/          # Python source
-│   ├── agents/                      # Agent Harness · DAG · Pipeline
-│   ├── core/                        # DB · Repository · FTS5
-│   ├── domain/models.py            # Core domain models
-│   ├── llm/                         # LLM Providers (OpenAI / Anthropic / ...)
-│   ├── plugins/                     # Four plugin types
-│   ├── adapters/                    # Ingestion adapters (RSS · GitHub · AI Search)
-│   ├── publishers/                  # Publishers (Feishu · WeCom · WeChat · DingTalk)
-│   ├── scheduler/                  # APScheduler
+│   ├── agents/                      # Agent Harness · DAG · Daily Digest Pipeline
 │   ├── api/routes/                  # FastAPI routes
-│   └── observability/              # structlog · OTel
+│   ├── core/                        # Logging · security · archive models
+│   ├── domain/                      # Domain models + repository ports
+│   ├── eval/                        # LLM-as-Judge + curation benchmarks
+│   ├── infra/                       # DB · repositories · FTS5 · dialect layer
+│   ├── knowledge/                   # RAG knowledge base + memory
+│   ├── llm/                         # LLM Providers (OpenAI / Anthropic / ...)
+│   ├── mcp/                         # MCP tools + external AI interop
+│   ├── observability/              # structlog · OTel · alerts
+│   ├── plugins/builtin/            # Adapters · Publishers · Tools · Storages
+│   ├── services/                   # Scheduler · scheduler lock
+│   └── skills/                     # Built-in + custom skill loading
 ├── frontend/                        # React admin dashboard
 │   ├── src/
 │   │   ├── pages/                  # Dashboard · Knowledge · Memory · Settings ...
@@ -247,12 +251,14 @@ MultiscribeAgent/
 | `FEISHU_SECRET` | - | Feishu HMAC signing secret |
 | `WECOM_WEBHOOK` | ✅* | WeCom bot Webhook URL |
 | `DEFAULT_CURATION_PROVIDER_ID` | - | Default provider ID (default: `default-openai`) |
-| `DEFAULT_CURATION_MODEL` | - | Default model (e.g. `gpt-5.4-mini`) |
+| `DEFAULT_CURATION_MODEL` | - | Default model (e.g. `gpt-4o-mini`) |
 | `DEFAULT_DIGEST_TARGETS` | - | Default push targets (comma-separated) |
-| `DEFAULT_DIGEST_TOP_N` | - | Default curation count (default: 5) |
+| `DEFAULT_DIGEST_TOP_N` | - | Default curation count (default: 12) |
 | `SYSTEM_PASSWORD` | - | API admin password (dev default: `admin123`) |
 | `JWT_SECRET` | - | JWT signing secret |
-| `DB_PATH` | - | SQLite path (default: `data/database.sqlite`) |
+| `DB_DRIVER` | - | Database backend: `sqlite` (default) or `postgres` |
+| `DB_PATH` | - | SQLite path (default: `data/database.sqlite`), used when `DB_DRIVER=sqlite` |
+| `DATABASE_URL` | - | PostgreSQL DSN, used when `DB_DRIVER=postgres` |
 | `LOG_LEVEL` | - | Log level (default: `INFO`) |
 
 > `✅*` At least one LLM key and one publisher webhook are required.

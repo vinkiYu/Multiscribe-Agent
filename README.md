@@ -90,11 +90,13 @@ docker compose up -d --build
 
 ## 生成每日资讯
 
-执行日报时会调用已配置的模型与网络内容源。为仅生成归档、不发送到外部 Webhook，可显式传入空发布目标：
+执行日报时会调用已配置的模型与网络内容源，并通过 `--target` 指定接收推送的发布器（多个用英文逗号分隔）：
 
 ```bash
-uv run python -m multiscribe_agent digest --targets "[]"
+uv run python -m multiscribe_agent digest --target feishu_bot
 ```
+
+定时归档任务（`DAILY_AI_NEWS_CRON`）默认仅写入 AI 资讯日报页面；只有在 `.env` 配置并启用了对应发布渠道时才会推送。
 
 默认日报任务会自动升级历史默认数量：保存的 `top_n=5` 或 `top_n=10` 会调整为 12；其他数值视为用户自定义并保持不变。
 
@@ -105,9 +107,11 @@ uv run python -m multiscribe_agent digest --targets "[]"
 | 配置 | 说明 |
 | --- | --- |
 | `DEFAULT_DIGEST_TOP_N=12` | 每期日报默认精选数量，建议保持在 10-15 条。 |
-| `DEFAULT_RSS_FEEDS` | 默认 RSS 列表；已保存的自定义列表不会被覆盖。 |
+| `DAILY_AI_NEWS_RSS_URLS` | 定时归档任务使用的默认 RSS/Atom 订阅源，英文逗号分隔。 |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` 等 | LLM Provider 凭证。 |
-| `DATABASE_URL` | SQLite 数据库路径。 |
+| `DB_DRIVER` | 数据库后端，`sqlite`（默认）或 `postgres`。 |
+| `DB_PATH` | SQLite 数据库路径，`DB_DRIVER=sqlite` 时生效（默认 `data/database.sqlite`）。 |
+| `DATABASE_URL` | PostgreSQL 连接串，`DB_DRIVER=postgres` 时生效。 |
 | `FEISHU_WEBHOOK` / `WECOM_WEBHOOK` 等 | 对应发布渠道的 Webhook。 |
 | `LOG_LEVEL` | 日志级别。 |
 

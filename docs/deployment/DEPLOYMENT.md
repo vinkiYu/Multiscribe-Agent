@@ -77,7 +77,7 @@ backend. The API routes retain precedence over the static-file mount.
 
 ## 4. Docker Compose
 
-The repository includes an application image and a PostgreSQL service:
+The repository includes an application image plus PostgreSQL and Redis services:
 
 ```bash
 Copy-Item .env.example .env       # PowerShell
