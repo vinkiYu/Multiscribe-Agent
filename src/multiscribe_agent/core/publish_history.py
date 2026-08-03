@@ -21,14 +21,14 @@ _MAX_QUERY_LIMIT = 200
 _INSERT_RECORD = """
 INSERT INTO publish_history (
     id, publisher_id, status, title, content_preview, result_data,
-    error_message, published_at, adapter_name, digest_date
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    error_message, published_at, adapter_name, digest_date, content_hash
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 _INSERT_IDEMPOTENT_RECORD = """
 INSERT INTO publish_history (
     id, publisher_id, status, title, content_preview, result_data,
-    error_message, published_at, adapter_name, digest_date
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    error_message, published_at, adapter_name, digest_date, content_hash
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(publisher_id, digest_date) DO NOTHING
 """
 
@@ -49,6 +49,7 @@ class PublishRecord:
     published_at: datetime
     adapter_name: str | None
     digest_date: str | None = None
+    content_hash: str | None = None
 
 
 class PublishHistory(ExplicitDatabaseDialectMixin):
@@ -91,6 +92,7 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         error_message: str | None = None,
         adapter_name: str | None = None,
         digest_date: str | None = None,
+        content_hash: str | None = None,
     ) -> str:
         """Persist one normalized publisher outcome and return its generated identifier."""
         record_id = str(uuid4())
@@ -111,6 +113,7 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
                 published_at.isoformat(),
                 adapter_name,
                 digest_date,
+                content_hash,
             ),
         )
         if digest_date is not None:
@@ -147,7 +150,7 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
         # where_clause consists only of static clauses defined above; all values use placeholders.
         statement = f"""
             SELECT id, publisher_id, status, title, content_preview, result_data,
-                   error_message, published_at, adapter_name, digest_date
+                   error_message, published_at, adapter_name, digest_date, content_hash
             FROM {_TABLE_NAME}
             WHERE {where_clause}
             ORDER BY published_at DESC, id DESC
@@ -215,6 +218,37 @@ class PublishHistory(ExplicitDatabaseDialectMixin):
                 counts[status] = int(row["count"])
         return {"total": counts["success"] + counts["error"], **counts}
 
+    async def recent_content_hashes(self, db: Database, since_date: str) -> set[str]:
+        """Return successful digest fingerprints retained in publish history."""
+        _validate_digest_date(since_date)
+        rows = await self._fetchall(
+            db,
+            """
+            SELECT content_hash
+            FROM publish_history
+            WHERE status = 'success'
+              AND digest_date >= ?
+              AND content_hash IS NOT NULL
+              AND content_hash != ''
+            """,
+            (since_date,),
+        )
+        hashes: set[str] = set()
+        for row in rows:
+            value = row.get("content_hash")
+            if not isinstance(value, str) or not value:
+                continue
+            try:
+                decoded = json.loads(value)
+            except json.JSONDecodeError:
+                hashes.add(value)
+                continue
+            if isinstance(decoded, list):
+                hashes.update(item for item in decoded if isinstance(item, str) and item)
+            else:
+                hashes.add(value)
+        return hashes
+
 
 def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
     """Convert a trusted SQLite row into a typed published-record value."""
@@ -235,6 +269,7 @@ def _record_from_row(row: Mapping[str, Any]) -> PublishRecord:
         published_at=datetime.fromisoformat(str(row["published_at"])),
         adapter_name=_optional_row_text(row["adapter_name"]),
         digest_date=_optional_row_text(row.get("digest_date")),
+        content_hash=_optional_row_text(row.get("content_hash")),
     )
 
 

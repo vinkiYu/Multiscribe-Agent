@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import re
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import cast
 
@@ -129,9 +131,19 @@ class _ProviderLoopReflector:
         """Attach a per-run usage collector without changing the loop protocol."""
         self.usage_sink = sink
 
-    async def assess(self, task: str, output: str) -> LoopAssessment:
+    async def assess(
+        self, task: str, output: str, *, max_output_tokens: int | None = None
+    ) -> LoopAssessment:
         """Assess loop output with the provider selected for the curation agent."""
-        reflection = await self.reflector.assess(task, output, self.provider)
+        if max_output_tokens is None:
+            reflection = await self.reflector.assess(task, output, self.provider)
+        else:
+            reflection = await self.reflector.assess(
+                task,
+                output,
+                self.provider,
+                max_output_tokens=max_output_tokens,
+            )
         if reflection.usage is not None and self.usage_sink is not None:
             self.usage_sink(reflection.usage)
         return _MutableLoopAssessment(
@@ -539,6 +551,21 @@ class ServiceContext:
     ) -> dict[str, object]:
         """Build and run P11, resuming the deterministic scheduler run when supplied."""
         self._require_initialized()
+        raw_date = task.config.get("date") if isinstance(task.config, Mapping) else None
+        payload_date: str | None = None
+        if raw_date is not None:
+            if (
+                not isinstance(raw_date, str)
+                or re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw_date) is None
+            ):
+                raise ValueError("date must use YYYY-MM-DD format")
+            try:
+                date.fromisoformat(raw_date)
+            except ValueError as exc:
+                raise ValueError("date must be a valid calendar date") from exc
+            payload_date = raw_date
+        if run_id is None and payload_date is not None:
+            run_id = f"{task.id}:{payload_date}"
         config = DailyDigestConfig.from_mapping(task.config)
         raw = await self.entities.get("agents", config.curate_agent_id)  # type: ignore[union-attr]
         if raw is None:

@@ -36,6 +36,7 @@ TaskCallback = RunIdTaskCallback | LegacyTaskCallback
 
 
 log = structlog.get_logger(__name__)
+_DAILY_DIGEST_TASK_TYPE = "daily_digest"
 
 
 class TaskExecutorRegistry:
@@ -140,18 +141,63 @@ class SchedulerService:
             raise ValueError(f"unknown scheduled task: {task_id}")
         await self.execute_task(task, self._registry.get(task.task_type))
 
-    async def execute_task(self, task: ScheduleTask, callback: TaskCallback | None) -> None:
-        """Run one callback once per task and UTC calendar day under a distributed lease."""
+    async def execute_task(
+        self, task: ScheduleTask, callback: TaskCallback | None
+    ) -> dict[str, object] | None:
+        """Run one callback under task and daily-digest semantic distributed leases.
+
+        Returns:
+            The callback result when the task completes successfully, or ``None`` when
+            a lock decision skips/rejects the task or the callback fails.
+        """
         run_date = datetime.now(UTC).strftime("%Y-%m-%d")
+        type_lock_key: str | None = None
+        type_lock_result: AcquireResult | None = None
+        if task.task_type == _DAILY_DIGEST_TASK_TYPE:
+            type_lock_key = f"multiscribe:scheduler:lock:type:{task.task_type}:{run_date}"
+            type_lock_result = await self._try_acquire(type_lock_key)
+            if not type_lock_result.acquired and not type_lock_result.allow_without_lock:
+                status: Literal["error", "skipped"] = (
+                    "error" if type_lock_result.unavailable else "skipped"
+                )
+                await self._record_lock_outcome(task, status, type_lock_result.reason)
+                if status == "skipped":
+                    log.info(
+                        "scheduler_task_skipped",
+                        task_id=task.id,
+                        task_type=task.task_type,
+                        run_date=run_date,
+                        reason=type_lock_result.reason,
+                    )
+                else:
+                    log.error(
+                        "scheduler_task_lock_rejected",
+                        task_id=task.id,
+                        task_type=task.task_type,
+                        run_date=run_date,
+                        reason=type_lock_result.reason,
+                    )
+                return None
+
         lock_key = f"multiscribe:scheduler:lock:{task.id}:{run_date}"
         lock_result = await self._try_acquire(lock_key)
         if not lock_result.acquired and not lock_result.allow_without_lock:
-            status: Literal["error", "skipped"] = "error" if lock_result.unavailable else "skipped"
-            await self._record_lock_outcome(task, status, lock_result.reason)
-            if status == "skipped":
+            if (
+                type_lock_key is not None
+                and type_lock_result is not None
+                and type_lock_result.acquired
+                and type_lock_result.token is not None
+            ):
+                await self._lock.release(type_lock_key, type_lock_result.token)
+            lock_status: Literal["error", "skipped"] = (
+                "error" if lock_result.unavailable else "skipped"
+            )
+            await self._record_lock_outcome(task, lock_status, lock_result.reason)
+            if lock_status == "skipped":
                 log.info(
                     "scheduler_task_skipped",
                     task_id=task.id,
+                    task_type=task.task_type,
                     run_date=run_date,
                     reason=lock_result.reason,
                 )
@@ -159,10 +205,11 @@ class SchedulerService:
                 log.error(
                     "scheduler_task_lock_rejected",
                     task_id=task.id,
+                    task_type=task.task_type,
                     run_date=run_date,
                     reason=lock_result.reason,
                 )
-            return
+            return None
 
         started_at = datetime.now(UTC).isoformat()
         started = perf_counter()
@@ -180,6 +227,16 @@ class SchedulerService:
                     raise LookupError(f"no executor registered for task type: {task.task_type}")
                 run_id = f"{task.id}:{run_date}"
                 result = await self._invoke_callback(callback, task, run_id)
+            except (LookupError, ValueError):
+                await self._task_log_repo.update(
+                    log_id,
+                    status="error",
+                    end_time=datetime.now(UTC).isoformat(),
+                    duration_ms=self._duration_ms(started),
+                    result_count=0,
+                    message="callback validation failed",
+                )
+                raise
             except Exception as exc:
                 log.warning("scheduled_task_failed", task_id=task.id, error_type=type(exc).__name__)
                 await self._task_log_repo.update(
@@ -190,7 +247,7 @@ class SchedulerService:
                     result_count=0,
                     message=str(exc),
                 )
-                return
+                return None
             await self._task_log_repo.update(
                 log_id,
                 status="success",
@@ -210,9 +267,17 @@ class SchedulerService:
                             task_id=task.id,
                             error_type=type(exc).__name__,
                         )
+            return result
         finally:
             if lock_result.acquired and lock_result.token is not None:
                 await self._lock.release(lock_key, lock_result.token)
+            if (
+                type_lock_key is not None
+                and type_lock_result is not None
+                and type_lock_result.acquired
+                and type_lock_result.token is not None
+            ):
+                await self._lock.release(type_lock_key, type_lock_result.token)
 
     @staticmethod
     async def _invoke_callback(

@@ -10,6 +10,7 @@ import pytest
 from multiscribe_agent.agents.pipelines.daily_digest import (
     DailyDigestConfig,
     _DailyDigestStepExecutor,
+    digest_content_hash,
 )
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
@@ -49,6 +50,7 @@ async def test_add_and_query_round_trip_redacts_preview() -> None:
             content="Bearer top-secret-token content",
             result_data={"message_id": "m-1"},
             adapter_name="rss",
+            content_hash="hash-1",
         )
 
         records = await history.query(db, publisher_id="feishu_bot")
@@ -57,6 +59,7 @@ async def test_add_and_query_round_trip_redacts_preview() -> None:
         assert records[0].content_preview == "[REDACTED] content"
         assert records[0].result_data == {"message_id": "m-1"}
         assert records[0].adapter_name == "rss"
+        assert records[0].content_hash == "hash-1"
     finally:
         await db.close()
 
@@ -179,6 +182,50 @@ async def test_query_by_digest_date() -> None:
 
 
 @pytest.mark.asyncio
+async def test_recent_content_hashes_reads_successful_scalar_and_json_values() -> None:
+    """Cross-day fallback accepts one-item and compact multi-item history values."""
+    db = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        scalar = digest_content_hash("One", "Summary")
+        second = digest_content_hash("Two", "Summary")
+        await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "One",
+            "content",
+            {},
+            digest_date="2026-07-29",
+            content_hash=scalar,
+        )
+        await history.add(
+            db,
+            "wecom_bot",
+            "error",
+            "Failed",
+            "content",
+            {},
+            digest_date="2026-07-30",
+            content_hash=second,
+        )
+        await history.add(
+            db,
+            "dingtalk",
+            "success",
+            "Two",
+            "content",
+            {},
+            digest_date="2026-07-31",
+            content_hash=f'["{scalar}","{second}"]',
+        )
+
+        assert await history.recent_content_hashes(db, "2026-07-29") == {scalar, second}
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
 async def test_database_initialization_creates_publish_history_table() -> None:
     """The migration is part of normal database initialization and is idempotent."""
     db = await init_db(":memory:")
@@ -243,6 +290,40 @@ async def test_existing_publish_history_table_is_upgraded_with_digest_date() -> 
 
 
 @pytest.mark.asyncio
+async def test_existing_publish_history_table_is_upgraded_with_content_hash() -> None:
+    """Legacy history rows gain the nullable fingerprint column without data loss."""
+    db = await SqliteDatabase.open(":memory:")
+    try:
+        await db.execute(
+            """
+            CREATE TABLE publish_history (
+                id TEXT PRIMARY KEY,
+                publisher_id TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
+                title TEXT NOT NULL,
+                content_preview TEXT NOT NULL,
+                result_data TEXT NOT NULL DEFAULT '{}',
+                error_message TEXT,
+                published_at TEXT NOT NULL,
+                adapter_name TEXT,
+                digest_date TEXT
+            )
+            """
+        )
+        await db.migrate_publish_history()
+        columns = await db.fetchall("PRAGMA table_info(publish_history)")
+        assert any(str(column["name"]) == "content_hash" for column in columns)
+        assert (
+            await db.fetchone(
+                "SELECT name FROM sqlite_master WHERE name = 'idx_publish_history_content_hash'"
+            )
+            is not None
+        )
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
 async def test_pipeline_fanout_persists_each_target_outcome() -> None:
     """Pipeline fan-out writes independent success and error delivery rows."""
     db = await init_db(":memory:")
@@ -279,6 +360,9 @@ async def test_pipeline_fanout_persists_each_target_outcome() -> None:
         assert archived.summary == "Digest overview"
         error_record = next(record for record in records if record.status == "error")
         assert error_record.error_message == "delivery failed"
+        assert error_record.content_hash is None
+        success_record = next(record for record in records if record.status == "success")
+        assert success_record.content_hash is not None
     finally:
         await db.close()
 

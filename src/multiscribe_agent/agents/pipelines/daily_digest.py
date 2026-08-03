@@ -14,7 +14,7 @@ from datetime import UTC, datetime, time, timedelta
 from datetime import date as Date
 from html.parser import HTMLParser
 from typing import Literal, Protocol, runtime_checkable
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 import structlog
@@ -69,6 +69,11 @@ CURATE_SCORE_MAX = 10.0
 CURATE_SUMMARY_MAX_CHARS = 100
 _DIGEST_SECTIONS = frozenset({"产品与功能更新", "前沿研究", "行业展望与社会影响", "开源TOP项目"})
 log = structlog.get_logger(__name__)
+
+
+def digest_content_hash(title: str, description: str) -> str:
+    """Return the canonical fingerprint used by digest deduplication entry points."""
+    return hashlib.sha256(f"{title}\n{description}".encode()).hexdigest()
 
 
 class IngestionRunner(Protocol):
@@ -191,6 +196,8 @@ class DailyDigestConfig:
     preview_mode: Literal["off", "preview_first"] = "off"
     preview_targets: list[str] = field(default_factory=list)
     enable_overview: bool = True
+    # Direct callers may opt in; the persisted default schedule is bootstrapped
+    # with this enabled and ``from_mapping`` keeps that production default.
     resolve_article_images: bool = False
     loop_max_iterations: int = 3
     curate_candidate_limit: int = 100
@@ -245,7 +252,7 @@ class DailyDigestConfig:
             preview_targets=_string_list(values.get("preview_targets"), "preview_targets"),
             enable_overview=_bool_value(values.get("enable_overview"), True, "enable_overview"),
             resolve_article_images=_bool_value(
-                values.get("resolve_article_images"), False, "resolve_article_images"
+                values.get("resolve_article_images"), True, "resolve_article_images"
             ),
             loop_max_iterations=_positive_int(
                 values.get("loop_max_iterations"), 3, "loop_max_iterations"
@@ -552,6 +559,12 @@ class _DailyDigestStepExecutor:
         self._usage = usage or _DigestUsage()
         self._archive_repo = archive_repo or get_daily_digest_archive()
         self._total_scanned = 0
+        self._raw_candidate_count = 0
+        self._deduped_count = 0
+        self._curate_candidate_count = 0
+        self._curated_count = 0
+        self._images_found = 0
+        self._images_failed = 0
         self._fetched_counts: dict[str, int] = {}
         self._content_hash_by_url: dict[str, str] = {}
 
@@ -689,6 +702,7 @@ class _DailyDigestStepExecutor:
     async def _dedupe(self, value: str) -> str:
         """Remove batch duplicates and content sent within the configured cross-day window."""
         items = _load_unified_items(value)
+        self._raw_candidate_count = len(items)
         seen_urls: set[str] = set()
         seen_hashes: set[str] = set()
         pushed_hashes, pushed_urls = await self._recent_pushed_identities()
@@ -696,7 +710,7 @@ class _DailyDigestStepExecutor:
         self._content_hash_by_url = {}
         for item in items:
             normalized_url = item.url.strip().rstrip("/").casefold()
-            content_hash = hashlib.sha256(f"{item.title}\n{item.description}".encode()).hexdigest()
+            content_hash = digest_content_hash(item.title, item.description)
             if (
                 normalized_url in seen_urls
                 or content_hash in seen_hashes
@@ -708,19 +722,32 @@ class _DailyDigestStepExecutor:
             seen_hashes.add(content_hash)
             self._content_hash_by_url[normalized_url] = content_hash
             unique.append(item)
+        self._deduped_count = len(unique)
+        # ``total_scanned`` is a persisted legacy field and remains the
+        # post-dedupe count; raw_candidates exposes the pre-dedupe volume.
         self._total_scanned = len(unique)
         return _dump_json([item.model_dump(mode="json") for item in unique])
 
     async def _recent_pushed_identities(self) -> tuple[set[str], set[str]]:
         """Load pushed identities using the same inclusive window as source fetching."""
-        if self._db is None or self._pushed_content_repo is None:
+        if self._db is None:
             return set(), set()
         end_date = Date.fromisoformat(self._run_date)
         since_date = (end_date - timedelta(days=self._config.fetch_days - 1)).isoformat()
-        return (
-            await self._pushed_content_repo.recent_hashes(self._db, since_date=since_date),
-            await self._pushed_content_repo.recent_urls(self._db, since_date=since_date),
-        )
+        pushed_hashes: set[str] = set()
+        pushed_urls: set[str] = set()
+        if self._pushed_content_repo is not None:
+            pushed_hashes = await self._pushed_content_repo.recent_hashes(
+                self._db, since_date=since_date
+            )
+            pushed_urls = await self._pushed_content_repo.recent_urls(
+                self._db, since_date=since_date
+            )
+        if self._publish_history is not None:
+            pushed_hashes.update(
+                await self._publish_history.recent_content_hashes(self._db, since_date)
+            )
+        return pushed_hashes, pushed_urls
 
     async def _curate(self, value: str) -> str:
         """Ask the injected curator for scored JSON and preserve the top configured entries."""
@@ -744,6 +771,7 @@ class _DailyDigestStepExecutor:
                 items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
         else:
             items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
+        self._curate_candidate_count = len(items)
         prompt = CURATE_PROMPT.format(
             items=_dump_json([_curate_item_dict(item) for item in items]),
             feedback=feedback or "无",
@@ -777,7 +805,7 @@ class _DailyDigestStepExecutor:
                 score = _score_value(record.get("score"))
                 curated.append(
                     DigestItem(
-                        title=source.title,
+                        title=_optional_string(record.get("title")) or source.title,
                         summary=_plain_text(_required_string(record, "summary"))[
                             :CURATE_SUMMARY_MAX_CHARS
                         ],
@@ -796,8 +824,18 @@ class _DailyDigestStepExecutor:
                 log.warning("daily_digest_invalid_curation_record")
         curated = _supplement_curated_items(curated, items, self._config.top_n)
         selected = _prioritize_digest_sections(curated, self._config.top_n)
+        self._curated_count = len(selected)
         if self._config.resolve_article_images:
+            before_images = sum(item.image_url is not None for item in selected)
             selected = await _resolve_article_images(selected)
+            self._images_found = sum(item.image_url is not None for item in selected)
+            self._images_failed = max(0, len(selected) - self._images_found)
+            log.info(
+                "daily_digest_images_resolved",
+                found=self._images_found,
+                failed=self._images_failed,
+                existing=before_images,
+            )
         return _dump_json([_digest_item_dict(item) for item in selected])
 
     async def _overview(self, value: str) -> str:
@@ -851,7 +889,7 @@ class _DailyDigestStepExecutor:
                         "overview": overview,
                         "preview_mode": "preview_first",
                         "approval_status": "skipped",
-                        "fetched_counts": self._fetched_counts,
+                        **self._run_stats(),
                     }
                 )
             targets = await self._publishing_service.fanout(digest, publish_targets)
@@ -865,7 +903,7 @@ class _DailyDigestStepExecutor:
                     "overview": overview,
                     "preview_mode": "preview_first",
                     "approval_status": "pending",
-                    "fetched_counts": self._fetched_counts,
+                    **self._run_stats(),
                 }
             )
 
@@ -882,11 +920,11 @@ class _DailyDigestStepExecutor:
                     "overview": overview,
                     "preview_mode": "off",
                     "approval_status": "skipped",
-                    "fetched_counts": self._fetched_counts,
+                    **self._run_stats(),
                 }
             )
         targets = await self._publishing_service.fanout(digest, publish_targets)
-        await self._record_publish_history(digest, targets)
+        await self._record_publish_history(digest, targets, include_content_hash=True)
         if (
             self._db is not None
             and self._pushed_content_repo is not None
@@ -896,9 +934,7 @@ class _DailyDigestStepExecutor:
                 normalized_url = item.url.strip().rstrip("/").casefold()
                 content_hash = self._content_hash_by_url.get(normalized_url)
                 if content_hash is None:
-                    content_hash = hashlib.sha256(
-                        f"{item.title}\n{item.summary}".encode()
-                    ).hexdigest()
+                    content_hash = digest_content_hash(item.title, item.summary)
                 await self._pushed_content_repo.add(
                     self._db,
                     content_hash=content_hash,
@@ -915,9 +951,26 @@ class _DailyDigestStepExecutor:
                 "overview": overview,
                 "preview_mode": "off",
                 "approval_status": "published",
-                "fetched_counts": self._fetched_counts,
+                **self._run_stats(),
             }
         )
+
+    def _run_stats(self) -> dict[str, object]:
+        """Return stage counters without persisting source content or prompts."""
+        return {
+            "fetched_counts": self._fetched_counts,
+            "fetched_new": sum(self._fetched_counts.values()),
+            "historical_candidates": max(
+                0, self._raw_candidate_count - sum(self._fetched_counts.values())
+            ),
+            "total_scanned": self._total_scanned,
+            "raw_candidates": self._raw_candidate_count,
+            "deduped": self._deduped_count,
+            "curate_candidates": self._curate_candidate_count,
+            "curated_count": self._curated_count,
+            "images_found": self._images_found,
+            "images_failed": self._images_failed,
+        }
 
     async def _filter_already_succeeded_targets(
         self, targets: list[str]
@@ -941,11 +994,29 @@ class _DailyDigestStepExecutor:
         return to_publish, skipped
 
     async def _record_publish_history(
-        self, digest: CuratedDigest, targets: dict[str, dict[str, object]]
+        self,
+        digest: CuratedDigest,
+        targets: dict[str, dict[str, object]],
+        *,
+        include_content_hash: bool = False,
     ) -> None:
-        """Record preview or final publisher outcomes without changing fan-out semantics."""
+        """Record publisher outcomes, optionally retaining final digest fingerprints."""
         if self._db is None or self._publish_history is None:
             return
+        content_hash: str | None = None
+        if include_content_hash:
+            hashes = [
+                self._content_hash_by_url.get(
+                    item.url.strip().rstrip("/").casefold(),
+                    digest_content_hash(item.title, item.summary),
+                )
+                for item in digest.items
+            ]
+            unique_hashes = list(dict.fromkeys(hashes))
+            if len(unique_hashes) == 1:
+                content_hash = unique_hashes[0]
+            elif unique_hashes:
+                content_hash = json.dumps(unique_hashes, separators=(",", ":"))
         for publisher_id, result in targets.items():
             status: Literal["success", "error"] = (
                 "success" if result.get("status") == "success" else "error"
@@ -960,6 +1031,7 @@ class _DailyDigestStepExecutor:
                 result_data=result,
                 error_message=str(error) if status == "error" and error is not None else None,
                 digest_date=self._run_date,
+                content_hash=content_hash if status == "success" else None,
             )
 
 
@@ -1280,13 +1352,21 @@ async def _resolve_article_images(items: list[DigestItem]) -> list[DigestItem]:
 async def _resolve_item_image(item: DigestItem, client: httpx.AsyncClient) -> DigestItem:
     if item.image_url is not None or item.source == "github_trending":
         return item
+    parsed_url = urlparse(item.url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
+        log.info("daily_digest_image_skipped", reason="invalid_article_url")
+        return item
     try:
         response = await client.get(item.url, headers={"User-Agent": "Multiscribe/1.0"})
         response.raise_for_status()
-    except httpx.HTTPError:
+    except httpx.HTTPError as exc:
+        log.info("daily_digest_image_failed", reason=type(exc).__name__)
         return item
     image_url = _article_preview_image(response.text, str(response.url))
-    return item if image_url is None else replace(item, image_url=image_url)
+    if image_url is None:
+        log.info("daily_digest_image_failed", reason="no_image_metadata")
+        return item
+    return replace(item, image_url=image_url)
 
 
 def _article_preview_image(html: str, base_url: str) -> str | None:
@@ -1297,7 +1377,8 @@ def _article_preview_image(html: str, base_url: str) -> str | None:
     if parser.image_url is None:
         return None
     resolved = urljoin(base_url, parser.image_url)
-    return resolved if resolved.startswith(("https://", "http://")) else None
+    parsed = urlparse(resolved)
+    return resolved if parsed.scheme in {"https", "http"} and parsed.hostname is not None else None
 
 
 def _plain_text(value: str) -> str:
@@ -1309,20 +1390,69 @@ def _plain_text(value: str) -> str:
 
 
 class _ArticleImageParser(HTMLParser):
-    """Stop at the first Open Graph or Twitter image meta element."""
+    """Extract social metadata, JSON-LD, or the first safe body image."""
 
     def __init__(self) -> None:
         super().__init__()
         self.image_url: str | None = None
+        self._script_chunks: list[str] = []
+        self._in_json_ld = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag != "meta" or self.image_url is not None:
+        if self.image_url is not None:
             return
         values = {key.casefold(): value for key, value in attrs if value is not None}
+        if tag == "link":
+            rel = (values.get("rel") or "").casefold()
+            href = (values.get("href") or "").strip()
+            if "image_src" in rel and href:
+                self.image_url = href
+            return
+        if tag == "img":
+            source = (values.get("src") or values.get("data-src") or "").strip()
+            if source:
+                self.image_url = source
+            return
+        if tag != "meta":
+            if tag == "script" and values.get("type", "").casefold() == "application/ld+json":
+                self._in_json_ld = True
+            return
         key = (values.get("property") or values.get("name") or "").casefold()
         content = values.get("content", "").strip()
         if key in {"og:image", "twitter:image", "twitter:image:src"} and content:
             self.image_url = content
+            return
+
+    def handle_data(self, data: str) -> None:
+        if self._in_json_ld:
+            self._script_chunks.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "script" and self._in_json_ld and self.image_url is None:
+            self._in_json_ld = False
+            try:
+                payload = json.loads("".join(self._script_chunks))
+            except json.JSONDecodeError:
+                return
+            self.image_url = _json_ld_image(payload)
+            self._script_chunks.clear()
+
+
+def _json_ld_image(payload: object) -> str | None:
+    """Read image/thumbnailUrl from common JSON-LD Article shapes."""
+    values: list[object] = payload if isinstance(payload, list) else [payload]
+    for value in values:
+        if not isinstance(value, Mapping):
+            continue
+        for key in ("image", "thumbnailUrl"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+            if isinstance(candidate, list):
+                for item in candidate:
+                    if isinstance(item, str) and item.strip():
+                        return item.strip()
+    return None
 
 
 class _PlainTextParser(HTMLParser):

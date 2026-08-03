@@ -7,9 +7,14 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from multiscribe_agent.api.routes.digest import approve_digest, reject_digest
+import multiscribe_agent.bootstrap as bootstrap_module
+from multiscribe_agent.agents.pipelines.daily_digest import digest_content_hash
+from multiscribe_agent.api.routes.digest import approve_digest, reject_digest, run_digest
+from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
+from multiscribe_agent.core.publish_history import PublishHistory
+from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
 from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
@@ -81,11 +86,25 @@ class FakeApprovalLock:
         self.release_calls.append((key, token))
 
 
+class FakeDigestScheduler:
+    """Capture manual digest execution and return a configured scheduler result."""
+
+    def __init__(self, result: dict[str, object] | None) -> None:
+        self.result = result
+        self.calls: list[tuple[ScheduleTask, object]] = []
+
+    async def execute_task(self, task: ScheduleTask, callback: object) -> dict[str, object] | None:
+        """Record the callback boundary used by the route."""
+        self.calls.append((task, callback))
+        return self.result
+
+
 def _context(
     db: Database,
     publishing: FakePublishing,
     entities: FakeEntities,
     scheduler_lock: FakeApprovalLock | None = None,
+    publish_history: PublishHistory | None = None,
 ) -> SimpleNamespace:
     """Build the minimal ServiceContext-shaped object consumed by the routes."""
     return SimpleNamespace(
@@ -95,6 +114,7 @@ def _context(
         pushed_content=FakePushedContent(),
         settings=SystemSettings(_env_file=None),
         scheduler_lock=scheduler_lock,
+        publish_history=publish_history,
     )
 
 
@@ -131,6 +151,7 @@ async def test_approve_rebuilds_digest_excludes_preview_and_records_pushed_conte
             FakeEntities(
                 {"targets": ["feishu_bot", "wecom_bot"], "preview_targets": ["feishu_bot"]}
             ),
+            publish_history=PublishHistory(),
         )
 
         result = await approve_digest("2026-07-29", context)  # type: ignore[arg-type]
@@ -139,8 +160,110 @@ async def test_approve_rebuilds_digest_excludes_preview_and_records_pushed_conte
         assert publishing.calls == [["wecom_bot"]]
         assert await archive.get_approval_status(db, "2026-07-29") == "approved"
         assert len(context.pushed_content.records) == 1
+        assert context.pushed_content.records[0][0] == digest_content_hash(
+            "Agent article", "A useful summary."
+        )
+        records = await context.publish_history.query(db, digest_date="2026-07-29")
+        assert len(records) == 1
+        assert records[0].content_hash == context.pushed_content.records[0][0]
     finally:
         await db.close()
+
+
+@pytest.mark.asyncio
+async def test_manual_digest_route_uses_scheduler_and_returns_callback_result() -> None:
+    """Manual runs share the scheduler lock boundary instead of calling the pipeline directly."""
+    scheduler = FakeDigestScheduler({"result_count": 1})
+
+    async def callback(task: ScheduleTask, *, run_id: str) -> dict[str, object]:
+        del task, run_id
+        return {"result_count": 1}
+
+    context = SimpleNamespace(scheduler=scheduler, run_daily_digest_task=callback, entities=None)
+
+    result = await run_digest({"targets": []}, context)  # type: ignore[arg-type]
+
+    assert result == {"result_count": 1}
+    assert len(scheduler.calls) == 1
+    assert scheduler.calls[0][0].id == "manual-daily-digest"
+    assert scheduler.calls[0][0].task_type == "daily_digest"
+
+
+@pytest.mark.asyncio
+async def test_manual_digest_route_maps_scheduler_skip_to_conflict() -> None:
+    """A held daily-digest lease is exposed as an explicit HTTP conflict."""
+    context = SimpleNamespace(
+        scheduler=FakeDigestScheduler(None),
+        run_daily_digest_task=lambda task, *, run_id: None,
+        entities=None,
+    )
+
+    with pytest.raises(HTTPException) as error:
+        await run_digest({}, context)  # type: ignore[arg-type]
+
+    assert error.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_direct_daily_digest_task_uses_valid_payload_date_for_run_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Direct callers can provide a real date while scheduler run IDs remain authoritative."""
+    captured: dict[str, object] = {}
+
+    class Entities:
+        async def get(self, table: str, entity_id: str) -> dict[str, object] | None:
+            assert table == "agents"
+            assert entity_id == "curator"
+            return AgentDefinition(
+                id="curator",
+                name="Curator",
+                description="test",
+                system_prompt="test",
+                provider_id="provider",
+                model="model",
+            ).model_dump(mode="json")
+
+    class Pipeline:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        async def run(
+            self, *, run_date: str | None, workflow_run_id: str | None
+        ) -> dict[str, object]:
+            captured["run_date"] = run_date
+            captured["workflow_run_id"] = workflow_run_id
+            return {"result_count": 0}
+
+    monkeypatch.setattr(bootstrap_module, "DailyDigestPipeline", Pipeline)
+    context = ServiceContext(SystemSettings(_env_file=None))
+    context._initialized = True
+    context.entities = Entities()  # type: ignore[assignment]
+    context._provider_for_agent = lambda definition: object()  # type: ignore[method-assign]
+
+    result = await context.run_daily_digest_task(
+        ScheduleTask(
+            id="manual",
+            name="Manual",
+            task_type="daily_digest",
+            cron="0 0 * * *",
+            config={"curate_agent_id": "curator", "date": "2026-01-02"},
+        )
+    )
+
+    assert result == {"result_count": 0}
+    assert captured == {"run_date": "2026-01-02", "workflow_run_id": "manual:2026-01-02"}
+
+    with pytest.raises(ValueError, match="valid calendar date"):
+        await context.run_daily_digest_task(
+            ScheduleTask(
+                id="manual",
+                name="Manual",
+                task_type="daily_digest",
+                cron="0 0 * * *",
+                config={"curate_agent_id": "curator", "date": "2026-02-30"},
+            )
+        )
 
 
 @pytest.mark.asyncio

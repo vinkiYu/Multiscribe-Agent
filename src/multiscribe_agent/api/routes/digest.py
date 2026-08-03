@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
-import hashlib
+import json
 from collections.abc import Mapping
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from multiscribe_agent.agents.pipelines.daily_digest import digest_content_hash
 from multiscribe_agent.api.deps import get_context
 from multiscribe_agent.api.security import get_current_user
 from multiscribe_agent.bootstrap import ServiceContext
@@ -24,7 +25,17 @@ router = APIRouter(prefix="/api/digest", tags=["digest"], dependencies=[Depends(
 async def run_digest(
     payload: dict[str, object], context: ServiceContext = Depends(get_context)
 ) -> dict[str, object]:
-    """Execute P11 immediately using an API-provided daily-digest configuration."""
+    """Execute P11 immediately through the scheduler's shared idempotency boundary."""
+    if context.scheduler is None:
+        raise HTTPException(status_code=503, detail="scheduler is unavailable")
+    curator_id = payload.get("curate_agent_id")
+    entities = getattr(context, "entities", None)
+    if (
+        isinstance(curator_id, str)
+        and entities is not None
+        and await entities.get("agents", curator_id) is None
+    ):
+        raise HTTPException(status_code=400, detail=f"agent not found: {curator_id}")
     task = ScheduleTask(
         id="manual-daily-digest",
         name="Manual daily digest",
@@ -33,9 +44,15 @@ async def run_digest(
         config=payload,
     )
     try:
-        return await context.run_daily_digest_task(task)
+        result = await context.scheduler.execute_task(task, context.run_daily_digest_task)
     except (LookupError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if result is None:
+        raise HTTPException(
+            status_code=409,
+            detail="digest already running today (lock held) or scheduler lock unavailable",
+        )
+    return result
 
 
 @router.post("/{date}/approve")
@@ -184,18 +201,39 @@ async def _record_approved_content(
     results: Mapping[str, Mapping[str, object]],
 ) -> None:
     """Record approved items only after at least one final target accepted the digest."""
-    if (
-        context.db is None
-        or context.pushed_content is None
-        or not any(result.get("status") == "success" for result in results.values())
+    if context.db is None or not any(
+        result.get("status") == "success" for result in results.values()
     ):
         return
-    for item in archived.items:
-        content_hash = hashlib.sha256(f"{item.title}\n{item.summary}".encode()).hexdigest()
-        await context.pushed_content.add(
+    hashes = [digest_content_hash(item.title, item.summary) for item in archived.items]
+    unique_hashes = list(dict.fromkeys(hashes))
+    serialized_hashes = (
+        unique_hashes[0]
+        if len(unique_hashes) == 1
+        else json.dumps(unique_hashes, separators=(",", ":"))
+    )
+    if context.pushed_content is not None:
+        for item, content_hash in zip(archived.items, hashes, strict=True):
+            await context.pushed_content.add(
+                context.db,
+                content_hash=content_hash,
+                url=item.url,
+                digest_date=archived.date,
+                title=item.title,
+            )
+    publish_history = getattr(context, "publish_history", None)
+    if publish_history is None:
+        return
+    for publisher_id, result in results.items():
+        if result.get("status") != "success":
+            continue
+        await publish_history.add(
             context.db,
-            content_hash=content_hash,
-            url=item.url,
+            publisher_id=publisher_id,
+            status="success",
+            title=archived.title,
+            content=archived.summary,
+            result_data=result,
             digest_date=archived.date,
-            title=item.title,
+            content_hash=serialized_hashes,
         )

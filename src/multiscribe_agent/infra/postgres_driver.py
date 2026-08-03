@@ -87,9 +87,8 @@ class AsyncpgRowMapping(Mapping[str, Any]):
 class PostgresDatabase:
     """PostgreSQL implementation of :class:`DatabaseProtocol` using ``asyncpg``.
 
-    This Phase 1 skeleton exposes the common database contract only. Bootstrap,
-    schema migration, and repository dialect conversion remain SQLite-only until
-    subsequent migration phases wire them explicitly.
+    The driver exposes the common database contract and the migrations required
+    by the daily-digest idempotency and workflow-resume paths.
     """
 
     __slots__ = ("_audit_logger", "_pool")
@@ -138,6 +137,16 @@ class PostgresDatabase:
     async def close(self) -> None:
         """Close the underlying asyncpg pool."""
         await self._pool.close()
+
+    async def migrate_daily_digest(self) -> None:
+        """Create daily-digest deduplication, history, and iteration tables."""
+        from multiscribe_agent.infra.postgres.schema_dedup import ALL_SCHEMAS
+
+        for schema in ALL_SCHEMAS:
+            for statement in schema.split(";"):
+                statement = statement.strip()
+                if statement:
+                    await self.execute(statement)
 
     def set_audit_logger(self, audit_logger: object | None) -> None:
         """Keep the protocol-compatible audit sink for later Postgres integration."""

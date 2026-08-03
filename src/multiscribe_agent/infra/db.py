@@ -392,12 +392,15 @@ class SqliteDatabase:
                 result_data TEXT NOT NULL DEFAULT '{}',
                 error_message TEXT,
                 published_at TEXT NOT NULL,
-                adapter_name TEXT
+                adapter_name TEXT,
+                content_hash TEXT
             )
             """,
         )
         with suppress(aiosqlite.Error):
             await self.execute("ALTER TABLE publish_history ADD COLUMN digest_date TEXT")
+        with suppress(aiosqlite.Error):
+            await self.execute("ALTER TABLE publish_history ADD COLUMN content_hash TEXT")
         await self.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_publish_history_publisher_date
@@ -414,6 +417,12 @@ class SqliteDatabase:
             """
             CREATE INDEX IF NOT EXISTS idx_publish_history_published
             ON publish_history(published_at DESC)
+            """,
+        )
+        await self.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_publish_history_content_hash
+            ON publish_history(content_hash)
             """,
         )
 
@@ -981,6 +990,8 @@ async def init_database(
             await connection.execute(_ALERT_HISTORY_POSTGRES_TABLE)
             for statement in _ALERT_HISTORY_POSTGRES_INDEXES:
                 await connection.execute(statement)
+
+        await database.migrate_daily_digest()
 
         # ``Database`` is the historical SQLite alias used by existing
         # repositories. The backend-neutral protocol is introduced gradually;

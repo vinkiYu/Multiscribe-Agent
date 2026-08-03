@@ -137,6 +137,28 @@ async def test_postgres_database_implements_protocol_with_fake_asyncpg(
 
 
 @pytest.mark.asyncio
+async def test_postgres_database_migrates_daily_digest_tables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Daily-digest tables and indexes are issued as single asyncpg statements."""
+    module = _load_fake_module(monkeypatch)
+    pool = _FakePool()
+    database = module.PostgresDatabase(pool)
+
+    await database.migrate_daily_digest()
+
+    statements = [statement for statement, _ in pool.connection.calls]
+    assert any("CREATE TABLE IF NOT EXISTS pushed_content" in statement for statement in statements)
+    assert any(
+        "CREATE TABLE IF NOT EXISTS publish_history" in statement for statement in statements
+    )
+    assert any("idx_publish_history_content_hash" in statement for statement in statements)
+    assert any(
+        "CREATE TABLE IF NOT EXISTS workflow_iterations" in statement for statement in statements
+    )
+
+
+@pytest.mark.asyncio
 async def test_sqlite_execute_with_returning(db: Database) -> None:
     """SQLite extracts an inserted id from a RETURNING clause."""
     await db.execute("CREATE TABLE returning_records (id INTEGER PRIMARY KEY AUTOINCREMENT)")

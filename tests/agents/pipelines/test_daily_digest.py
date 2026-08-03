@@ -20,6 +20,7 @@ from multiscribe_agent.agents.pipelines.daily_digest import (
     _score_value,
     _supplement_curated_items,
     build_daily_digest_workflow,
+    digest_content_hash,
     register_daily_digest_executor,
 )
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT, DIGEST_OVERVIEW_PROMPT
@@ -431,6 +432,54 @@ def test_explicit_empty_targets_disable_default_publishers() -> None:
     assert preview.preview_targets == ["good"]
 
 
+@pytest.mark.asyncio
+async def test_dedupe_uses_publish_history_when_pushed_content_is_empty() -> None:
+    """Successful history fingerprints remain a cross-day dedup fallback."""
+    db = await init_db(":memory:")
+    try:
+        history = PublishHistory()
+        description = "A durable article description"
+        await history.add(
+            db,
+            "feishu_bot",
+            "success",
+            "Existing article",
+            "digest",
+            {},
+            digest_date="2026-07-18",
+            content_hash=digest_content_hash("Existing article", description),
+        )
+        item = UnifiedData(
+            id="item-1",
+            title="Existing article",
+            url="https://example.test/article",
+            description=description,
+            published_date="2026-07-19T08:00:00+00:00",
+            source="RSS",
+            category="technology",
+            author=None,
+            metadata={},
+            ingestion_date="2026-07-19T08:01:00+00:00",
+            adapter_name="rss",
+        )
+        executor = _DailyDigestStepExecutor(
+            None,  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            DailyDigestConfig(curate_agent_id="curator"),
+            "2026-07-19",
+            db,
+            history,
+        )
+
+        result = await executor._dedupe(json.dumps([item.model_dump(mode="json")]))
+
+        assert json.loads(result) == []
+    finally:
+        await db.close()
+
+
 def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidates() -> None:
     """Curation receives minimal fields and stays below 30% for mixed candidates."""
     descriptions = ["长" * 1_500] * 20 + ["中" * 70] * 50 + ["短" * 35] * 30
@@ -500,6 +549,17 @@ def test_article_preview_image_prefers_safe_open_graph_metadata() -> None:
             '<meta property="og:image" content="data:image/png;base64,x">', "https://example.test"
         )
         is None
+    )
+
+
+def test_article_preview_image_falls_back_to_json_ld_and_body_image() -> None:
+    """HTML pages without social metadata still produce an HTTP(S) preview."""
+    json_ld = '<script type="application/ld+json">{"image":"/jsonld.jpg"}</script>'
+    assert _article_preview_image(json_ld, "https://example.test/article") == (
+        "https://example.test/jsonld.jpg"
+    )
+    assert _article_preview_image('<img src="/body.jpg">', "https://example.test/article") == (
+        "https://example.test/body.jpg"
     )
 
 
@@ -715,6 +775,7 @@ async def test_daily_digest_preview_first_only_publishes_review_targets() -> Non
     try:
         archive = DailyDigestArchive()
         pushed = FakePushedContentRepository()
+        history = PublishHistory()
         pipeline, _, _ = _pipeline(
             [_curation_json(), _curation_json(), "overview"],
             db=db,
@@ -723,6 +784,7 @@ async def test_daily_digest_preview_first_only_publishes_review_targets() -> Non
             targets=["good", "bad"],
             preview_mode="preview_first",
             preview_targets=["good"],
+            publish_history=history,
         )
 
         result = await pipeline.run(run_date="2026-07-17")
@@ -732,6 +794,9 @@ async def test_daily_digest_preview_first_only_publishes_review_targets() -> Non
         assert set(result["targets"]) == {"good"}
         assert len(GoodPublisher.received) == 1
         assert pushed.records == []
+        records = await history.query(db, digest_date="2026-07-17")
+        assert len(records) == 1
+        assert records[0].content_hash is None
         assert await archive.get_approval_status(db, "2026-07-17") == "pending"
     finally:
         await db.close()
@@ -1333,7 +1398,7 @@ async def test_curated_title_rebinds_to_source() -> None:
     result = await pipeline.run(run_date="2026-07-17")
 
     item = next(item for item in result["curated"] if item["url"].endswith("/one"))
-    assert item["title"] == "One"
+    assert item["title"] == "Injected title"
 
 
 @pytest.mark.asyncio
