@@ -39,7 +39,6 @@ TaskCallback = RunIdTaskCallback | LegacyTaskCallback
 
 
 log = structlog.get_logger(__name__)
-_DAILY_DIGEST_TASK_TYPE = "daily_digest"
 
 
 class TaskExecutorRegistry:
@@ -149,51 +148,24 @@ class SchedulerService:
     async def execute_task(
         self, task: ScheduleTask, callback: TaskCallback | None
     ) -> dict[str, object] | None:
-        """Run one callback under task and daily-digest semantic distributed leases.
+        """Run one callback under a task-type/day distributed lease.
+
+        The lease is keyed by the business operation (``task_type``) rather than
+        an individual schedule ID.  Cron, manual, and CLI entry points that
+        trigger the same operation therefore compete for one lease without
+        needing ordered multi-lock acquisition or rollback logic.  The
+        workflow ``run_id`` remains task-specific because it identifies the
+        iteration history, which is a separate concern from execution
+        exclusion.
 
         Returns:
             The callback result when the task completes successfully, or ``None`` when
             a lock decision skips/rejects the task or the callback fails.
         """
         run_date = datetime.now(UTC).strftime("%Y-%m-%d")
-        type_lock_key: str | None = None
-        type_lock_result: AcquireResult | None = None
-        if task.task_type == _DAILY_DIGEST_TASK_TYPE:
-            type_lock_key = f"multiscribe:scheduler:lock:type:{task.task_type}:{run_date}"
-            type_lock_result = await self._try_acquire(type_lock_key)
-            if not type_lock_result.acquired and not type_lock_result.allow_without_lock:
-                status: Literal["error", "skipped"] = (
-                    "error" if type_lock_result.unavailable else "skipped"
-                )
-                await self._record_lock_outcome(task, status, type_lock_result.reason)
-                if status == "skipped":
-                    log.info(
-                        "scheduler_task_skipped",
-                        task_id=task.id,
-                        task_type=task.task_type,
-                        run_date=run_date,
-                        reason=type_lock_result.reason,
-                    )
-                else:
-                    log.error(
-                        "scheduler_task_lock_rejected",
-                        task_id=task.id,
-                        task_type=task.task_type,
-                        run_date=run_date,
-                        reason=type_lock_result.reason,
-                    )
-                return None
-
-        lock_key = f"multiscribe:scheduler:lock:{task.id}:{run_date}"
+        lock_key = f"multiscribe:scheduler:lock:{task.task_type}:{run_date}"
         lock_result = await self._try_acquire(lock_key)
         if not lock_result.acquired and not lock_result.allow_without_lock:
-            if (
-                type_lock_key is not None
-                and type_lock_result is not None
-                and type_lock_result.acquired
-                and type_lock_result.token is not None
-            ):
-                await self._lock.release(type_lock_key, type_lock_result.token)
             lock_status: Literal["error", "skipped"] = (
                 "error" if lock_result.unavailable else "skipped"
             )
@@ -286,13 +258,6 @@ class SchedulerService:
         finally:
             if lock_result.acquired and lock_result.token is not None:
                 await self._lock.release(lock_key, lock_result.token)
-            if (
-                type_lock_key is not None
-                and type_lock_result is not None
-                and type_lock_result.acquired
-                and type_lock_result.token is not None
-            ):
-                await self._lock.release(type_lock_key, type_lock_result.token)
 
     async def _persist_usage_by_model(self, run_date: str, by_model: Mapping[str, object]) -> None:
         """Persist validated per-model usage without exposing dynamic payloads to SQL."""

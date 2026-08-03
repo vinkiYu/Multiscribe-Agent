@@ -98,6 +98,7 @@ testpaths = ["tests"]
 markers = [
     "e2e: real external dependency tests (skipped by default)",
     "benchmark: performance benchmark test (requires pytest-benchmark)",
+    "redis: requires a running Redis instance (docker-compose up -d redis)",
 ]
 addopts = "-m 'not e2e'"
 

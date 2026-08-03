@@ -1,4 +1,4 @@
-"""Integration coverage for the shared daily-digest scheduler lock."""
+"""Integration coverage for the shared task-type scheduler lock."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def _task(task_id: str) -> ScheduleTask:
 
 
 @pytest.mark.asyncio
-async def test_cron_and_manual_daily_digest_share_redis_type_lock() -> None:
+async def test_cron_and_manual_daily_digest_share_redis_task_type_lock() -> None:
     """Different task IDs still produce one callback when they race on one day."""
     redis = FakeRedis()
     service = SchedulerService(

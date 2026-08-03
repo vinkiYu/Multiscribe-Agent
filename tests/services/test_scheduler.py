@@ -192,23 +192,6 @@ class UnavailableLock:
         del key, token
 
 
-class TypeOnlyLock:
-    """Grant the semantic lock but reject the second task-specific lease."""
-
-    def __init__(self) -> None:
-        self.released: list[str] = []
-
-    async def acquire(self, key: str, ttl_seconds: int) -> AcquireResult:
-        assert ttl_seconds == 120
-        if ":type:daily_digest:" in key:
-            return AcquireResult(acquired=True, token="type-token", reason="acquired")
-        return AcquireResult(acquired=False, reason="already_locked")
-
-    async def release(self, key: str, token: str) -> None:
-        assert token == "type-token"
-        self.released.append(key)
-
-
 @pytest.mark.asyncio
 async def test_lock_busy_is_skipped_without_calling_callback() -> None:
     """A concurrent second trigger gets a skipped terminal log."""
@@ -234,7 +217,7 @@ async def test_lock_busy_is_skipped_without_calling_callback() -> None:
 
     finish.set()
     await first
-    assert lock.releases == 2
+    assert lock.releases == 1
 
 
 @pytest.mark.asyncio
@@ -255,12 +238,12 @@ async def test_released_lock_allows_next_run_and_run_now_uses_same_guard() -> No
 
     assert calls == ["daily", "daily"]
     assert all(log.status == "success" for log in logs.logs.values())
-    assert lock.releases == 4
+    assert lock.releases == 2
 
 
 @pytest.mark.asyncio
-async def test_non_daily_tasks_only_use_the_task_lock() -> None:
-    """The semantic type lock is limited to daily-digest tasks."""
+async def test_different_task_types_use_independent_task_type_locks() -> None:
+    """Each task type gets its own semantic lock namespace."""
     logs = MemoryTaskLogs()
     lock = HoldingLock()
     service = SchedulerService(logs, MemorySchedules(), lock=lock, lock_ttl_seconds=120)
@@ -272,12 +255,12 @@ async def test_non_daily_tasks_only_use_the_task_lock() -> None:
     await service.execute_task(other, callback)
 
     assert lock.acquired_keys == [
-        f"multiscribe:scheduler:lock:other:{datetime.now(UTC).strftime('%Y-%m-%d')}"
+        f"multiscribe:scheduler:lock:maintenance:{datetime.now(UTC).strftime('%Y-%m-%d')}"
     ]
 
 
 @pytest.mark.asyncio
-async def test_daily_digest_tasks_with_different_ids_share_type_lock() -> None:
+async def test_daily_digest_tasks_with_different_ids_share_task_type_lock() -> None:
     """Cron and manual task IDs cannot execute two daily digests concurrently."""
     logs = MemoryTaskLogs()
     lock = HoldingLock()
@@ -304,23 +287,6 @@ async def test_daily_digest_tasks_with_different_ids_share_type_lock() -> None:
     assert second is None
     assert calls == 1
     assert any(log.task_id == manual.id and log.status == "skipped" for log in logs.logs.values())
-
-
-@pytest.mark.asyncio
-async def test_task_lock_failure_releases_already_acquired_type_lock() -> None:
-    """A second-layer rejection never leaks the semantic daily-digest lease."""
-    logs = MemoryTaskLogs()
-    lock = TypeOnlyLock()
-    service = SchedulerService(logs, MemorySchedules(), lock=lock, lock_ttl_seconds=120)
-
-    async def callback(_: ScheduleTask) -> dict[str, object]:
-        return {}
-
-    result = await service.execute_task(task("daily-ai-news"), callback)
-
-    assert result is None
-    assert len(lock.released) == 1
-    assert ":type:daily_digest:" in lock.released[0]
 
 
 @pytest.mark.asyncio
