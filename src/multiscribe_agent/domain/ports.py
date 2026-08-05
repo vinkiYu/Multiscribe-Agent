@@ -2,10 +2,50 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 
 from multiscribe_agent.domain.models import SourceData, TaskLog, UnifiedData
+
+
+class DatabaseProtocol(Protocol):
+    """Minimal database surface exposed to agent-layer orchestration."""
+
+    async def execute(
+        self, statement: str, parameters: tuple[Any, ...] | list[Any] = ()
+    ) -> int | None:
+        """Execute one parameterized statement."""
+        ...
+
+    async def executemany(
+        self, statement: str, parameters: list[tuple[Any, ...] | list[Any]]
+    ) -> int:
+        """Execute one statement for a batch of parameter sets."""
+        ...
+
+    async def fetchone(
+        self, statement: str, parameters: tuple[Any, ...] | list[Any] = ()
+    ) -> Mapping[str, Any] | None:
+        """Fetch one row from a parameterized query."""
+        ...
+
+    async def fetchall(
+        self, statement: str, parameters: tuple[Any, ...] | list[Any] = ()
+    ) -> list[Mapping[str, Any]]:
+        """Fetch all rows from a parameterized query."""
+        ...
+
+    async def close(self) -> None:
+        """Close the database connection or pool."""
+        ...
+
+
+class CurationEvaluationRepositoryProtocol(Protocol):
+    """Persistence port used by the daily digest to record one evaluation."""
+
+    async def upsert(self, evaluation: object) -> None:
+        """Insert or update a serialized curation evaluation record."""
+        ...
 
 
 class VectorStorePort(Protocol):

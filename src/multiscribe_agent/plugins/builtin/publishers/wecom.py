@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
+import asyncio  # noqa: F401 - retained as a patch point for retry-delay tests.
 from collections.abc import Mapping
 from typing import ClassVar
 
 import httpx
-import structlog
 
 from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
@@ -15,8 +14,7 @@ from multiscribe_agent.plugins.base import BasePublisher
 
 WECOM_WEBHOOK_PREFIX = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
 REQUEST_TIMEOUT_SECONDS = 10.0
-RETRY_DELAYS_SECONDS = (1.0, 2.0, 4.0)
-log = structlog.get_logger(__name__)
+RETRY_DELAYS_SECONDS = BasePublisher.RETRY_DELAYS_SECONDS
 
 
 class WeComPublisher(BasePublisher):
@@ -50,28 +48,20 @@ class WeComPublisher(BasePublisher):
         """
         webhook = self._webhook(options or {})
         payload = self._payload(content, options or {})
-        last_error: PublisherError | None = None
-        for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
-            try:
-                response = await self._post(webhook, payload)
-                body = self._response_body(response)
-                if body.get("errcode") == 0:
-                    return {"status": "success", "response": body}
+
+        async def _send() -> dict[str, object]:
+            response = await self._post(webhook, payload)
+            body = self._response_body(response)
+            if body.get("errcode") != 0:
                 message = self._string_value(body.get("errmsg")) or "unknown WeCom error"
                 raise PublisherError(f"WeCom webhook returned error: {message}")
-            except (httpx.HTTPError, PublisherError) as exc:
-                last_error = (
-                    exc
-                    if isinstance(exc, PublisherError)
-                    else PublisherError("WeCom webhook request failed")
-                )
-                if attempt == len(RETRY_DELAYS_SECONDS):
-                    break
-                log.warning(
-                    "wecom_publish_retry", attempt=attempt + 1, error_type=type(exc).__name__
-                )
-                await asyncio.sleep(RETRY_DELAYS_SECONDS[attempt])
-        raise PublisherError("WeCom publish failed after retries") from last_error
+            return {"status": "success", "response": body}
+
+        return await self._send_with_retry(
+            _send,
+            publisher_name="WeCom",
+            retry_delays=RETRY_DELAYS_SECONDS,
+        )
 
     async def _post(self, webhook: str, payload: dict[str, object]) -> httpx.Response:
         """Send one bounded asynchronous HTTP request."""

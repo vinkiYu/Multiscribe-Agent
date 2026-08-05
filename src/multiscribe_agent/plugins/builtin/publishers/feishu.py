@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
+import asyncio  # noqa: F401 - retained as a patch point for retry-delay tests.
 import base64
 import hashlib
 import hmac
@@ -11,15 +11,13 @@ from collections.abc import Mapping
 from typing import ClassVar
 
 import httpx
-import structlog
 
 from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
 from multiscribe_agent.plugins.base import BasePublisher
 
 REQUEST_TIMEOUT_SECONDS = 10.0
-RETRY_DELAYS_SECONDS = (1.0, 2.0, 4.0)
-log = structlog.get_logger(__name__)
+RETRY_DELAYS_SECONDS = BasePublisher.RETRY_DELAYS_SECONDS
 
 
 class FeishuPublisher(BasePublisher):
@@ -72,30 +70,18 @@ class FeishuPublisher(BasePublisher):
             payload["timestamp"] = timestamp
             payload["sign"] = gen_sign(int(timestamp), secret)
 
-        last_error: PublisherError | None = None
-        for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
-            try:
-                response = await self._post(webhook, payload)
-                response_body = self._response_body(response)
-                if self._is_success(response_body):
-                    return {"status": "success", "response": response_body}
+        async def _send() -> dict[str, object]:
+            response = await self._post(webhook, payload)
+            response_body = self._response_body(response)
+            if not self._is_success(response_body):
                 raise PublisherError("Feishu webhook returned an error response")
-            except (httpx.HTTPError, PublisherError) as exc:
-                last_error = (
-                    exc
-                    if isinstance(exc, PublisherError)
-                    else PublisherError("Feishu webhook request failed")
-                )
-                if attempt == len(RETRY_DELAYS_SECONDS):
-                    break
-                log.warning(
-                    "feishu_publish_retry",
-                    attempt=attempt + 1,
-                    error_type=type(exc).__name__,
-                )
-                await asyncio.sleep(RETRY_DELAYS_SECONDS[attempt])
+            return {"status": "success", "response": response_body}
 
-        raise PublisherError("Feishu publish failed after retries") from last_error
+        return await self._send_with_retry(
+            _send,
+            publisher_name="Feishu",
+            retry_delays=RETRY_DELAYS_SECONDS,
+        )
 
     async def _post(self, webhook: str, payload: dict[str, object]) -> httpx.Response:
         """Send one bounded asynchronous webhook request."""

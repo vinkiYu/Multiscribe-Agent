@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 import httpx
-import structlog
 
 from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
@@ -23,8 +22,7 @@ XHS_NOTE_URL = "https://open-api.xiaohongshu.com/api/note/create"
 SEMAPHORE_LIMIT = 3
 TOKEN_REFRESH_BUFFER_SECONDS = 200
 DEFAULT_TOKEN_TTL_SECONDS = 7200
-RETRY_DELAYS_SECONDS = (1.0, 2.0, 4.0)
-log = structlog.get_logger(__name__)
+RETRY_DELAYS_SECONDS = BasePublisher.RETRY_DELAYS_SECONDS
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,21 +142,18 @@ class XiaohongshuPublisher(BasePublisher):
         images: list[str],
     ) -> dict[str, object]:
         """Retry only transport failures; business rejections are not retriable."""
-        for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
-            try:
-                token = await _XhsTokenManager.get_token(client, app_key, app_secret)
-                note_id = await self._create_note(client, token, title, description, images)
-                return {"status": "published", "note_id": note_id, "title": title}
-            except httpx.HTTPError as exc:
-                if attempt == len(RETRY_DELAYS_SECONDS):
-                    raise PublisherError("Xiaohongshu note request failed after retries") from exc
-                log.warning(
-                    "xiaohongshu_publish_retry",
-                    attempt=attempt + 1,
-                    error_type=type(exc).__name__,
-                )
-                await asyncio.sleep(RETRY_DELAYS_SECONDS[attempt])
-        raise PublisherError("Xiaohongshu note request exited unexpectedly")
+
+        async def _send() -> dict[str, object]:
+            token = await _XhsTokenManager.get_token(client, app_key, app_secret)
+            note_id = await self._create_note(client, token, title, description, images)
+            return {"status": "published", "note_id": note_id, "title": title}
+
+        return await self._send_with_retry(
+            _send,
+            publisher_name="Xiaohongshu",
+            retry_exceptions=(httpx.HTTPError,),
+            retry_delays=RETRY_DELAYS_SECONDS,
+        )
 
     async def _create_note(
         self,

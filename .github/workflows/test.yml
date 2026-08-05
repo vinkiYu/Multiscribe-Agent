@@ -16,11 +16,13 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
-        run: uv sync --frozen
-      - name: Run eval unit tests (FakeProvider)
-        run: uv run pytest tests/eval/ -q
-      - name: Run projection contract tests
-        run: uv run pytest tests/eval/test_projection_contract.py -q
+        run: uv sync --frozen --extra dev
+      - name: Run full test suite (excluding external dependencies)
+        run: |
+          uv run pytest -q \
+            --ignore tests/api/test_frontend_static.py \
+            --ignore tests/knowledge/test_api_kb.py \
+            -m "not e2e and not redis"
       - name: Lint and type-check
         run: |
           uv run ruff check src tests

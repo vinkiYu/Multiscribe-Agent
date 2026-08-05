@@ -129,12 +129,21 @@ api → agents/services → domain（模型/端口）
 - 自动发现：扫描 `plugins/builtin/**` 与 `plugins/custom/**`，凡带 `metadata` 即注册。
 - Tool 必须提供 JSON Schema `parameters`；handler 为 `async def`。
 
+### 自定义插件信任边界
+
+`plugins/custom/` 下的插件会在主进程内直接加载，属于受信任代码，而不是沙箱内的第三方扩展。它们可能读取进程环境中的 API Key、Secret 和 Webhook URL，因此放入该目录前必须完成人工审计；`sandbox.py` 当前尚未接入这条加载路径，接入社区插件前应先补充进程隔离。
+
 ## 7. 安全准则
 
 - **严禁**硬编码密钥、token、密码。配置走 `.env` + Settings + KV。
 - 日志对敏感字段做脱敏（token/secret/password/key/cookie → 掩码）。
 - `execute_command` 类工具必须有白名单/黑名单。
 - 文件读写做路径穿越校验。
+
+### SQLite 与 PostgreSQL 选型
+
+- **SQLite（默认）**：适合单人使用、单实例部署和低并发写入，WAL 模式下读写并发良好，运维成本最低；当多个任务持续并发写入并出现 `database is locked` 时，应考虑升级。
+- **PostgreSQL**：适合多实例部署、高并发采集和长期运行，提供更稳定的并发写入、备份和连接池能力，但需要额外维护数据库服务。通过 `DB_DRIVER=postgres` 与 `DATABASE_URL` 启用。
 
 ## 8. 阶段化重构记录区
 

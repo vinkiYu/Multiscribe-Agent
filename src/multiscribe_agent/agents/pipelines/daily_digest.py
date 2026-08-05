@@ -13,7 +13,7 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as Date
 from html.parser import HTMLParser
-from typing import Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, cast, runtime_checkable
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -40,11 +40,10 @@ from multiscribe_agent.domain.models import (
     WorkflowDefinition,
     WorkflowStep,
 )
-from multiscribe_agent.domain.ports import SourceDataRepository
-from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.repositories.curation_evaluations import (
-    CurationEvaluationRecord,
-    CurationEvaluationRepository,
+from multiscribe_agent.domain.ports import (
+    CurationEvaluationRepositoryProtocol,
+    DatabaseProtocol,
+    SourceDataRepository,
 )
 from multiscribe_agent.memory.digest_context import DigestMemoryContextBuilder, DigestMemoryService
 from multiscribe_agent.renderers.feishu_card import DigestItem
@@ -72,6 +71,23 @@ CURATE_SCORE_MAX = 10.0
 CURATE_SUMMARY_MAX_CHARS = 100
 _DIGEST_SECTIONS = frozenset({"产品与功能更新", "前沿研究", "行业展望与社会影响", "开源TOP项目"})
 log = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class CurationEvaluationRecord:
+    """Persistence payload exchanged through the curation-evaluation port."""
+
+    workflow_run_id: str
+    date: str
+    recorded_at: int
+    rounds: int
+    converged: bool
+    exit_reason: str
+    final_score: float | None
+    score_delta: float | None
+    avg_iter_score: float | None
+    result_count: int
+    usage: dict[str, int]
 
 
 def digest_content_hash(title: str, description: str) -> str:
@@ -372,14 +388,14 @@ class DailyDigestPipeline:
         publishing_service: PublishingService,
         config: DailyDigestConfig,
         reflector: LoopReflector,
-        db: Database | None = None,
+        db: DatabaseProtocol | None = None,
         publish_history: PublishHistory | None = None,
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
         archive_repo: DailyDigestArchive | None = None,
         preference_feedback: PreferenceFeedbackService | None = None,
         iteration_store: IterationStore | None = None,
-        curation_evaluations: CurationEvaluationRepository | None = None,
+        curation_evaluations: object | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -402,7 +418,7 @@ class DailyDigestPipeline:
     ) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
         if self._preference_feedback is not None and self._db is not None:
-            await self._preference_feedback.apply_click_feedback(self._db)
+            await self._preference_feedback.apply_click_feedback(self._db)  # type: ignore[arg-type]  # Legacy service annotation still names the SQLite alias.
         date_value = run_date or datetime.now(UTC).date().isoformat()
         engine, usage = self._engine(date_value)
         loop_summary = _LoopIterationAccumulator()
@@ -440,7 +456,10 @@ class DailyDigestPipeline:
                 for key, value in loop_summary.usage.as_dict().items()
                 if isinstance(value, int)
             }
-            await self._curation_evaluations.upsert(
+            evaluation_repository = cast(
+                CurationEvaluationRepositoryProtocol, self._curation_evaluations
+            )
+            await evaluation_repository.upsert(
                 CurationEvaluationRecord(
                     workflow_run_id=resolved_run_id,
                     date=date_value,
@@ -579,7 +598,7 @@ class _DailyDigestStepExecutor:
         publishing_service: PublishingService,
         config: DailyDigestConfig,
         run_date: str,
-        db: Database | None,
+        db: DatabaseProtocol | None,
         publish_history: PublishHistory | None,
         memory_service: DigestMemoryService | None = None,
         pushed_content_repo: PushedContentRepository | None = None,
@@ -778,14 +797,19 @@ class _DailyDigestStepExecutor:
         pushed_urls: set[str] = set()
         if self._pushed_content_repo is not None:
             pushed_hashes = await self._pushed_content_repo.recent_hashes(
-                self._db, since_date=since_date
+                self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
+                since_date=since_date,
             )
             pushed_urls = await self._pushed_content_repo.recent_urls(
-                self._db, since_date=since_date
+                self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
+                since_date=since_date,
             )
         if self._publish_history is not None:
             pushed_hashes.update(
-                await self._publish_history.recent_content_hashes(self._db, since_date)
+                await self._publish_history.recent_content_hashes(
+                    self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
+                    since_date,
+                )
             )
         return pushed_hashes, pushed_urls
 
@@ -911,7 +935,7 @@ class _DailyDigestStepExecutor:
         )
         if self._db is not None:
             await self._archive_repo.upsert(
-                self._db,
+                self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
                 digest,
                 approval_status="pending" if preview_enabled else "published",
             )
@@ -976,7 +1000,7 @@ class _DailyDigestStepExecutor:
                 if content_hash is None:
                     content_hash = digest_content_hash(item.title, item.summary)
                 await self._pushed_content_repo.add(
-                    self._db,
+                    self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
                     content_hash=content_hash,
                     url=normalized_url,
                     digest_date=self._run_date,
@@ -1022,7 +1046,7 @@ class _DailyDigestStepExecutor:
         skipped: list[str] = []
         for target in targets:
             records = await self._publish_history.query(
-                self._db,
+                self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
                 publisher_id=target,
                 digest_date=self._run_date,
                 limit=10,
@@ -1063,7 +1087,7 @@ class _DailyDigestStepExecutor:
             )
             error = result.get("error")
             await self._publish_history.add(
-                self._db,
+                self._db,  # type: ignore[arg-type]  # Legacy repository annotation.
                 publisher_id=publisher_id,
                 status=status,
                 title=digest.title,

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from typing import Protocol, cast
 
+import httpx
+import structlog
 from langchain_core.messages import (
     AIMessage as LCAIMessage,
 )
@@ -26,6 +29,10 @@ from multiscribe_agent.domain.models import (
     ToolDefinition,
 )
 from multiscribe_agent.observability.trace_headers import install_trace_propagation
+
+LLM_RETRY_DELAYS_SECONDS: tuple[float, ...] = (1.0, 2.0, 4.0)
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
+log = structlog.get_logger(__name__)
 
 
 class AIProvider(Protocol):
@@ -188,6 +195,89 @@ def merge_tool_call_deltas(existing: list[ToolCall], incoming: list[ToolCall]) -
             arguments=_merge_arguments(current.arguments, tool_call.arguments),
         )
     return merged
+
+
+async def retry_provider_call[T](
+    coroutine_factory: Callable[[], Awaitable[T]],
+    *,
+    provider_id: str,
+    method_name: str = "generate",
+) -> T:
+    """Retry transient provider failures with bounded exponential backoff.
+
+    The provider implementations normalize SDK failures into ``ProviderError``
+    while retaining the original exception as ``__cause__``.  Inspecting that
+    cause lets this helper distinguish a retryable 429/5xx/network failure from
+    a permanent authentication, policy, or malformed-request error.
+    """
+    last_error: Exception | None = None
+    for attempt in range(len(LLM_RETRY_DELAYS_SECONDS) + 1):
+        try:
+            return await coroutine_factory()
+        except ProviderError as exc:
+            cause = exc.__cause__
+            if not _is_retryable_provider_error(cause or exc):
+                raise
+            last_error = exc
+        except Exception as exc:
+            if not _is_retryable_provider_error(exc):
+                raise
+            last_error = exc
+
+        if attempt >= len(LLM_RETRY_DELAYS_SECONDS):
+            break
+        log.warning(
+            "llm_provider_retry",
+            provider_id=provider_id,
+            method=method_name,
+            attempt=attempt + 1,
+            error_type=type(last_error).__name__ if last_error is not None else "unknown",
+        )
+        await asyncio.sleep(LLM_RETRY_DELAYS_SECONDS[attempt])
+
+    message = f"{provider_id} {method_name} failed after {len(LLM_RETRY_DELAYS_SECONDS)} retries"
+    raise ProviderError(message) from last_error
+
+
+def _is_retryable_provider_error(exc: BaseException) -> bool:
+    """Return whether an exception represents a transient provider failure."""
+    statuses = _collect_status_codes(exc)
+    if statuses:
+        return bool(statuses.intersection(_RETRYABLE_STATUS_CODES))
+    if isinstance(exc, (httpx.HTTPError, OSError, TimeoutError)):
+        return True
+    text = _exception_text(exc)
+    return "rate limit" in text or "too many requests" in text
+
+
+def _collect_status_codes(exc: BaseException) -> set[int]:
+    """Collect status codes from wrapped SDK and HTTP exceptions."""
+    statuses: set[int] = set()
+    current: BaseException | None = exc
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        status = getattr(current, "status_code", None)
+        if isinstance(status, int):
+            statuses.add(status)
+        response = getattr(current, "response", None)
+        response_status = getattr(response, "status_code", None)
+        if isinstance(response_status, int):
+            statuses.add(response_status)
+        current = current.__cause__ or current.__context__
+    return statuses
+
+
+def _exception_text(exc: BaseException) -> str:
+    """Return lower-case text across an exception's cause chain."""
+    fragments: list[str] = []
+    current: BaseException | None = exc
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        fragments.append(str(current).lower())
+        current = current.__cause__ or current.__context__
+    return " ".join(fragments)
 
 
 def create_provider(

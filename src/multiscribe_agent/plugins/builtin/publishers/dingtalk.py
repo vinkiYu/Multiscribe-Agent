@@ -12,7 +12,6 @@ from typing import ClassVar
 from urllib.parse import quote_plus
 
 import httpx
-import structlog
 
 from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
@@ -20,8 +19,7 @@ from multiscribe_agent.plugins.base import BasePublisher
 
 REQUEST_TIMEOUT_SECONDS = 20.0
 SEMAPHORE_LIMIT = 3
-RETRY_DELAYS_SECONDS = (1.0, 2.0, 4.0)
-log = structlog.get_logger(__name__)
+RETRY_DELAYS_SECONDS = BasePublisher.RETRY_DELAYS_SECONDS
 
 
 def compute_sign(secret: str) -> tuple[str, str]:
@@ -107,21 +105,11 @@ class DingTalkPublisher(BasePublisher):
         title: str,
     ) -> dict[str, object]:
         """Retry transport failures while avoiding sensitive request logging."""
-        for attempt in range(len(RETRY_DELAYS_SECONDS) + 1):
-            try:
-                response = await client.post(url, json=payload)
-                response.raise_for_status()
-                body = _json_object(response)
-            except httpx.HTTPError as exc:
-                if attempt == len(RETRY_DELAYS_SECONDS):
-                    raise PublisherError("DingTalk webhook request failed after retries") from exc
-                log.warning(
-                    "dingtalk_publish_retry",
-                    attempt=attempt + 1,
-                    error_type=type(exc).__name__,
-                )
-                await asyncio.sleep(RETRY_DELAYS_SECONDS[attempt])
-                continue
+
+        async def _send() -> dict[str, object]:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            body = _json_object(response)
             if body.get("errcode", 0) != 0:
                 raise PublisherError(f"DingTalk webhook returned errcode={body.get('errcode')}")
             message_id = body.get("msg_id")
@@ -130,7 +118,13 @@ class DingTalkPublisher(BasePublisher):
                 "msg_id": message_id if isinstance(message_id, str) else "",
                 "title": title,
             }
-        raise PublisherError("DingTalk webhook request exited unexpectedly")
+
+        return await self._send_with_retry(
+            _send,
+            publisher_name="DingTalk",
+            retry_exceptions=(httpx.HTTPError,),
+            retry_delays=RETRY_DELAYS_SECONDS,
+        )
 
     @staticmethod
     def _payload(

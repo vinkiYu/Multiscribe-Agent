@@ -8,7 +8,6 @@ from collections.abc import Mapping
 from typing import ClassVar
 
 import httpx
-import structlog
 
 from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import ConfigField, PluginMetadata
@@ -17,8 +16,7 @@ from multiscribe_agent.plugins.builtin.publishers.wechat_renderer import markdow
 
 WECHAT_API = "https://api.weixin.qq.com"
 REQUEST_TIMEOUT_SECONDS = 30.0
-RETRY_DELAYS = (1.0, 2.0, 4.0)
-log = structlog.get_logger(__name__)
+RETRY_DELAYS = BasePublisher.RETRY_DELAYS_SECONDS
 
 
 class _TokenManager:
@@ -102,23 +100,19 @@ class WeChatPublisher(BasePublisher):
         digest = _option_text(values, "digest", content[:54])
         thumb_media_id = _option_text(values, "thumb_media_id", "")
         async with self._semaphore, httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
-            for attempt in range(len(RETRY_DELAYS) + 1):
-                try:
-                    token = await self._tokens.get_token(client)
-                    draft_id = await self._create_draft(
-                        client, token, title, content, digest, thumb_media_id
-                    )
-                    return {"status": "draft", "draft_id": draft_id, "title": title}
-                except (httpx.HTTPError, PublisherError) as exc:
-                    if attempt == len(RETRY_DELAYS):
-                        raise PublisherError("WeChat draft creation failed after retries") from exc
-                    log.warning(
-                        "wechat_publish_retry",
-                        attempt=attempt + 1,
-                        error_type=type(exc).__name__,
-                    )
-                    await asyncio.sleep(RETRY_DELAYS[attempt])
-        raise PublisherError("WeChat draft creation exited unexpectedly")
+
+            async def _send() -> dict[str, object]:
+                token = await self._tokens.get_token(client)
+                draft_id = await self._create_draft(
+                    client, token, title, content, digest, thumb_media_id
+                )
+                return {"status": "draft", "draft_id": draft_id, "title": title}
+
+            return await self._send_with_retry(
+                _send,
+                publisher_name="WeChat",
+                retry_delays=RETRY_DELAYS,
+            )
 
     async def _create_draft(
         self,

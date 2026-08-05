@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import ClassVar, Literal
 
+import httpx
 import structlog
 
+from multiscribe_agent.core.errors import PublisherError
 from multiscribe_agent.domain.models import PluginMetadata, UnifiedData
 
 log = structlog.get_logger(__name__)
@@ -47,6 +50,7 @@ class BasePublisher(ABC):
     """Publish rendered content to an external destination."""
 
     metadata: ClassVar[PluginMetadata]
+    RETRY_DELAYS_SECONDS: ClassVar[tuple[float, ...]] = (1.0, 2.0, 4.0)
 
     @abstractmethod
     async def publish(
@@ -58,6 +62,38 @@ class BasePublisher(ABC):
         """Return a published item's public URL when supported."""
         del item
         return None
+
+    async def _send_with_retry(
+        self,
+        send_func: Callable[[], Awaitable[dict[str, object]]],
+        *,
+        publisher_name: str,
+        retry_exceptions: tuple[type[Exception], ...] = (httpx.HTTPError, PublisherError),
+        retry_delays: tuple[float, ...] | None = None,
+    ) -> dict[str, object]:
+        """Run one publisher send with bounded exponential backoff.
+
+        Payload and signing construction happen before this method is called. The
+        closure therefore contains only the external request and response checks,
+        keeping retries deterministic and preventing duplicate signatures.
+        """
+        delays = retry_delays if retry_delays is not None else self.RETRY_DELAYS_SECONDS
+        last_error: Exception | None = None
+        for attempt in range(len(delays) + 1):
+            try:
+                return await send_func()
+            except retry_exceptions as exc:
+                last_error = exc
+                if attempt >= len(delays):
+                    break
+                log.warning(
+                    "publisher_retry",
+                    publisher=publisher_name,
+                    attempt=attempt + 1,
+                    error_type=type(exc).__name__,
+                )
+                await asyncio.sleep(delays[attempt])
+        raise PublisherError(f"{publisher_name} publish failed after retries") from last_error
 
 
 class BaseStorageProvider(ABC):

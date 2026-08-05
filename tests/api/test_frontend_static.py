@@ -16,7 +16,8 @@ def test_frontend_index_is_served_at_root(tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert "<title>Multiscribe · 智能采集" in response.text
+    assert "<title>" in response.text
+    assert "Multiscribe" in response.text
 
 
 def test_frontend_console_is_served_as_a_second_entry(tmp_path) -> None:

@@ -11,6 +11,7 @@ import structlog
 from anthropic import AnthropicError
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage
 
 from multiscribe_agent.config import ProviderConfig
 from multiscribe_agent.core.errors import ProviderError
@@ -19,6 +20,7 @@ from multiscribe_agent.llm.provider import (
     from_lc_message,
     merge_tool_call_deltas,
     normalize_provider_error,
+    retry_provider_call,
     to_lc_bindable_tools,
     to_lc_messages,
 )
@@ -63,21 +65,25 @@ class AnthropicProvider:
     ) -> AIResponse:
         """Generate one complete Anthropic response with a bounded wait time."""
         model = self._model_for_call(tools, max_output_tokens)
-        try:
-            response = await asyncio.wait_for(
-                model.ainvoke(to_lc_messages(messages, system_instruction)),
-                timeout=REQUEST_TIMEOUT_SECONDS,
-            )
-        except TimeoutError as exc:
-            log.warning("anthropic_request_timeout", provider_id=self._config.id)
-            raise ProviderError("Anthropic request timed out") from exc
-        except (AnthropicError, httpx.HTTPError, OSError) as exc:
-            log.warning(
-                "anthropic_request_failed",
-                provider_id=self._config.id,
-                error_type=type(exc).__name__,
-            )
-            raise normalize_provider_error(exc, "Anthropic") from exc
+
+        async def _call() -> BaseMessage:
+            try:
+                return await asyncio.wait_for(
+                    model.ainvoke(to_lc_messages(messages, system_instruction)),
+                    timeout=REQUEST_TIMEOUT_SECONDS,
+                )
+            except TimeoutError as exc:
+                log.warning("anthropic_request_timeout", provider_id=self._config.id)
+                raise ProviderError("Anthropic request timed out") from exc
+            except (AnthropicError, httpx.HTTPError, OSError) as exc:
+                log.warning(
+                    "anthropic_request_failed",
+                    provider_id=self._config.id,
+                    error_type=type(exc).__name__,
+                )
+                raise normalize_provider_error(exc, "Anthropic") from exc
+
+        response = await retry_provider_call(_call, provider_id=self._config.id)
         return from_lc_message(response)
 
     async def list_models(self) -> list[str]:

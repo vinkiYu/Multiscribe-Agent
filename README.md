@@ -117,6 +117,12 @@ uv run python -m multiscribe_agent digest --target feishu_bot
 
 默认 RSS 包含：Hugging Face Blog、OpenAI News、Google AI Blog、AWS Machine Learning Blog、arXiv cs.AI、arXiv cs.CL、Simon Willison Atom 和 GitHub Blog。
 
+## 数据库选型与插件安全
+
+默认使用 SQLite，适合单人使用和单实例部署，WAL 模式可以提供良好的读写并发与零额外运维成本。当多个任务持续并发写入、出现 `database is locked` 或需要多实例水平扩展时，建议切换到 PostgreSQL；PostgreSQL 需要独立服务、备份与连接池运维，但更适合高并发和长期生产运行。设置 `DB_DRIVER=postgres` 与 `DATABASE_URL` 即可启用。
+
+`plugins/custom/` 下的自定义插件会在主进程内直接加载，属于受信任代码，可能访问进程环境中的 API Key、Secret 和 Webhook URL。将插件放入该目录前必须人工审计；当前 sandbox 能力尚未接入此加载路径，接入第三方插件时应先完成隔离改造。
+
 ## API
 
 | 接口 | 说明 |

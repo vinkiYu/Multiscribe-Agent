@@ -44,12 +44,11 @@ def decode_token(token: str, settings: SystemSettings) -> dict[str, object]:
 
 
 async def get_current_user(request: Request) -> dict[str, object]:
-    """Resolve bearer or query-string authentication for protected API routes."""
+    """Resolve bearer authentication for protected API routes."""
     authorization = request.headers.get("Authorization", "")
     token = (
         authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else ""
     )
-    token = token or request.query_params.get("token", "")
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="authentication required"
