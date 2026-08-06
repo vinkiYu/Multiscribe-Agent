@@ -46,8 +46,9 @@ async def run_benchmark(
     reports_dir: Path,
     baseline_path: Path | None = None,
     regression_threshold: float = 0.10,
+    write_baseline: bool = True,
 ) -> BenchmarkSummary:
-    """Evaluate all samples, write a Markdown report, and update the baseline."""
+    """Evaluate all samples, write a Markdown report, and optionally update the baseline."""
     reports_dir.mkdir(parents=True, exist_ok=True)
     results: list[EvaluationResult] = []
     for sample in dataset.samples:
@@ -73,10 +74,11 @@ async def run_benchmark(
                 raise ValueError(f"Invalid benchmark baseline {baseline_path}: {exc}") from exc
             if (baseline.overall - summary.overall) > regression_threshold:
                 raise RegressionDetected(baseline.overall, summary.overall, regression_threshold)
-        baseline_path.parent.mkdir(parents=True, exist_ok=True)
-        baseline_path.write_text(
-            json.dumps(asdict(summary), ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        if write_baseline:
+            baseline_path.parent.mkdir(parents=True, exist_ok=True)
+            baseline_path.write_text(
+                json.dumps(asdict(summary), ensure_ascii=False, indent=2), encoding="utf-8"
+            )
     return summary
 
 

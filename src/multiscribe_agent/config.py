@@ -384,6 +384,16 @@ class SystemSettings(BaseSettings):
             "DEFAULT_CURATION_TEMPERATURE", "MULTISCRIBE_DEFAULT_CURATION_TEMPERATURE"
         ),
     )
+    eval_judge_provider_id: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "EVAL_JUDGE_PROVIDER_ID", "MULTISCRIBE_EVAL_JUDGE_PROVIDER_ID"
+        ),
+    )
+    eval_judge_model: str = Field(
+        default="",
+        validation_alias=AliasChoices("EVAL_JUDGE_MODEL", "MULTISCRIBE_EVAL_JUDGE_MODEL"),
+    )
     default_digest_targets: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["feishu_bot", "wecom_bot"],
         validation_alias=AliasChoices(

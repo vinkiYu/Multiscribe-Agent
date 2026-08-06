@@ -31,7 +31,8 @@ export interface PublishSummary { total: number; success: number; error: number 
 export interface IterationRecord { workflow_run_id: string; step_id: string; round: number; score: number | null; converged: boolean; reason: string }
 export interface CurationEvaluationRecord { workflow_run_id: string; date: string; recorded_at: number; rounds: number; converged: boolean; exit_reason: string; final_score: number | null; score_delta: number | null; avg_iter_score: number | null; result_count: number; usage: Omit<DailyUsageRecord, 'date' | 'task_count'> }
 export interface CurationEvaluationsSummary { total_runs: number; converged_runs: number; avg_score: number | null; avg_final_score: number | null; avg_rounds: number; converge_rate: number; per_reason_counts: Record<string, number> }
-export interface DailyCurationStat { date: string; final_score: number | null; result_count: number | null; total_scanned: number | null; efficiency: number | null; converged: boolean; exit_reason: string; rounds: number }
+export interface DailyCurationStat { date: string; final_score: number | null; result_count: number | null; total_scanned: number | null; efficiency: number | null; converged: boolean; exit_reason: string; rounds: number; ci_baseline?: number | null }
+export interface CurationBaseline { avg_f1: number | null }
 export interface OperationsOverview { usage: DailyUsageRecord; cost_usd: number; usage_by_model: DailyUsageByModelRecord[]; publish: PublishSummary; iterations: IterationRecord[]; evaluation: { today_summary: CurationEvaluationsSummary; recent: CurationEvaluationRecord[] }; task_logs: TaskLog[] }
 
 export interface WorkflowSummary {
@@ -299,6 +300,7 @@ export const curationStatsApi = {
     const query = params.toString()
     return request<DailyCurationStat[]>(`/curation-stats/by-period${query ? `?${query}` : ''}`)
   },
+  getBaseline: (): Promise<CurationBaseline> => request<CurationBaseline>('/curation-stats/baseline'),
 }
 
 export const workflowsApi = {

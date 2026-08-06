@@ -124,6 +124,23 @@ class MemoryAwareObservingAgentStepExecutor(Protocol):
         """Execute with memory and return provider usage alongside the output."""
 
 
+@runtime_checkable
+class QualityAlertRecorder(Protocol):
+    """Minimal alert surface used by the pipeline's quality trend check."""
+
+    def record(self, metric: str, value: float) -> None:
+        """Record one aggregate metric without coupling to the alert engine."""
+
+
+class CurationEvaluationReader(Protocol):
+    """Read the persisted curation aggregates needed for quality monitoring."""
+
+    async def summary(
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> dict[str, object]:
+        """Return quality aggregates for an inclusive date interval."""
+
+
 @dataclass(slots=True)
 class _DigestUsage:
     """Per-run token and provider-call accumulator for the daily digest."""
@@ -396,6 +413,7 @@ class DailyDigestPipeline:
         preference_feedback: PreferenceFeedbackService | None = None,
         iteration_store: IterationStore | None = None,
         curation_evaluations: object | None = None,
+        alert_engine: QualityAlertRecorder | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -412,6 +430,7 @@ class DailyDigestPipeline:
         self._preference_feedback = preference_feedback
         self._iteration_store = iteration_store
         self._curation_evaluations = curation_evaluations
+        self._alert_engine = alert_engine
 
     async def run(
         self, *, run_date: str | None = None, workflow_run_id: str | None = None
@@ -478,6 +497,7 @@ class DailyDigestPipeline:
                     usage=evaluation_usage,
                 )
             )
+            await self._record_quality_alert(date_value)
         return {
             "result_count": result_count,
             "message": message,
@@ -492,6 +512,30 @@ class DailyDigestPipeline:
             "loop_summary": serialized_loop_summary,
             "workflow_run_id": resolved_run_id,
         }
+
+    async def _record_quality_alert(self, date_value: str) -> None:
+        """Record a seven-day quality aggregate after a successful evaluation write."""
+        if self._alert_engine is None or self._curation_evaluations is None:
+            return
+        current = Date.fromisoformat(date_value)
+        from_date = (current - timedelta(days=7)).isoformat()
+        try:
+            summary = await cast(CurationEvaluationReader, self._curation_evaluations).summary(
+                from_date, date_value
+            )
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            log.warning("curation_quality_summary_failed", error_type=type(exc).__name__)
+            return
+        total_runs = summary.get("total_runs")
+        average = summary.get("avg_final_score")
+        if (
+            isinstance(total_runs, int)
+            and not isinstance(total_runs, bool)
+            and total_runs >= 3
+            and isinstance(average, int | float)
+            and not isinstance(average, bool)
+        ):
+            self._alert_engine.record("curation_final_score_7d_avg", float(average))
 
     async def stream(
         self, *, run_date: str | None = None, workflow_run_id: str | None = None

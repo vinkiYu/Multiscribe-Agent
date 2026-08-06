@@ -1,0 +1,74 @@
+{
+  "candidates": [
+    {
+      "id": "cr-008-a1",
+      "title": "$100 million for open source: A milestone built by the community",
+      "description": "<p>Celebrating $100 million contributed by the community to the people who build and sustain open source every day.</p>\n<p>The post <a href=\"https://github.blog/open-source/maintainers/100-million-for-open-source-a-milestone-built-by-the-community/\">$100 million for open source: A milestone built by",
+      "url": "https://example.test/cr-008/1-github-blog-open-source-maintainers-100-million-",
+      "source": "The GitHub Blog"
+    },
+    {
+      "id": "cr-008-a2",
+      "title": "AI safety needs social scientists",
+      "description": "We’ve written a paper arguing that long-term AI safety research needs social scientists to ensure AI alignment algorithms succeed when actual humans are involved. Properly aligning advanced AI systems with human values requires resolving many uncertainties related to the psychology of human rational",
+      "url": "https://example.test/cr-008/2-openai-com-index-ai-safety-needs-social-scientis",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-008-a3",
+      "title": "Generate Autonomous Business Insights with AI Agent and MCP Servers",
+      "description": "Learn how Amazon Bedrock AgentCore delivers autonomous, cross-system business intelligence through configuration rather than custom code. Using pre-built MCP server connectors, fine-grained access control, and persistent memory, enterprises can query multiple data sources with natural language while",
+      "url": "https://example.test/cr-008/3-aws-amazon-com-blogs-machine-learning-generate-a",
+      "source": "Artificial Intelligence"
+    },
+    {
+      "id": "cr-008-a4",
+      "title": "Accelerating the next phase of AI",
+      "description": "OpenAI raises $122 billion in new funding to expand frontier AI globally, invest in next-generation compute, and meet growing demand for ChatGPT, Codex, and enterprise AI.",
+      "url": "https://example.test/cr-008/4-openai-com-index-accelerating-the-next-phase-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-008-a5",
+      "title": "Authenticate with Private Key JWT using Amazon Bedrock AgentCore Identity",
+      "description": "This post explains how Private Key JWT client authentication works in AgentCore Identity and reviews the supported grant flows. We then walk through creating an AWS KMS signing key, registering its public key with your identity provider, configuring a credential provider on the AWS Management Consol",
+      "url": "https://example.test/cr-008/5-aws-amazon-com-blogs-machine-learning-authentica",
+      "source": "Artificial Intelligence"
+    },
+    {
+      "id": "cr-008-a6",
+      "title": "The state of enterprise AI",
+      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
+      "url": "https://example.test/cr-008/6-openai-com-business-guides-and-resources-the-sta",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-008-a7",
+      "title": "Migrate your prompts to new models and optimize them on Amazon Bedrock",
+      "description": "Amazon Bedrock Advanced Prompt Optimization optimizes your prompts for up to 5 models at once and compares original versus optimized performance across quality, latency, and cost. Migrate to a new model or improve your current one in minutes instead of weeks.",
+      "url": "https://example.test/cr-008/7-aws-amazon-com-blogs-machine-learning-migrate-yo",
+      "source": "Artificial Intelligence"
+    },
+    {
+      "id": "cr-008-a8",
+      "title": "Evaluating AI Agents: A production blueprint with Strands and AgentCore",
+      "description": "Together, Motorway and AWS built an end-to-end evaluation pipeline that reduced incorrect results from 1 in 8 queries to 1 in 50 and cut issue detection time from few hours to few minutes. The pipeline combines the Strands Agents SDK with Amazon Bedrock AgentCore, a fully managed service for deployi",
+      "url": "https://example.test/cr-008/8-aws-amazon-com-blogs-machine-learning-evaluating",
+      "source": "Artificial Intelligence"
+    },
+    {
+      "id": "cr-008-a9",
+      "title": "How Yahoo enhances search retargeting using Amazon Bedrock",
+      "description": "In this post, we demonstrate how Yahoo implemented Amazon Bedrock to enhance their Search Retargeting (SRT) capabilities in the Yahoo DSP ad tech suite. SRT is a core audience targeting solution that helps advertisers reach users based on their historical search behavior, bridging search intent with",
+      "url": "https://example.test/cr-008/9-aws-amazon-com-blogs-machine-learning-how-yahoo-",
+      "source": "Artificial Intelligence"
+    },
+    {
+      "id": "cr-008-a10",
+      "title": "Deploying Kimi K3 on AWS",
+      "description": "This post walks through deploying Kimi K3 on AWS using two approaches: Amazon SageMaker HyperPod, and&nbsp; Amazon Elastic Kubernetes Service (Amazon EKS) cluster.",
+      "url": "https://example.test/cr-008/10-aws-amazon-com-blogs-machine-learning-deploying-",
+      "source": "Artificial Intelligence"
+    }
+  ]
+}

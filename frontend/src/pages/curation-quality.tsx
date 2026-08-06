@@ -10,6 +10,7 @@ const EXIT_REASON_LABELS: Record<string, string> = { threshold: '达到评分阈
 export function CurationQualityPage(): ReactElement {
   const [stats, setStats] = useState<DailyCurationStat[]>([])
   const [summary, setSummary] = useState<CurationEvaluationsSummary | null>(null)
+  const [baseline, setBaseline] = useState<number | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerDate, setDrawerDate] = useState<string | null>(null)
@@ -18,8 +19,8 @@ export function CurationQualityPage(): ReactElement {
     let active = true
     setLoading(true)
     setError(null)
-    void Promise.all([curationStatsApi.getByPeriod(), operationsApi.getOverview()])
-      .then(([nextStats, overview]) => { if (active) { setStats(nextStats); setSummary(overview.evaluation.today_summary) } })
+    void Promise.all([curationStatsApi.getByPeriod(), operationsApi.getOverview(), curationStatsApi.getBaseline()])
+      .then(([nextStats, overview, nextBaseline]) => { if (active) { setStats(nextStats); setSummary(overview.evaluation.today_summary); setBaseline(nextBaseline.avg_f1) } })
       .catch((caught: unknown) => { if (active) setError(caught instanceof ApiError ? caught : new ApiError('unknown', '读取策展质量数据失败')) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
@@ -40,8 +41,10 @@ export function CurationQualityPage(): ReactElement {
   if (error) return <div className="curation-quality-state is-error"><CircleAlert /><strong>{error.message}</strong><button className="button" onClick={() => window.location.reload()}>重新加载</button></div>
 
   const averageScore = summary?.avg_final_score
+  const ciBaseline = baseline ?? stats.find((stat) => stat.ci_baseline !== undefined)?.ci_baseline ?? null
   return <div className="curation-quality-page">
     <header className="curation-quality-header"><div><span className="eyebrow"><Sparkles />运营指标</span><h2>策展质量</h2><p>观察每日资讯精选的评分、收敛表现和产出效率。</p></div><span className="curation-period">最近 30 天</span></header>
+    <div className="ci-baseline-banner" role="status"><strong>CI 回归基线</strong><span>{ciBaseline === null ? '尚未生成' : `Precision/Recall F1 ${(ciBaseline * 100).toFixed(1)}%`}</span><small>用于比较离线策展评测与线上最终评分，不替代趋势图。</small></div>
     <section className="metric-grid curation-metric-grid">
       <Metric label="收敛率" value={`${(summary?.converge_rate ?? 0).toFixed(1)}%`} note={`${summary?.converged_runs ?? 0} / ${summary?.total_runs ?? 0} 次运行`} icon={CheckCircle2} tone="blue" />
       <Metric label="平均迭代轮次" value={(summary?.avg_rounds ?? 0).toFixed(1)} note="每次策展循环的平均轮次" icon={Repeat2} tone="purple" />

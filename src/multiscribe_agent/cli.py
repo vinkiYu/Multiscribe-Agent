@@ -201,6 +201,11 @@ def _result_summary(result: dict[str, object]) -> str:
 @click.option("--reports-dir", default="data/eval/reports", show_default=True)
 @click.option("--baseline", default="data/eval/baselines/last.json", show_default=True)
 @click.option("--regression-threshold", default=0.10, show_default=True, type=float)
+@click.option(
+    "--check-only",
+    is_flag=True,
+    help="Only compare with the existing baseline; never create or overwrite it.",
+)
 def evaluate(
     dataset_name: str,
     agent: str,
@@ -208,11 +213,12 @@ def evaluate(
     reports_dir: str,
     baseline: str,
     regression_threshold: float,
+    check_only: bool,
 ) -> None:
     """运行 LLM-as-Judge 评估并生成 Markdown 报告。"""
     del agent  # Pipeline state is replayed directly; agent is retained for CLI compatibility.
     settings = get_settings()
-    provider = _resolve_eval_provider(settings)
+    provider = _resolve_judge_provider(settings)
     dataset_path = _resolve_dataset_path(Path(datasets_dir), dataset_name)
     try:
         dataset = load_dataset(dataset_path)
@@ -224,6 +230,7 @@ def evaluate(
                 reports_dir=Path(reports_dir),
                 baseline_path=Path(baseline) if baseline else None,
                 regression_threshold=regression_threshold,
+                write_baseline=not check_only,
             )
         )
     except (OSError, ValueError, RuntimeError) as exc:
@@ -305,6 +312,31 @@ def _resolve_eval_provider(settings: SystemSettings) -> AIProvider:
         return create_provider(
             config,
             model=settings.default_curation_model,
+            temperature=settings.default_curation_temperature,
+            proxy=settings.http_proxy or None,
+        )
+    except (NotImplementedError, RuntimeError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+def _resolve_judge_provider(settings: SystemSettings) -> AIProvider:
+    """Resolve the independent Judge provider, falling back to curation settings."""
+    judge_id = settings.eval_judge_provider_id.strip()
+    if not judge_id:
+        return _resolve_eval_provider(settings)
+
+    config = next((item for item in settings.ai_providers if item.id == judge_id), None)
+    if config is None:
+        raise click.ClickException(f"eval judge provider not found: {judge_id}")
+    if not config.api_key:
+        raise click.ClickException(f"eval judge provider has no API key: {judge_id}")
+    model = settings.eval_judge_model.strip() or (
+        config.models[0] if config.models else settings.default_curation_model
+    )
+    try:
+        return create_provider(
+            config,
+            model=model,
             temperature=settings.default_curation_temperature,
             proxy=settings.http_proxy or None,
         )

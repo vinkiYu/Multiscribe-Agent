@@ -1,0 +1,39 @@
+name: eval-judge-regression
+
+on:
+  pull_request:
+    paths:
+      - "src/multiscribe_agent/agents/pipelines/prompts.py"
+      - "src/multiscribe_agent/agents/pipelines/daily_digest.py"
+      - "src/multiscribe_agent/eval/**"
+      - "data/eval/**"
+      - ".github/workflows/eval-judge-regression.yml"
+  workflow_dispatch:
+
+jobs:
+  judge-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Run judge benchmark
+        env:
+          EVAL_JUDGE_PROVIDER_ID: ${{ secrets.EVAL_JUDGE_PROVIDER_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: >-
+          uv run multiscribe-agent eval
+          --dataset summary-quality
+          --baseline data/eval/baselines/summary_quality.json
+          --regression-threshold 0.10
+          --check-only
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-eval-report
+          path: data/eval/reports/

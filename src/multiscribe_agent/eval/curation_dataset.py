@@ -28,6 +28,7 @@ class CurationSample(BaseModel):
     expected_selected_ids: list[str] = Field(default_factory=list)
     expected_rejected_ids: list[str] = Field(default_factory=list)
     notes: str = ""
+    selection_rationale: str = ""
 
     @model_validator(mode="after")
     def validate_labels(self) -> CurationSample:

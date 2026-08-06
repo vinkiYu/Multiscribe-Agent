@@ -4,22 +4,29 @@ rules:
     type: threshold
     threshold: 10
     window_seconds: 60
-    description: "错误数超过 10"
+    description: "Error count exceeded 10"
   - name: high_publish_failure_rate
     metric: publish_failure
     type: ratio
     threshold: 0
     window_seconds: 300
-    description: "5 分钟内推送失败率 > 50%"
+    description: "Publish failures exceeded 50% in five minutes"
   - name: slow_llm_latency
     metric: llm_latency
     type: window
     threshold: 30.0
     window_seconds: 60
-    description: "LLM 平均延迟 > 30s"
+    description: "Average LLM latency exceeded 30 seconds"
   - name: frequent_slow_queries
     metric: slow_query
     type: ratio
     threshold: 0
     window_seconds: 60
-    description: "1 分钟内慢查询占比 > 50%"
+    description: "Slow queries exceeded 50% in one minute"
+  - name: curation_quality_drop
+    metric: curation_final_score_7d_avg
+    type: threshold
+    threshold: 6.0
+    # The aggregate is recorded once per digest; retain a seven-day history.
+    window_seconds: 604800
+    description: "Seven-day curation final-score average below 6.0"
