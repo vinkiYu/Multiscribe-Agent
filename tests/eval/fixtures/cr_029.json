@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-029-a1",
+      "title": "Structurally Separated Uncertainty in Supervised Latent Variable Models",
+      "description": "arXiv:2602.11219v2 Announce Type: replace-cross \nAbstract: Predictive uncertainty is commonly decomposed into epistemic and aleatoric components, but standard decompositions often produce strongly correlated estimates because both quantities are derived from the same predictive distribution. We stud",
+      "url": "https://example.test/cr-029/1-arxiv-org-abs-2602-11219",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-029-a2",
+      "title": "Workspace agents",
+      "description": "Learn how to build, use, and scale workspace agents in ChatGPT to automate repeatable workflows, connect tools, and streamline team operations.",
+      "url": "https://example.test/cr-029/2-openai-com-academy-workspace-agents",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-029-a3",
+      "title": "Exposure is not manifestation: measurement target and output resolution jointly determine which behavioural-faithfulness evaluator wins",
+      "description": "arXiv:2607.09306v3 Announce Type: replace \nAbstract: Behavioural auditing asks whether a language model behaves as it claims, but detection scores are reported without separating two targets: whether a reply was produced under a behaviour-inducing condition (exposure) and whether the behaviour surfa",
+      "url": "https://example.test/cr-029/3-arxiv-org-abs-2607-09306",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-029-a4",
+      "title": "Google DeepMind Open Sources 'Gemma 2' with RAG-Optimized Checkpoints",
+      "description": "Google released Gemma 2, a family of small open-source LLMs (2B-27B) fine-tuned for retrieval-augmented generation, including special LoRA adapters for agentic tool use.",
+      "url": "https://example.test/cr-029/4-ai-googleblog-com-2025-04-gemma-2-rag-optimized-",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-029-a5",
+      "title": "The Global Story: Is the Iran war back on?",
+      "description": "The White House has asked Congress for billions more dollars in funding for the Iran war",
+      "url": "https://example.test/cr-029/5-www-bbc-co-uk-sounds-play-w3ct8ml2",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-029-a6",
+      "title": "Advancing the price-performance frontier with GPT‑5.6",
+      "description": "<p><strong><a href=\"https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/\">Advancing the price-performance frontier with GPT‑5.6</a></strong></p>\nHuge price drop from OpenAI today: GPT-5.6 Terra got a 20% reduction, and GPT-5.6 Luna got a massive 80% drop.</p>\n<p>OpenAI cre",
+      "url": "https://example.test/cr-029/6-simonwillison-net-2026-jul-30-luna-price-drop",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-029-a7",
+      "title": "[JavaScript] nodejs/node (118,515 stars)",
+      "description": "Node.js JavaScript runtime ✨🐢🚀✨",
+      "url": "https://example.test/cr-029/7-github-com-nodejs-node",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-029-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-029/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-029-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-029/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-029-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-029/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-029-a3",
+    "cr-029-a4",
+    "cr-029-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-029-a1",
+    "cr-029-a2",
+    "cr-029-a5",
+    "cr-029-a7",
+    "cr-029-a8",
+    "cr-029-a9",
+    "cr-029-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv LLM behavioural auditing, Gemma 2 RAG 开源, SW GPT-5.6 价格调整. 拒 7 条:OpenAI Academy 教程 x4, arXiv uncertainty (纯统计), BBC 中东, github_trending nodejs (非 AI), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

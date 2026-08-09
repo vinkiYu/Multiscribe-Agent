@@ -74,6 +74,7 @@ def _load_rows(db_path: Path) -> list[SourceRow]:
             SELECT id, title, description, url, source, category
             FROM source_data
             WHERE description IS NOT NULL AND length(description) >= 30
+              AND source NOT IN ('__EXCLUDED_PLACEHOLDER__')
             ORDER BY fetched_at DESC, id ASC
             """
         ).fetchall()
@@ -91,36 +92,55 @@ def _load_rows(db_path: Path) -> list[SourceRow]:
 
 
 def _build_pools(rows: list[SourceRow], count: int) -> list[list[SourceRow]]:
-    """Mix source families while giving boundary-oriented rows first priority."""
+    """Build ``count`` pools of 10 with minimal candidate overlap across pools.
+
+    Rows are grouped by source. Each pool pulls one row from up to 10 different
+    sources (round-robin), advancing the per-source cursor so consecutive pools
+    consume different rows. This ensures 50 pools draw from close to 500 unique
+    rows rather than re-reading the same handful.
+    """
     if len(rows) < 10:
         raise ValueError("source_data does not contain ten eligible candidates")
-    groups: dict[str, list[SourceRow]] = {key: [] for key in _GROUP_ORDER}
-    title_counts: dict[str, int] = {}
+    by_source: dict[str, list[SourceRow]] = {}
     for row in rows:
-        key = _title_key(row["title"])
-        title_counts[key] = title_counts.get(key, 0) + 1
-    for row in rows:
-        group = "duplicate" if title_counts[_title_key(row["title"])] > 1 else _classify(row)
-        groups[group].append(row)
-    fallback = rows
+        by_source.setdefault(row["source"], []).append(row)
+    # 完全排除的源(非 AI 资讯):
+    # - GitHub Blog: 营销/财务/教程为主
+    # - AWS 两个源(Artificial Intelligence + AI): 主要是 Bedrock 教程/AWS 营销案例
+    EXCLUDED_SOURCES = {"The GitHub Blog", "Artificial Intelligence", "AI"}
+    # 按数据量从大到小排
+    source_order = sorted(
+        [s for s in by_source if s not in EXCLUDED_SOURCES],
+        key=lambda s: -len(by_source[s]),
+    )
+    cursors: dict[str, int] = dict.fromkeys(source_order, 0)
     pools: list[list[SourceRow]] = []
     for index in range(count):
         selected: list[SourceRow] = []
         seen: set[str] = set()
-        for group in _group_sequence(index):
-            for row in groups[group] + fallback:
+        # Rotate the starting source so no single source always fills slot 1.
+        rotation = index % len(source_order)
+        rotated = source_order[rotation:] + source_order[:rotation]
+        for source in rotated:
+            if len(selected) >= 10:
+                break
+            queue = by_source[source]
+            cursor = cursors[source]
+            if cursor < len(queue) and queue[cursor]["id"] not in seen:
+                selected.append(queue[cursor])
+                seen.add(queue[cursor]["id"])
+            cursors[source] += 1
+        # If round-robin did not fill 10 (some sources exhausted), top up from
+        # any remaining unused rows.
+        if len(selected) < 10:
+            for row in rows:
+                if len(selected) >= 10:
+                    break
+                if row["source"] in EXCLUDED_SOURCES:
+                    continue
                 if row["id"] not in seen:
                     selected.append(row)
                     seen.add(row["id"])
-                    break
-            if len(selected) >= 10:
-                break
-        for row in fallback:
-            if len(selected) >= 10:
-                break
-            if row["id"] not in seen:
-                selected.append(row)
-                seen.add(row["id"])
         if len(selected) < 10:
             raise ValueError("source_data cannot produce a ten-candidate pool")
         pools.append(selected[:10])

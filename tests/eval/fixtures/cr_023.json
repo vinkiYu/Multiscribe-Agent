@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-023-a1",
+      "title": "Responsible and safe use of AI",
+      "description": "Learn how to use AI responsibly with best practices for safety, accuracy, and transparency when using tools like ChatGPT.",
+      "url": "https://example.test/cr-023/1-openai-com-academy-responsible-and-safe-use",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-023-a2",
+      "title": "VISTA: A Controllable Platform for Generating and Auditing Egocentric Assistance Scenarios",
+      "description": "arXiv:2605.10579v2 Announce Type: replace \nAbstract: Evaluating whether AI agents can proactively assist humans in daily activities, ranging from routine household tasks to urgent safety-critical situations, requires diverse visual data. However, collecting such scenarios in the real world is often ",
+      "url": "https://example.test/cr-023/2-arxiv-org-abs-2605-10579",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-023-a3",
+      "title": "Mistral AI releases open-source CodeMistral-7B with 128K context window",
+      "description": "CodeMistral-7B is a state-of-the-art code generation model released under a permissive license, supporting agentic code editing.",
+      "url": "https://example.test/cr-023/3-mistral-ai-news-codemistral-7b-open-source",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-023-a4",
+      "title": "Four Palestinians and two Israelis killed in West Bank shooting",
+      "description": "Palestinians say villagers came under attack by settlers, while the Israeli military says a Palestinian stole a weapon and opened fire on hikers.",
+      "url": "https://example.test/cr-023/4-www-bbc-co-uk-news-articles-cx2rxmye4k3o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-023-a5",
+      "title": "Quoting Matthew Green",
+      "description": "<blockquote cite=\"https://blog.cryptographyengineering.com/2026/07/29/some-notes-about-anthropics-new-results/\"><p>Right now we’re in the midst of a historic transition from traditional public-key algorithms based on EC-based cryptography and RSA, moving over to new <em>post-quantum</em> algorithms ",
+      "url": "https://example.test/cr-023/5-simonwillison-net-2026-jul-29-matthew-green",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-023-a6",
+      "title": "[Rust] Pumpkin-MC/Pumpkin (10,083 stars)",
+      "description": "Empowering everyone to host fast and efficient Minecraft servers.",
+      "url": "https://example.test/cr-023/6-github-com-pumpkin-mc-pumpkin",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-023-a7",
+      "title": "$\\texttt{AMEND++}$: Benchmarking Eligibility Criteria Amendments in Clinical Trials",
+      "description": "arXiv:2601.06300v2 Announce Type: replace-cross \nAbstract: Clinical trial amendments frequently introduce delays, increased costs, and administrative burden, with eligibility criteria being the most commonly amended component. We introduce \\textit{eligibility criteria amendment prediction}, a novel ",
+      "url": "https://example.test/cr-023/7-arxiv-org-abs-2601-06300",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-023-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-023/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-023-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-023/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-023-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-023/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-023-a2",
+    "cr-023-a3"
+  ],
+  "expected_rejected_ids": [
+    "cr-023-a1",
+    "cr-023-a4",
+    "cr-023-a5",
+    "cr-023-a6",
+    "cr-023-a7",
+    "cr-023-a8",
+    "cr-023-a9",
+    "cr-023-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv VISTA AI agent egocentric, Mistral CodeMistral 开源. 拒 8 条:OpenAI Academy 教程 x4, github_trending Pumpkin (Minecraft, 非 AI), SW Matthew Green (密码学, 非 AI), BBC 西岸, arXiv AMEND (临床, 无 LLM/agent), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

@@ -2,73 +2,91 @@
   "candidates": [
     {
       "id": "cr-006-a1",
-      "title": "The state of enterprise AI",
-      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
-      "url": "https://example.test/cr-006/1-openai-com-business-guides-and-resources-the-sta",
-      "source": "OpenAI News"
+      "title": "OpenAI’s accidental cyberattack against Hugging Face is science fiction that happened",
+      "description": "<p>This story is wild. The short version: OpenAI were running a cybersecurity test against an unreleased model, with the model's guardrail features turned off. Rather than solve the test, the model broke its way out of OpenAI's sandbox, then found exploits to break <em>in</em> to Hugging Face, all s",
+      "url": "https://example.test/cr-006/1-simonwillison-net-2026-jul-22-openai-cyberattack",
+      "source": "Simon Willison's Weblog"
     },
     {
       "id": "cr-006-a2",
-      "title": "Migrate your prompts to new models and optimize them on Amazon Bedrock",
-      "description": "Amazon Bedrock Advanced Prompt Optimization optimizes your prompts for up to 5 models at once and compares original versus optimized performance across quality, latency, and cost. Migrate to a new model or improve your current one in minutes instead of weeks.",
-      "url": "https://example.test/cr-006/2-aws-amazon-com-blogs-machine-learning-migrate-yo",
-      "source": "Artificial Intelligence"
+      "title": "[TypeScript] different-ai/openwork (18,834 stars)",
+      "description": "The open-source alternative to Claude Cowork (powered by opencode)",
+      "url": "https://example.test/cr-006/2-github-com-different-ai-openwork",
+      "source": "github_trending"
     },
     {
       "id": "cr-006-a3",
-      "title": "$100 million for open source: A milestone built by the community",
-      "description": "<p>Celebrating $100 million contributed by the community to the people who build and sustain open source every day.</p>\n<p>The post <a href=\"https://github.blog/open-source/maintainers/100-million-for-open-source-a-milestone-built-by-the-community/\">$100 million for open source: A milestone built by",
-      "url": "https://example.test/cr-006/3-github-blog-open-source-maintainers-100-million-",
-      "source": "The GitHub Blog"
+      "title": "Task and Skill Planning: Hierarchical Robot Planning with Black-Box Skills",
+      "description": "arXiv:2504.17901v3 Announce Type: replace-cross \nAbstract: Task and motion planning (TAMP) is a well-established approach for solving long-horizon robot planning problems. Although TAMP methods have historically assumed that each task-level robot action, or skill, can be reduced to kinematic motion ",
+      "url": "https://example.test/cr-006/3-arxiv-org-abs-2504-17901",
+      "source": "cs.AI updates on arXiv.org"
     },
     {
       "id": "cr-006-a4",
-      "title": "AI safety needs social scientists",
-      "description": "We’ve written a paper arguing that long-term AI safety research needs social scientists to ensure AI alignment algorithms succeed when actual humans are involved. Properly aligning advanced AI systems with human values requires resolving many uncertainties related to the psychology of human rational",
-      "url": "https://example.test/cr-006/4-openai-com-index-ai-safety-needs-social-scientis",
+      "title": "How sales teams use ChatGPT Work",
+      "description": "See how sales teams can use ChatGPT Work to create pipeline briefs, meeting prep packets, forecast reviews, account plans, and stalled-deal diagnoses from real work inputs.",
+      "url": "https://example.test/cr-006/4-openai-com-academy-codex-for-work-how-sales-team",
       "source": "OpenAI News"
     },
     {
       "id": "cr-006-a5",
-      "title": "Generate Autonomous Business Insights with AI Agent and MCP Servers",
-      "description": "Learn how Amazon Bedrock AgentCore delivers autonomous, cross-system business intelligence through configuration rather than custom code. Using pre-built MCP server connectors, fine-grained access control, and persistent memory, enterprises can query multiple data sources with natural language while",
-      "url": "https://example.test/cr-006/5-aws-amazon-com-blogs-machine-learning-generate-a",
-      "source": "Artificial Intelligence"
+      "title": "Towards Structurally Explainable Machine-Generated Text Detection: A Graph-Perspective Framework",
+      "description": "arXiv:2505.12507v2 Announce Type: replace \nAbstract: Despite the success of machine-generated text detectors, the black-box nature remains a critical limitation. Traditional explainability methods rely on token-level saliency, insufficient to reveal the high-order structural dependencies that distin",
+      "url": "https://example.test/cr-006/5-arxiv-org-abs-2505-12507",
+      "source": "cs.CL updates on arXiv.org"
     },
     {
       "id": "cr-006-a6",
-      "title": "Accelerating the next phase of AI",
-      "description": "OpenAI raises $122 billion in new funding to expand frontier AI globally, invest in next-generation compute, and meet growing demand for ChatGPT, Codex, and enterprise AI.",
-      "url": "https://example.test/cr-006/6-openai-com-index-accelerating-the-next-phase-ai",
-      "source": "OpenAI News"
+      "title": "AWS Launches Bedrock Agents with Custom RAG Connectors",
+      "description": "New service enables developers to link agents to enterprise data sources via native RAG connectors, simplifying AI deployment.",
+      "url": "https://example.test/cr-006/6-aws-amazon-com-blogs-aws-bedrock-agents-custom-r",
+      "source": "ai_search:perplexity"
     },
     {
       "id": "cr-006-a7",
-      "title": "Authenticate with Private Key JWT using Amazon Bedrock AgentCore Identity",
-      "description": "This post explains how Private Key JWT client authentication works in AgentCore Identity and reviews the supported grant flows. We then walk through creating an AWS KMS signing key, registering its public key with your identity provider, configuring a credential provider on the AWS Management Consol",
-      "url": "https://example.test/cr-006/7-aws-amazon-com-blogs-machine-learning-authentica",
-      "source": "Artificial Intelligence"
+      "title": "Chris Brown pleads guilty to affray over nightclub attack in London",
+      "description": "The US singer hit a man with a glass bottle in \"a vicious and unprovoked attack\", prosecutors said.",
+      "url": "https://example.test/cr-006/7-www-bbc-co-uk-news-articles-c3w01e37v9vo",
+      "source": "BBC News"
     },
     {
       "id": "cr-006-a8",
-      "title": "Evaluating AI Agents: A production blueprint with Strands and AgentCore",
-      "description": "Together, Motorway and AWS built an end-to-end evaluation pipeline that reduced incorrect results from 1 in 8 queries to 1 in 50 and cut issue detection time from few hours to few minutes. The pipeline combines the Strands Agents SDK with Amazon Bedrock AgentCore, a fully managed service for deployi",
-      "url": "https://example.test/cr-006/8-aws-amazon-com-blogs-machine-learning-evaluating",
-      "source": "Artificial Intelligence"
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-006/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-006-a9",
-      "title": "How Yahoo enhances search retargeting using Amazon Bedrock",
-      "description": "In this post, we demonstrate how Yahoo implemented Amazon Bedrock to enhance their Search Retargeting (SRT) capabilities in the Yahoo DSP ad tech suite. SRT is a core audience targeting solution that helps advertisers reach users based on their historical search behavior, bridging search intent with",
-      "url": "https://example.test/cr-006/9-aws-amazon-com-blogs-machine-learning-how-yahoo-",
-      "source": "Artificial Intelligence"
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-006/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-006-a10",
-      "title": "Deploying Kimi K3 on AWS",
-      "description": "This post walks through deploying Kimi K3 on AWS using two approaches: Amazon SageMaker HyperPod, and&nbsp; Amazon Elastic Kubernetes Service (Amazon EKS) cluster.",
-      "url": "https://example.test/cr-006/10-aws-amazon-com-blogs-machine-learning-deploying-",
-      "source": "Artificial Intelligence"
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-006/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
     }
-  ]
+  ],
+  "expected_selected_ids": [
+    "cr-006-a1",
+    "cr-006-a2",
+    "cr-006-a5",
+    "cr-006-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-006-a3",
+    "cr-006-a4",
+    "cr-006-a7",
+    "cr-006-a8",
+    "cr-006-a9",
+    "cr-006-a10"
+  ],
+  "selection_rationale": "选中 4 条:SW OpenAI cyberattack (AI 安全事件), github_trending openwork (Claude Cowork 开源), arXiv Machine-Generated Text Detection, AWS Bedrock RAG. 拒 6 条:OpenAI Academy 教程 x4, BBC 刑事, arXiv 机器人 TAMP (纯机器人学).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

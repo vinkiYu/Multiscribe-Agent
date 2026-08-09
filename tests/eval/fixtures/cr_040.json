@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-040-a1",
+      "title": "Do declassified files support Trump's election security claims?",
+      "description": "BBC Verify has reviewed these documents, although some of them have been heavily redacted.",
+      "url": "https://example.test/cr-040/1-www-bbc-co-uk-news-articles-cz64wx8yjjdo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-040-a2",
+      "title": "SQLite Query Explainer",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/sqlite-query-explainer\">SQLite Query Explainer</a></p>\n        <p>Julia Evan's, in <a href=\"https://jvns.ca/blog/2026/07/17/learning-about-running-sqlite/\">Learning a few things about running SQLite</a>:</p>\n<blockquote>\n<p>Maybe one",
+      "url": "https://example.test/cr-040/2-simonwillison-net-2026-jul-18-sqlite-query-expla",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-040-a3",
+      "title": "[Swift] palmier-io/palmier-pro (12,371 stars)",
+      "description": "macOS video editor built for AI",
+      "url": "https://example.test/cr-040/3-github-com-palmier-io-palmier-pro",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-040-a4",
+      "title": "Do LLMs Know What They Know? Measuring Metacognitive Efficiency with Signal Detection Theory",
+      "description": "arXiv:2603.25112v3 Announce Type: replace-cross \nAbstract: Standard evaluation of LLM confidence relies on calibration metrics (ECE, Brier score) that conflate two capacities: how much a model knows (Type-1 accuracy) and how well its confidence signal tracks that knowledge (Type-2 metacognitive sens",
+      "url": "https://example.test/cr-040/4-arxiv-org-abs-2603-25112",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-040-a5",
+      "title": "Working with 400,000 teachers to shape the future of AI in schools",
+      "description": "OpenAI partners with the American Federation of Teachers to launch a 5-year initiative equipping 400,000 K-12 educators to lead AI innovation in classrooms.",
+      "url": "https://example.test/cr-040/5-openai-com-global-affairs-aft",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-040-a6",
+      "title": "From Found to Designed: Concepts as a Design Axis for Large Language Models",
+      "description": "arXiv:2607.26825v2 Announce Type: replace \nAbstract: Large language models (LLMs) encode rich concept-like information, but represent it implicitly through distributed statistical associations rather than as explicit, structured, compositional concepts. Consequently, concept-level structure is typic",
+      "url": "https://example.test/cr-040/6-arxiv-org-abs-2607-26825",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-040-a7",
+      "title": "Microsoft Releases Phi-4-Mini: A 3.8B Parameter On-Device LLM",
+      "description": "Designed for mobile and edge devices, Phi-4-Mini achieves strong reasoning performance with minimal compute. Open source via Hugging Face, it also supports RAG via on-device vector stores.",
+      "url": "https://example.test/cr-040/7-news-microsoft-com-2025-07-10-phi-4-mini-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-040-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-040/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-040-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-040/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-040-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-040/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-040-a4",
+    "cr-040-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-040-a1",
+    "cr-040-a2",
+    "cr-040-a3",
+    "cr-040-a5",
+    "cr-040-a6",
+    "cr-040-a8",
+    "cr-040-a9",
+    "cr-040-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv LLM metacognition, Microsoft Phi-4-Mini 开源. 拒 8 条:OpenAI Academy 教程 x4, BBC 政治, SW SQLite query tool (非实质), github_trending palmier-pro (视频, 拒以稳妥), arXiv concepts (边界), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

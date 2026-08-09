@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-031-a1",
+      "title": "Auditing Question-Order Effects in Large Language Models with the QQ Equality: Mechanism Characterization and a Saturation Caveat",
+      "description": "arXiv:2607.17219v2 Announce Type: replace \nAbstract: Question-order effects in human survey data have been reported to approximately satisfy the QQ (quantum question) equality, a parameter-free prediction of the standard projective quantum question-order model. We develop this equality into an audit",
+      "url": "https://example.test/cr-031/1-arxiv-org-abs-2607-17219",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-031-a2",
+      "title": "LangChain Introduces LangGraph Studio: Visual Agent Workflow Builder",
+      "description": "LangGraph Studio allows developers to design, debug, and deploy complex agentic RAG pipelines using a drag-and-drop interface. Supports open-source models from Ollama and vLLM.",
+      "url": "https://example.test/cr-031/2-blog-langchain-dev-langgraph-studio-visual-agent",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-031-a3",
+      "title": "Guardiola turns down Italy manager job",
+      "description": "Former Manchester City manager Pep Guardiola turns down the chance to coach Italy.",
+      "url": "https://example.test/cr-031/3-www-bbc-co-uk-sport-football-articles-cd7len4lvy",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-031-a4",
+      "title": "Quoting Thibault Sottiaux",
+      "description": "<blockquote cite=\"https://twitter.com/thsottiaux/status/2077630111499882637\"><p>On file deletions. We’ve investigated a handful of reports where GPT-5.6 unexpectedly deleted files. </p>\n<p>What we have  found is that this most commonly occurs when:</p>\n<ul>\n<li>Full access mode is enabled and codex ",
+      "url": "https://example.test/cr-031/4-simonwillison-net-2026-jul-16-bad-codex-bug",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-031-a5",
+      "title": "[Swift] permissionlesstech/bitchat (30,791 stars)",
+      "description": "bluetooth mesh chat, IRC vibes",
+      "url": "https://example.test/cr-031/5-github-com-permissionlesstech-bitchat",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-031-a6",
+      "title": "PatchDenoiser: Parameter-efficient multi-scale patch learning and fusion denoiser for Low-dose CT imaging",
+      "description": "arXiv:2602.21987v3 Announce Type: replace-cross \nAbstract: Low-dose CT images are essential for reducing radiation exposure in cancer screening, pediatric imaging, and longitudinal monitoring protocols, but their quality is often degraded by noise from low-dose acquisition, patient motion, or scanne",
+      "url": "https://example.test/cr-031/6-arxiv-org-abs-2602-21987",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-031-a7",
+      "title": "Inside GPT-5 for Work: How Businesses Use GPT-5",
+      "description": "A data-driven report on how workers across industries use ChatGPT—covering adoption trends, top tasks, departmental patterns, and the future of AI at work.",
+      "url": "https://example.test/cr-031/7-openai-com-business-guides-and-resources-chatgpt",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-031-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-031/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-031-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-031/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-031-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-031/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-031-a1",
+    "cr-031-a2",
+    "cr-031-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-031-a3",
+    "cr-031-a5",
+    "cr-031-a6",
+    "cr-031-a7",
+    "cr-031-a8",
+    "cr-031-a9",
+    "cr-031-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv LLM question-order, LangGraph Studio, SW GPT-5.6 file deletion bug. 拒 7 条:OpenAI Academy 教程 x4, BBC 体育, github_trending bitchat (蓝牙, 非 AI), arXiv CT 影像 (纯医学, 无 LLM 信号), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

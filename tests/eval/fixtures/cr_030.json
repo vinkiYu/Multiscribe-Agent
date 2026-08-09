@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-030-a1",
+      "title": "Writing with ChatGPT",
+      "description": "Learn how to use ChatGPT for writing to draft, revise, and refine content with clear structure, tone, and intent.",
+      "url": "https://example.test/cr-030/1-openai-com-academy-writing",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-030-a2",
+      "title": "Who Grades the Grader? Co-Evolving Evaluation Metrics and Skills for Self-Improving LLM Agents",
+      "description": "arXiv:2607.12790v2 Announce Type: replace-cross \nAbstract: Self-evolving agent systems create, revise, and retire their own skills, but every such loop assumes a reliable evaluation metric already exists. In many real applications none does. We show the metric itself can be the evolving object: our ",
+      "url": "https://example.test/cr-030/2-arxiv-org-abs-2607-12790",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-030-a3",
+      "title": "Stanford Researchers Open-Source 'AgentBench 2.0' for Evaluating LLM Agents",
+      "description": "AgentBench 2.0 extends the original benchmark with new tasks requiring multi-turn RAG, tool use, and long-horizon planning. Includes leaderboard and open-source evaluation harness.",
+      "url": "https://example.test/cr-030/3-github-com-stanford-crfm-agentbench2",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-030-a4",
+      "title": "The two days which could make or break Fury-Joshua",
+      "description": "BBC Sport looks at how a proposed bout between Tyson Fury and Anthony Joshua hinges on a 24-hour-period between Friday and Saturday.",
+      "url": "https://example.test/cr-030/4-www-bbc-co-uk-sport-boxing-articles-c2k758w1xdzo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-030-a5",
+      "title": "Investigating three real-world incidents in our cybersecurity evaluations",
+      "description": "<p><strong><a href=\"https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals\">Investigating three real-world incidents in our cybersecurity evaluations</a></strong></p>\nIt happened again! This is turning into something of a pattern.</p>\n<p>Last week <a href=\"https://simonwillison.n",
+      "url": "https://example.test/cr-030/5-simonwillison-net-2026-jul-30-three-real-world-i",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-030-a6",
+      "title": "[JavaScript] pbakaus/impeccable (50,845 stars)",
+      "description": "The design language that makes your AI harness better at design.",
+      "url": "https://example.test/cr-030/6-github-com-pbakaus-impeccable",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-030-a7",
+      "title": "Calibrate Globally, Measure Everywhere: Scaling LLM-Based Prevalence Measurement Across A/B Experiments",
+      "description": "arXiv:2602.16111v2 Announce Type: replace-cross \nAbstract: Online media platforms track the share of impressions associated with content attributes, or prevalence, to evaluate trade-offs and set guardrails in A/B experiments. LLM-based labeling provides a high-fidelity reference measurement, but is ",
+      "url": "https://example.test/cr-030/7-arxiv-org-abs-2602-16111",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-030-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-030/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-030-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-030/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-030-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-030/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-030-a2",
+    "cr-030-a3",
+    "cr-030-a5",
+    "cr-030-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-030-a1",
+    "cr-030-a4",
+    "cr-030-a7",
+    "cr-030-a8",
+    "cr-030-a9",
+    "cr-030-a10"
+  ],
+  "selection_rationale": "选中 4 条:arXiv Co-evolving LLM agent eval, Stanford AgentBench 2 开源, SW Anthropic cybersecurity, arXiv LLM A/B. 拒 6 条:OpenAI Academy 教程 x4, BBC 体育, github_trending impeccable (UI 工具, 非 AI).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

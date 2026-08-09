@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-036-a1",
+      "title": "Deep Expert Injection for Anchoring Retinal VLMs with Domain-Specific Knowledge",
+      "description": "arXiv:2603.07131v4 Announce Type: replace-cross \nAbstract: Large Vision Language Models (LVLMs) show immense potential for automated ophthalmic diagnosis. However, their clinical deployment is severely hindered by lacking domain-specific knowledge. In this work, we identify two structural deficienci",
+      "url": "https://example.test/cr-036/1-arxiv-org-abs-2603-07131",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-036-a2",
+      "title": "New in ChatGPT for Business: March 2025",
+      "description": "Join us as we share our latest releases and how ChatGPT is becoming more interactive, customized to the way your teams work, and agentic.",
+      "url": "https://example.test/cr-036/2-openai-com-business-new-in-chatgpt-for-work-marc",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-036-a3",
+      "title": "SourceMinds at CheckThat! 2026: NLI-Grounded Citation Auditing in a Multi-Agent Pipeline for Full Fact-Checking Article Generation",
+      "description": "arXiv:2607.24802v2 Announce Type: replace-cross \nAbstract: This paper presents our system for Task 3 of the CLEF 2026 CheckThat! Lab, which focuses on generating full fact-checking articles from claims, veracity labels, and evidence documents. We propose a multi-agent pipeline that combines evidence",
+      "url": "https://example.test/cr-036/3-arxiv-org-abs-2607-24802",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-036-a4",
+      "title": "Anthropic's Claude 4: Agentic AI with Real-Time RAG",
+      "description": "Anthropic released Claude 4, which introduces a new 'Agentic RAG' pipeline that dynamically retrieves and re-ranks knowledge, achieving SOTA on HotpotQA. The model also improves safety alignment.",
+      "url": "https://example.test/cr-036/4-www-anthropic-com-news-claude-4-agent-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-036-a5",
+      "title": "Promising results from new Aston Martin, says Newey",
+      "description": "Adrian Newey says the new Aston Martin had showed \"promising results\" in its first on-track session at the Hungarian Grand Prix.",
+      "url": "https://example.test/cr-036/5-www-bbc-co-uk-sport-formula1-articles-c3v0wp9yvd",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-036-a6",
+      "title": "LLM cliché highlighter",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/llm-cliche-highlighter\">LLM cliché highlighter</a></p>\n        <p>I got frustrated reading <em>yet another</em> article that was crammed with the clichés of LLM-generated writing - \"no fluff, no filler, no jargon\" type stuff - so I h",
+      "url": "https://example.test/cr-036/6-simonwillison-net-2026-jul-17-llm-cliche-highlig",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-036-a7",
+      "title": "[Jupyter Notebook] Lordog/dive-into-llms (45,506 stars)",
+      "description": "《动手学大模型Dive into LLMs》系列编程实践教程",
+      "url": "https://example.test/cr-036/7-github-com-lordog-dive-into-llms",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-036-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-036/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-036-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-036/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-036-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-036/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-036-a1",
+    "cr-036-a3",
+    "cr-036-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-036-a2",
+    "cr-036-a5",
+    "cr-036-a6",
+    "cr-036-a7",
+    "cr-036-a8",
+    "cr-036-a9",
+    "cr-036-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv LVLM retinal, arXiv multi-agent fact-checking, Anthropic Claude 4 RAG. 拒 7 条:OpenAI Academy 教程 x4, BBC 体育, SW LLM cliché tool (非实质), github_trending dive-into-llms (教程), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

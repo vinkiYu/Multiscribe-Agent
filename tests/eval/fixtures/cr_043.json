@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-043-a1",
+      "title": "Shot-based quantum encoding: a data-loading paradigm for quantum neural networks",
+      "description": "arXiv:2604.06135v2 Announce Type: replace-cross \nAbstract: Efficient data loading remains a bottleneck for near-term quantum machine learning. Existing schemes (angle, amplitude, and basis encoding) either underuse the exponential Hilbert-space capacity or require circuit depths that exceed the cohe",
+      "url": "https://example.test/cr-043/1-arxiv-org-abs-2604-06135",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-043-a2",
+      "title": "Disrupting malicious uses of AI: June 2025",
+      "description": "Our latest report featuring case studies of how we’re detecting and preventing malicious uses of AI.",
+      "url": "https://example.test/cr-043/2-openai-com-global-affairs-disrupting-malicious-u",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-043-a3",
+      "title": "Digital Harf: A Clinically Integrated Multimodal AI System for Pervasive Arabic Speech and Language Therapy",
+      "description": "arXiv:2607.27212v1 Announce Type: cross \nAbstract: Children with Autism Spectrum Disorder in Arabic-speaking countries face compounded barriers to effective speech and language therapy: a shortage of qualified specialists, limited service reach beyond urban centers, and a near-total absence of cultu",
+      "url": "https://example.test/cr-043/3-arxiv-org-abs-2607-27212",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-043-a4",
+      "title": "Stability AI Open-Sources 'StableLM-2-12B' with Apache 2.0 License",
+      "description": "The 12 billion parameter model rivals Llama-3.1-8B in benchmarks, available for commercial use. Includes pre-trained weights and a fine-tuned chat variant.",
+      "url": "https://example.test/cr-043/4-stability-ai-blog-stablelm-2-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-043-a5",
+      "title": "Mother of Henry Nowak killer jailed for removing knife from murder scene",
+      "description": "Kiran Kaur is jailed after attempting to hide the knife used to kill student Henry Nowak.",
+      "url": "https://example.test/cr-043/5-www-bbc-co-uk-news-articles-c1w1nnzgg2no",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-043-a6",
+      "title": "Who’s Afraid of Chinese Models?",
+      "description": "<p><strong><a href=\"https://stratechery.com/2026/whos-afraid-of-chinese-models/\">Who’s Afraid of Chinese Models?</a></strong></p>\nInteresting proposal from Ben Thompson that both addresses the hypocrisy of labs outlawing distillation against their models despite training on unlicensed data, and coul",
+      "url": "https://example.test/cr-043/6-simonwillison-net-2026-jul-20-afraid-of-chinese-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-043-a7",
+      "title": "[TypeScript] koala73/worldmonitor (72,944 stars)",
+      "description": "Real-time global intelligence dashboard. AI-powered news aggregation, geopolitical monitoring, and infrastructure tracking in a unified situational awareness interface",
+      "url": "https://example.test/cr-043/7-github-com-koala73-worldmonitor",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-043-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-043/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-043-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-043/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-043-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-043/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-043-a3",
+    "cr-043-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-043-a1",
+    "cr-043-a2",
+    "cr-043-a5",
+    "cr-043-a6",
+    "cr-043-a7",
+    "cr-043-a8",
+    "cr-043-a9",
+    "cr-043-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv Arabic speech LLM therapy, Stability AI StableLM-2 开源. 拒 8 条:OpenAI Academy 教程 x4, arXiv quantum (纯量子), BBC 刑事, SW Chinese models (评论, 拒), github_trending worldmonitor (边界, 拒), OpenAI malicious report (企业稿).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

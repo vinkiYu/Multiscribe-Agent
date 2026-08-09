@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-046-a1",
+      "title": "Databricks Acquires Knowledge Retrieval Startup 'RAGFlow'",
+      "description": "Databricks bolsters its Mosaic AI platform by acquiring RAGFlow, a startup specializing in real-time retrieval pipelines with vector and hybrid search capabilities.",
+      "url": "https://example.test/cr-046/1-techcrunch-com-2025-07-09-databricks-acquires-ra",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-046-a2",
+      "title": "Conman targeted the elderly to defraud them out of millions",
+      "description": "Victims speak out after Steven Long stole £11.5m from 115 people to fund his lavish lifestyle.",
+      "url": "https://example.test/cr-046/2-www-bbc-co-uk-news-articles-c2d89kjkkwlo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-046-a3",
+      "title": "Quoting Linus Torvalds",
+      "description": "<blockquote cite=\"https://lore.kernel.org/linux-media/CAHk-=wi4zC+Ze8e+p3tMv8TtG_80KzsZ1syL9anBtmEh5Z40vg@mail.gmail.com/\"><p>I realize that some people really dislike AI, but this is an area where I'm willing to absolutely put my foot down as the top-level maintainer.</p>\n<p>Linux is not one of tho",
+      "url": "https://example.test/cr-046/3-simonwillison-net-2026-jul-16-linus-torvalds",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-046-a4",
+      "title": "Facial-Expression-Aware Prompting for Empathetic LLM Tutoring",
+      "description": "arXiv:2604.15336v2 Announce Type: replace-cross \nAbstract: Large language models (LLMs) enable increasingly capable tutoring-style conversational agents, yet effective tutoring requires sensitivity to learners' affective and cognitive states beyond text alone. Facial expressions provide immediate an",
+      "url": "https://example.test/cr-046/4-arxiv-org-abs-2604-15336",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-046-a5",
+      "title": "Intellectual freedom by design",
+      "description": "ChatGPT is designed to be useful, trustworthy, and adaptable—so you can make it your own.",
+      "url": "https://example.test/cr-046/5-openai-com-global-affairs-intellectual-freedom-b",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-046-a6",
+      "title": "THGFM: Dual-Branch Temporal Heterogeneous Graph Fusion Model",
+      "description": "arXiv:2607.27303v1 Announce Type: cross \nAbstract: Temporal heterogeneous graphs offer a natural abstraction for dynamic relational systems in which diverse node and relation types co-exist and evolve over time. Learning on such graphs requires jointly modeling cross-type structural heterogeneity an",
+      "url": "https://example.test/cr-046/6-arxiv-org-abs-2607-27303",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-046-a7",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-046/7-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-046-a8",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-046/8-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-046-a9",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-046/9-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-046-a10",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-046/10-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-046-a1",
+    "cr-046-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-046-a2",
+    "cr-046-a3",
+    "cr-046-a5",
+    "cr-046-a6",
+    "cr-046-a7",
+    "cr-046-a8",
+    "cr-046-a9",
+    "cr-046-a10"
+  ],
+  "selection_rationale": "选中 2 条:Databricks 收购 RAGFlow, arXiv facial-expression LLM tutoring. 拒 8 条:OpenAI Academy 教程 x4, BBC 犯罪, SW Linus Torvalds (评论, 拒), arXiv THGFM (图模型, 无 LLM 信号), OpenAI intellectual freedom (企业稿).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

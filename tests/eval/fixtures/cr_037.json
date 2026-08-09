@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-037-a1",
+      "title": "Stargate Infrastructure",
+      "description": "OpenAI, and our strategic partners, are thrilled about our shared vision for the Infrastructure of AGI. We are energized by the challenges we face and are excited by the prospect of partnering with firms across the industrial base to deliver against our ambitious mission. Specifically, we want to co",
+      "url": "https://example.test/cr-037/1-openai-com-form-stargate-infrastructure",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-037-a2",
+      "title": "HANDBOOK.md: A Benchmark for Long-Context Agentic Instruction Following",
+      "description": "arXiv:2607.25398v2 Announce Type: replace-cross \nAbstract: Language-model agents are increasingly deployed under standing instructions: a system prompt, a policy file, or a skills document is placed in context, and the agent is trusted to let it govern every action that follows. Existing benchmarks ",
+      "url": "https://example.test/cr-037/2-arxiv-org-abs-2607-25398",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-037-a3",
+      "title": "CrewAI Raises $20M to Build Multi-Agent Enterprise Orchestrator",
+      "description": "CrewAI's platform allows enterprises to design, deploy, and monitor teams of specialized AI agents. The new funding will accelerate development of their RAG-augmented agent workflows.",
+      "url": "https://example.test/cr-037/3-venturebeat-com-2025-07-09-crewai-funding-agent-",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-037-a4",
+      "title": "Heat health alerts in effect for parts of UK as rain returns for some this weekend",
+      "description": "Highs of 30C are expected in the south on Friday before wet weather arrives for the weekend - although it is unlikely to be enough, as Ben Rich explains.",
+      "url": "https://example.test/cr-037/4-www-bbc-co-uk-weather-articles-c75gze7427vo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-037-a5",
+      "title": "Spot birds not golf",
+      "description": "<p>Suggestion for hyperscalers feeling pressure over data center water use:</p>\n<p>Buy up a few exclusive country clubs, convert the golf courses into public parks, pay for guides and binoculars to get the previous members into birdwatching - help them embrace a more sustainable hobby!</p>\n<p>Google",
+      "url": "https://example.test/cr-037/5-simonwillison-net-2026-jul-17-spot-birds-not-gol",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-037-a6",
+      "title": "[Python] RyanCodrai/turbovec (14,372 stars)",
+      "description": "A vector index built on TurboQuant, written in Rust with Python bindings",
+      "url": "https://example.test/cr-037/6-github-com-ryancodrai-turbovec",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-037-a7",
+      "title": "Gated Adaptation for Continual Learning in Human Activity Recognition",
+      "description": "arXiv:2603.10046v2 Announce Type: replace-cross \nAbstract: Wearable sensors in Internet of Things (IoT) ecosystems increasingly support applications such as remote health monitoring, elderly care, and smart home automation, all of which rely on robust human activity recognition (HAR). Continual lear",
+      "url": "https://example.test/cr-037/7-arxiv-org-abs-2603-10046",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-037-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-037/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-037-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-037/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-037-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-037/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-037-a2",
+    "cr-037-a3"
+  ],
+  "expected_rejected_ids": [
+    "cr-037-a1",
+    "cr-037-a4",
+    "cr-037-a5",
+    "cr-037-a6",
+    "cr-037-a7",
+    "cr-037-a8",
+    "cr-037-a9",
+    "cr-037-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv HANDBOOK agentic instruction, CrewAI 融资. 拒 8 条:OpenAI Academy 教程 x4, BBC 天气, SW Spot birds (非 AI), github_trending turbovec (向量索引, 无 LLM), Stargate Infrastructure (企业稿, 拒), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

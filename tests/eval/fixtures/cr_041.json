@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-041-a1",
+      "title": "AI Mania Is Eviscerating Global Decision-Making",
+      "description": "<p><strong><a href=\"https://ludic.mataroa.blog/blog/ai-mania-is-eviscerating-global-decision-making/\">AI Mania Is Eviscerating Global Decision-Making</a></strong></p>\nHere's an entertaining perspective from Nik Suresh on the AI mania that is overwhelming the large companies that he consults with. It",
+      "url": "https://example.test/cr-041/1-simonwillison-net-2026-jul-19-ai-mania",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-041-a2",
+      "title": "[Assembly] chrislgarry/Apollo-11 (71,317 stars)",
+      "description": "Original Apollo 11 Guidance Computer (AGC) source code for the command and lunar modules.",
+      "url": "https://example.test/cr-041/2-github-com-chrislgarry-apollo-11",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-041-a3",
+      "title": "GroupRAG: Cognitively Inspired Group-Aware Retrieval and Reasoning via Knowledge-Driven Problem Structuring",
+      "description": "arXiv:2603.26807v2 Announce Type: replace-cross \nAbstract: The performance of language models is commonly limited by insufficient knowledge and constrained reasoning. Prior approaches such as Retrieval-Augmented Generation (RAG) and Chain-of-Thought (CoT) address these issues by incorporating extern",
+      "url": "https://example.test/cr-041/3-arxiv-org-abs-2603-26807",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-041-a4",
+      "title": "Introducing AI stories: daily benefits shine a light on bigger opportunities",
+      "description": "Sam Altman has written that we are entering the Intelligence Age, a time when AI will help people become dramatically more capable. The biggest problems of today—across science, medicine, education, national defense—will no longer seem intractable, but will in fact be solvable. New horizons of possi",
+      "url": "https://example.test/cr-041/4-openai-com-global-affairs-ai-stories-daily-benef",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-041-a5",
+      "title": "APEX-Accounting",
+      "description": "arXiv:2607.27189v2 Announce Type: replace \nAbstract: We introduce APEX-Accounting, a benchmark built by Mercor in partnership with Ramp, to assess whether frontier models can do the real work of accountants. Tasks include reconciling accounts, accruing expenses, posting transactions, and producing r",
+      "url": "https://example.test/cr-041/5-arxiv-org-abs-2607-27189",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-041-a6",
+      "title": "OpenAI Releases GPT-5 with Native Agent Capabilities",
+      "description": "OpenAI launches GPT-5, featuring built-in tool use, multi-step planning, and autonomous task execution. Early benchmarks show significant improvements in agentic tasks and RAG accuracy.",
+      "url": "https://example.test/cr-041/6-techcrunch-com-2025-07-09-openai-gpt5-agent-rele",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-041-a7",
+      "title": "Argentina like to leave mark on opponents - Laporte",
+      "description": "Spain defender Aymeric Laporte claims World Cup final opponents Argentina are a team that \"likes to leave a mark on their opponents\".",
+      "url": "https://example.test/cr-041/7-www-bbc-co-uk-sport-football-articles-cj63e8l0kj",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-041-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-041/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-041-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-041/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-041-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-041/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-041-a3",
+    "cr-041-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-041-a1",
+    "cr-041-a2",
+    "cr-041-a4",
+    "cr-041-a5",
+    "cr-041-a7",
+    "cr-041-a8",
+    "cr-041-a9",
+    "cr-041-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv GroupRAG, OpenAI GPT-5 agent 发布. 拒 8 条:OpenAI Academy 教程 x4, SW AI mania (评论, 边界), BBC 体育, github_trending Apollo-11 (非 AI), arXiv APEX-Accounting (纯会计, 无 LLM), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

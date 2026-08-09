@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-038-a1",
+      "title": "BM25 Wins at Scale: A Scaling Study of Retrieval-Augmented Generation Paradigms",
+      "description": "arXiv:2607.26497v2 Announce Type: replace \nAbstract: Retrieval-augmented generation (RAG) spans lexical and dense retrieval, graph-based indexing, and agentic search, but these paradigms are usually evaluated on different benchmarks at one corpus size, leaving their accuracy-cost scaling unclear. To",
+      "url": "https://example.test/cr-038/1-arxiv-org-abs-2607-26497",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-038-a2",
+      "title": "PyTorch 3.0 Adds Native Support for LLM Inference Optimization",
+      "description": "PyTorch 3.0 includes quantized KV-cache, FlashAttention-3 integration, and a new torch.compile backend optimized for large language models. All features are open source and production-ready.",
+      "url": "https://example.test/cr-038/2-pytorch-org-blog-pytorch3-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-038-a3",
+      "title": "Indian activist on hunger strike for 20 days forcibly taken to hospital",
+      "description": "Cockroach Janta Party founder Abhijeet Dipke has now begun an indefinite fast in Sonam Wangchuk's place.",
+      "url": "https://example.test/cr-038/3-www-bbc-co-uk-news-articles-cjej3dxxg2do",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-038-a4",
+      "title": "Claude make Fable 5 permanent",
+      "description": "<p><strong><a href=\"https://twitter.com/claudeai/status/2078302415804379218\">Claude make Fable 5 permanent</a></strong></p>\nAn update from the <code>@claudeai</code> account on Twitter:</p>\n<blockquote>\n<p>Beginning July 20, Claude Fable 5 will be included in all Max and Team Premium plans, at 50% o",
+      "url": "https://example.test/cr-038/4-simonwillison-net-2026-jul-18-claude-make-fable-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-038-a5",
+      "title": "[Shell] mattpocock/skills (188,905 stars)",
+      "description": "Skills for Real Engineers. Straight from my .agents directory.",
+      "url": "https://example.test/cr-038/5-github-com-mattpocock-skills",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-038-a6",
+      "title": "State-Dependent Safety Failures in Multi-Turn Language Model Interaction",
+      "description": "arXiv:2603.15684v2 Announce Type: replace-cross \nAbstract: Safety alignment in large language models is typically evaluated under isolated queries, yet real-world use is inherently multi-turn. Although multi-turn jailbreaks are empirically effective, the structure of conversational safety failure re",
+      "url": "https://example.test/cr-038/6-arxiv-org-abs-2603-15684",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-038-a7",
+      "title": "1,000 Scientist AI Jam Session",
+      "description": "OpenAI and nine national labs bring together leading scientists for first-of-its kind event.",
+      "url": "https://example.test/cr-038/7-openai-com-global-affairs-1000-scientist-ai-jam-",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-038-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-038/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-038-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-038/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-038-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-038/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-038-a1",
+    "cr-038-a2",
+    "cr-038-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-038-a3",
+    "cr-038-a4",
+    "cr-038-a5",
+    "cr-038-a7",
+    "cr-038-a8",
+    "cr-038-a9",
+    "cr-038-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv BM25 RAG scaling, PyTorch 3.0 LLM inference, arXiv multi-turn safety LLM. 拒 7 条:OpenAI Academy 教程 x4, BBC 政治, SW Claude Fable (产品, 拒以稳妥), github_trending skills (开发方法, 非 AI), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

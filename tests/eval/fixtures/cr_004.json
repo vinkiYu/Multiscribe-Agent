@@ -1,16 +1,92 @@
 {
   "candidates": [
-    {"id": "cr4-a1", "title": "推理服务支持连续批处理", "description": "Serving 引擎通过 continuous batching 提高多用户 LLM 推理吞吐。", "url": "https://example.test/cr4-a1", "source": "rss"},
-    {"id": "cr4-a2", "title": "对象存储增加生命周期规则", "description": "云存储产品新增归档和过期删除规则配置。", "url": "https://example.test/cr4-a2", "source": "rss"},
-    {"id": "cr4-a3", "title": "GPU 推出新一代显存架构", "description": "芯片厂商介绍面向 AI 训练和推理的新显存互联架构。", "url": "https://example.test/cr4-a3", "source": "rss"},
-    {"id": "cr4-a4", "title": "团队协作软件改进搜索", "description": "协作软件优化了文档搜索和评论筛选。", "url": "https://example.test/cr4-a4", "source": "rss"},
-    {"id": "cr4-a5", "title": "量化模型在边缘设备运行", "description": "研究团队展示 4-bit 量化模型在消费级 GPU 上的低延迟推理。", "url": "https://example.test/cr4-a5", "source": "rss"},
-    {"id": "cr4-a6", "title": "数据库备份功能改版", "description": "数据库产品更新备份配置页面并增加导出选项。", "url": "https://example.test/cr4-a6", "source": "rss"},
-    {"id": "cr4-a7", "title": "多模态推理加入音频输入", "description": "模型服务新增音频理解接口，可将语音与图像联合输入。", "url": "https://example.test/cr4-a7", "source": "rss"},
-    {"id": "cr4-a8", "title": "数据中心公布节能指标", "description": "云服务商分享数据中心电力使用效率和节能建设进展。", "url": "https://example.test/cr4-a8", "source": "rss"},
-    {"id": "cr4-a9", "title": "LLM Gateway 增加路由降级", "description": "网关可按模型健康度和预算自动切换 provider，降低 Agent 调用失败率。", "url": "https://example.test/cr4-a9", "source": "rss"},
-    {"id": "cr4-a10", "title": "容器运行时发布安全补丁", "description": "容器社区修复一个权限问题并发布补丁版本。", "url": "https://example.test/cr4-a10", "source": "rss"}
+    {
+      "id": "cr-004-a1",
+      "title": "Research Shows Small LLMs Outperform Large Models in Agent Loops",
+      "description": "New study finds that carefully fine-tuned 7B-parameter LLMs match GPT-4 in multi-step agent tasks when using structured prompts and RAG.",
+      "url": "https://example.test/cr-004/1-arxiv-org-abs-2025-04001",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-004-a2",
+      "title": "US and Iran trade more strikes in Gulf as fears of escalation mount",
+      "description": "It comes as Iran condemned the US plan to use frozen Iranian assets to pay for war damages.",
+      "url": "https://example.test/cr-004/2-www-bbc-co-uk-news-articles-c05ql5llj4do",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-004-a3",
+      "title": "Orchestrions",
+      "description": "<p>San Francisco tip: it only costs around $15 ($10 in quarters plus a $5 bill for the self-playing violin) to activate every single Orchestrion in <a href=\"https://en.wikipedia.org/wiki/Musée_Mécanique\">Musée Mécanique</a>.</p>\n<p>And because most people are bad at allocating their funds you may we",
+      "url": "https://example.test/cr-004/3-simonwillison-net-2026-jul-22-all-the-orchestrio",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-004-a4",
+      "title": "[Rust] agavra/tuicr (1,893 stars)",
+      "description": "a code review TUI with vim keybindings",
+      "url": "https://example.test/cr-004/4-github-com-agavra-tuicr",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-004-a5",
+      "title": "The Reliability of LLMs for Medical Diagnosis: An Examination of Consistency, Manipulation, and Contextual Awareness",
+      "description": "arXiv:2503.10647v2 Announce Type: replace-cross \nAbstract: This study evaluated the diagnostic reliability of two Large Language Models (LLMs), Google Gemini 2.0 Flash and OpenAI ChatGPT-4o, across three dimensions: consistency under rephrased inputs, susceptibility to irrelevant prompt content, and",
+      "url": "https://example.test/cr-004/5-arxiv-org-abs-2503-10647",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-004-a6",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-004/6-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-004-a7",
+      "title": "Hallucinations and Truth: A Comprehensive Accuracy Evaluation of RAG, LoRA and DoRA",
+      "description": "arXiv:2502.10497v2 Announce Type: replace \nAbstract: Recent advancements in Generative AI have significantly improved the efficiency and adaptability of natural language processing (NLP) systems, particularly through Retrieval-Augmented Generation (RAG), Low-Rank Adaptation (LoRA), and Weight-Decomp",
+      "url": "https://example.test/cr-004/7-arxiv-org-abs-2502-10497",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-004-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-004/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-004-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-004/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-004-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-004/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
   ],
-  "expected_selected_ids": ["cr4-a1", "cr4-a3", "cr4-a5", "cr4-a7", "cr4-a9"],
-  "expected_rejected_ids": ["cr4-a2", "cr4-a4", "cr4-a6", "cr4-a8", "cr4-a10"]
+  "expected_selected_ids": [
+    "cr-004-a5",
+    "cr-004-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-004-a1",
+    "cr-004-a2",
+    "cr-004-a3",
+    "cr-004-a4",
+    "cr-004-a6",
+    "cr-004-a8",
+    "cr-004-a9",
+    "cr-004-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv LLM 医学诊断 (LLM Medical Diagnosis), arXiv RAG/hallucination (Hallucinations and Truth). 拒 8 条:OpenAI Academy 教程 x4, BBC 国际新闻, SW Orchestrions (非 AI), github_trending tuicr (代码 review TUI), arXiv Small LLMs (实为 perplexity), arXiv EFX Allocations (纯数学).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

@@ -2,73 +2,91 @@
   "candidates": [
     {
       "id": "cr-020-a1",
-      "title": "The state of enterprise AI",
-      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
-      "url": "https://example.test/cr-020/1-openai-com-business-guides-and-resources-the-sta",
-      "source": "OpenAI News"
+      "title": "uv 0.12.0",
+      "description": "<p><strong><a href=\"https://github.com/astral-sh/uv/releases/tag/0.12.0\">uv 0.12.0</a></strong></p>\nSome interesting breaking changes in this release of <code>uv</code>, in particular to the default project produced by the <code>uv init</code> command.</p>\n<p><a href=\"https://docs.astral.sh/uv/conce",
+      "url": "https://example.test/cr-020/1-simonwillison-net-2026-jul-28-uv",
+      "source": "Simon Willison's Weblog"
     },
     {
       "id": "cr-020-a2",
-      "title": "Migrate your prompts to new models and optimize them on Amazon Bedrock",
-      "description": "Amazon Bedrock Advanced Prompt Optimization optimizes your prompts for up to 5 models at once and compares original versus optimized performance across quality, latency, and cost. Migrate to a new model or improve your current one in minutes instead of weeks.",
-      "url": "https://example.test/cr-020/2-aws-amazon-com-blogs-machine-learning-migrate-yo",
-      "source": "Artificial Intelligence"
+      "title": "[Go] yorukot/superfile (21,229 stars)",
+      "description": "Pretty fancy and modern terminal file manager",
+      "url": "https://example.test/cr-020/2-github-com-yorukot-superfile",
+      "source": "github_trending"
     },
     {
       "id": "cr-020-a3",
-      "title": "$100 million for open source: A milestone built by the community",
-      "description": "<p>Celebrating $100 million contributed by the community to the people who build and sustain open source every day.</p>\n<p>The post <a href=\"https://github.blog/open-source/maintainers/100-million-for-open-source-a-milestone-built-by-the-community/\">$100 million for open source: A milestone built by",
-      "url": "https://example.test/cr-020/3-github-blog-open-source-maintainers-100-million-",
-      "source": "The GitHub Blog"
+      "title": "Measure what Matters: Psychometric Evaluation of AI with Situational Judgment Tests",
+      "description": "arXiv:2510.22170v3 Announce Type: replace \nAbstract: Persona conditioning is widely used to steer large language model (LLM) behavior, but it is unclear whether it induces stable behavioral structure or superficial variation. We propose a framework to measure consistent behavioral tendencies using s",
+      "url": "https://example.test/cr-020/3-arxiv-org-abs-2510-22170",
+      "source": "cs.AI updates on arXiv.org"
     },
     {
       "id": "cr-020-a4",
-      "title": "AI safety needs social scientists",
-      "description": "We’ve written a paper arguing that long-term AI safety research needs social scientists to ensure AI alignment algorithms succeed when actual humans are involved. Properly aligning advanced AI systems with human values requires resolving many uncertainties related to the psychology of human rational",
-      "url": "https://example.test/cr-020/4-openai-com-index-ai-safety-needs-social-scientis",
+      "title": "Personalizing ChatGPT",
+      "description": "Learn how to personalize ChatGPT using custom instructions and memory to get more relevant, consistent, and tailored responses.",
+      "url": "https://example.test/cr-020/4-openai-com-academy-personalization",
       "source": "OpenAI News"
     },
     {
       "id": "cr-020-a5",
-      "title": "Generate Autonomous Business Insights with AI Agent and MCP Servers",
-      "description": "Learn how Amazon Bedrock AgentCore delivers autonomous, cross-system business intelligence through configuration rather than custom code. Using pre-built MCP server connectors, fine-grained access control, and persistent memory, enterprises can query multiple data sources with natural language while",
-      "url": "https://example.test/cr-020/5-aws-amazon-com-blogs-machine-learning-generate-a",
-      "source": "Artificial Intelligence"
+      "title": "Beyond Pattern Matching: Seven Cross-Domain Techniques for Prompt Injection Detection",
+      "description": "arXiv:2604.18248v4 Announce Type: replace-cross \nAbstract: Current open-source prompt-injection detectors converge on two architectural choices: regular-expression pattern matching and fine-tuned transformer classifiers. Both share failure modes recent work has made concrete. Regular expressions mis",
+      "url": "https://example.test/cr-020/5-arxiv-org-abs-2604-18248",
+      "source": "cs.CL updates on arXiv.org"
     },
     {
       "id": "cr-020-a6",
-      "title": "Accelerating the next phase of AI",
-      "description": "OpenAI raises $122 billion in new funding to expand frontier AI globally, invest in next-generation compute, and meet growing demand for ChatGPT, Codex, and enterprise AI.",
-      "url": "https://example.test/cr-020/6-openai-com-index-accelerating-the-next-phase-ai",
-      "source": "OpenAI News"
+      "title": "Cohere releases Command-R+ with advanced RAG and citation capabilities",
+      "description": "Command-R+ specializes in retrieval-augmented generation, offering automatic citation and improved accuracy for enterprise knowledge bases.",
+      "url": "https://example.test/cr-020/6-cohere-com-blog-command-r-plus-rag-citations",
+      "source": "ai_search:perplexity"
     },
     {
       "id": "cr-020-a7",
-      "title": "Authenticate with Private Key JWT using Amazon Bedrock AgentCore Identity",
-      "description": "This post explains how Private Key JWT client authentication works in AgentCore Identity and reviews the supported grant flows. We then walk through creating an AWS KMS signing key, registering its public key with your identity provider, configuring a credential provider on the AWS Management Consol",
-      "url": "https://example.test/cr-020/7-aws-amazon-com-blogs-machine-learning-authentica",
-      "source": "Artificial Intelligence"
+      "title": "Edinburgh's tourist tax is here - how much is it and who pays?",
+      "description": "The Scottish capital has become the first city in the country to introduce a charge for overnight stays.",
+      "url": "https://example.test/cr-020/7-www-bbc-co-uk-news-articles-cvgl8j37839o",
+      "source": "BBC News"
     },
     {
       "id": "cr-020-a8",
-      "title": "Evaluating AI Agents: A production blueprint with Strands and AgentCore",
-      "description": "Together, Motorway and AWS built an end-to-end evaluation pipeline that reduced incorrect results from 1 in 8 queries to 1 in 50 and cut issue detection time from few hours to few minutes. The pipeline combines the Strands Agents SDK with Amazon Bedrock AgentCore, a fully managed service for deployi",
-      "url": "https://example.test/cr-020/8-aws-amazon-com-blogs-machine-learning-evaluating",
-      "source": "Artificial Intelligence"
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-020/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-020-a9",
-      "title": "How Yahoo enhances search retargeting using Amazon Bedrock",
-      "description": "In this post, we demonstrate how Yahoo implemented Amazon Bedrock to enhance their Search Retargeting (SRT) capabilities in the Yahoo DSP ad tech suite. SRT is a core audience targeting solution that helps advertisers reach users based on their historical search behavior, bridging search intent with",
-      "url": "https://example.test/cr-020/9-aws-amazon-com-blogs-machine-learning-how-yahoo-",
-      "source": "Artificial Intelligence"
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-020/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-020-a10",
-      "title": "Deploying Kimi K3 on AWS",
-      "description": "This post walks through deploying Kimi K3 on AWS using two approaches: Amazon SageMaker HyperPod, and&nbsp; Amazon Elastic Kubernetes Service (Amazon EKS) cluster.",
-      "url": "https://example.test/cr-020/10-aws-amazon-com-blogs-machine-learning-deploying-",
-      "source": "Artificial Intelligence"
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-020/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
     }
-  ]
+  ],
+  "expected_selected_ids": [
+    "cr-020-a3",
+    "cr-020-a5",
+    "cr-020-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-020-a1",
+    "cr-020-a2",
+    "cr-020-a4",
+    "cr-020-a7",
+    "cr-020-a8",
+    "cr-020-a9",
+    "cr-020-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv LLM persona evaluation, arXiv prompt injection detection, Cohere Command R+ RAG. 拒 7 条:OpenAI Academy 教程 x4, SW uv release (非 AI), github_trending superfile (非 AI), BBC 旅游税, OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

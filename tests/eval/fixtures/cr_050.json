@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-050-a1",
+      "title": "The Alignment Target Problem: Divergent Moral Judgments of Humans, AI Systems, and Their Designers",
+      "description": "arXiv:2604.24155v4 Announce Type: replace-cross \nAbstract: The project of aligning machine behavior with human values raises a basic problem: whose moral expectations should guide AI decision-making? Much alignment research assumes that the appropriate benchmark is how humans themselves would act in",
+      "url": "https://example.test/cr-050/1-arxiv-org-abs-2604-24155",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-050-a2",
+      "title": "OpenAI’s new economic analysis",
+      "description": "Analysis provides insights into ChatGPT’s impact on the economy. OpenAI also launches new research collaboration to study AI’s broader effects on the labor market and productivity.",
+      "url": "https://example.test/cr-050/2-openai-com-global-affairs-new-economic-analysis",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-050-a3",
+      "title": "HSS-Synth: Humanities and Social Sciences Data Synthesis for LLMs",
+      "description": "arXiv:2607.27379v1 Announce Type: new \nAbstract: High-quality, diverse data are vital for large language models (LLMs) but remain scarce and costly. Data synthesis is a viable alternative and succeeds on closed tasks, yet the humanities and social sciences (HSS) are overlooked, and their open-ended ",
+      "url": "https://example.test/cr-050/3-arxiv-org-abs-2607-27379",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-050-a4",
+      "title": "Cohere Unveils Command R+ v2: Enterprise-Grade RAG with Real-Time Fact-Checking",
+      "description": "Cohere's updated model incorporates hallucination detection layers and citation verification directly into the retrieval process, targeting legal and healthcare compliance use cases.",
+      "url": "https://example.test/cr-050/4-cohere-com-blog-command-r-plus-v2-enterprise-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-050-a5",
+      "title": "The Papers: 'The Burn supremacy' and 'Spice up your wife'",
+      "description": "Britian's new prime minister Andy Burnham is the main focus of Saturday's papers.",
+      "url": "https://example.test/cr-050/5-www-bbc-co-uk-news-articles-cwyq978dxwqo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-050-a6",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-050/6-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-050-a7",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-050/7-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-050-a8",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-050/8-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-050-a9",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-050/9-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-050-a10",
+      "title": "How data science teams use ChatGPT Work",
+      "description": "See how data science teams can use ChatGPT Work to build root-cause briefs, impact readouts, KPI memos, scoped analyses, and dashboard specs from real work inputs.",
+      "url": "https://example.test/cr-050/10-openai-com-academy-codex-for-work-how-data-scien",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-050-a1",
+    "cr-050-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-050-a2",
+    "cr-050-a3",
+    "cr-050-a5",
+    "cr-050-a6",
+    "cr-050-a7",
+    "cr-050-a8",
+    "cr-050-a9",
+    "cr-050-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv Alignment Target, Cohere Command R+ v2 RAG. 拒 8 条:OpenAI Academy 教程 x4, arXiv HSS-Synth (纯社科, 无 LLM), BBC 政治, OpenAI economic analysis (企业稿, 拒).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

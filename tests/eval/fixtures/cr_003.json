@@ -1,16 +1,92 @@
 {
   "candidates": [
-    {"id": "cr3-a1", "title": "开源中文大模型发布新版本", "description": "模型开放权重和推理脚本，在中文指令跟随任务上提升效果。", "url": "https://example.test/cr3-a1", "source": "rss"},
-    {"id": "cr3-a2", "title": "前端组件库发布图标包", "description": "前端项目新增一批图标和主题变量。", "url": "https://example.test/cr3-a2", "source": "rss"},
-    {"id": "cr3-a3", "title": "Transformer 推理优化论文", "description": "研究提出 KV cache 压缩方法，降低长上下文推理的显存占用。", "url": "https://example.test/cr3-a3", "source": "rss"},
-    {"id": "cr3-a4", "title": "开源监控平台支持新面板", "description": "可观测性平台增加新的图表组件和告警模板。", "url": "https://example.test/cr3-a4", "source": "rss"},
-    {"id": "cr3-a5", "title": "GitHub Trending 出现 AI 编程工具", "description": "开源代码 Agent 支持仓库分析、补丁生成和测试执行。", "url": "https://example.test/cr3-a5", "source": "github_trending"},
-    {"id": "cr3-a6", "title": "摄影社区举办春季活动", "description": "摄影社区公布线上作品征集活动和奖项设置。", "url": "https://example.test/cr3-a6", "source": "rss"},
-    {"id": "cr3-a7", "title": "扩散模型图像编辑基准更新", "description": "新数据集覆盖主体替换和局部编辑，方便比较多模态模型能力。", "url": "https://example.test/cr3-a7", "source": "rss"},
-    {"id": "cr3-a8", "title": "Linux 内核发布维护版", "description": "Linux 社区发布常规维护版本并修复驱动问题。", "url": "https://example.test/cr3-a8", "source": "rss"},
-    {"id": "cr3-a9", "title": "AI 开源社区新增模型许可证指南", "description": "指南比较常见模型许可证对商用、再分发和训练数据的限制。", "url": "https://example.test/cr3-a9", "source": "rss"},
-    {"id": "cr3-a10", "title": "云厂商调整存储价格", "description": "云服务商公布对象存储价格和计费规则变化。", "url": "https://example.test/cr3-a10", "source": "rss"}
+    {
+      "id": "cr-003-a1",
+      "title": "Metareasoning constraints couple narratives, affect and cognition",
+      "description": "arXiv:2502.09487v4 Announce Type: replace \nAbstract: Narratives and emotions shape thoughts, and thoughts shape our feelings and stories we tell. Why narrative, affective and cognitive states interact remains unclear. We examine whether this mutual relationship reflects constraints on metareasoning ",
+      "url": "https://example.test/cr-003/1-arxiv-org-abs-2502-09487",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-003-a2",
+      "title": "Mistral AI Releases Open-Source Mixtral 8x22B for Free",
+      "description": "Mixtral 8x22B, a mixture-of-experts model, is now available under Apache 2.0, offering competitive performance with lower inference costs.",
+      "url": "https://example.test/cr-003/2-mistral-ai-news-mixtral-8x22b-open-source",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-003-a3",
+      "title": "BBC News app",
+      "description": "Top stories, breaking news, live reporting, and follow news topics that match your interests",
+      "url": "https://example.test/cr-003/3-www-bbc-co-uk-news-10628994",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-003-a4",
+      "title": "California Sea Lion",
+      "description": "<p><img alt=\"California Sea Lion\" src=\"https://static.inaturalist.org/photos/702321069/large.jpg\" /></p><p><img alt=\"California Sea Lion\" src=\"https://static.inaturalist.org/photos/702321114/large.jpg\" /></p><p>California Sea Lion, in San Francisco County, US, CA</p><p>We took some visiting family t",
+      "url": "https://example.test/cr-003/4-simonwillison-net-2026-jul-21-sighting-383713864",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-003-a5",
+      "title": "[JavaScript] affaan-m/ECC (236,284 stars)",
+      "description": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
+      "url": "https://example.test/cr-003/5-github-com-affaan-m-ecc",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-003-a6",
+      "title": "MEDIC: Comprehensive Evaluation of Leading Indicators for LLM Safety and Utility in Clinical Applications",
+      "description": "arXiv:2409.07314v4 Announce Type: replace-cross \nAbstract: While Large Language Models (LLMs) achieve superhuman performance on standardized medical licensing exams, these static benchmarks have become saturated and increasingly disconnected from the functional requirements of clinical workflows. To",
+      "url": "https://example.test/cr-003/6-arxiv-org-abs-2409-07314",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-003-a7",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-003/7-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-003-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-003/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-003-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-003/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-003-a10",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-003/10-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    }
   ],
-  "expected_selected_ids": ["cr3-a1", "cr3-a3", "cr3-a5", "cr3-a7", "cr3-a9"],
-  "expected_rejected_ids": ["cr3-a2", "cr3-a4", "cr3-a6", "cr3-a8", "cr3-a10"]
+  "expected_selected_ids": [
+    "cr-003-a2",
+    "cr-003-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-003-a1",
+    "cr-003-a3",
+    "cr-003-a4",
+    "cr-003-a5",
+    "cr-003-a7",
+    "cr-003-a8",
+    "cr-003-a9",
+    "cr-003-a10"
+  ],
+  "selection_rationale": "选中 2 条:Mistral Mixtral 开源 (AI 公司), arXiv MEDIC LLM safety. 拒 8 条:OpenAI Academy 教程 x4, BBC app, SW 海狮照片 (非 AI), github_trending ECC (描述含 Claude 但属工具, 拒以稳妥), arXiv Metareasoning (无 LLM 关键词), arXiv backup.",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

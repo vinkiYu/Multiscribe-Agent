@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-027-a1",
+      "title": "llm 0.32rc1",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/llm/releases/tag/0.32rc1\">llm 0.32rc1</a></p>\n        <p>This RC for LLM 0.32 finishes the work that <a href=\"https://simonwillison.net/2026/Apr/29/llm/\">started in LLM 0.32a0</a> - it adds a <a href=\"https://llm.datasette.io/en/latest/",
+      "url": "https://example.test/cr-027/1-simonwillison-net-2026-jul-30-llm-rc1",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-027-a2",
+      "title": "[Rust] block/buzz (13,613 stars)",
+      "description": "A hive mind communication platform",
+      "url": "https://example.test/cr-027/2-github-com-block-buzz",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-027-a3",
+      "title": "A Methodology for Designing Knowledge-Driven Missions for Robots",
+      "description": "arXiv:2601.20797v1 Announce Type: cross \nAbstract: This paper presents a comprehensive methodology for implementing knowledge graphs in ROS 2 systems, aiming to enhance the efficiency and intelligence of autonomous robotic missions. The methodology encompasses several key steps: defining initial and",
+      "url": "https://example.test/cr-027/3-arxiv-org-abs-2601-20797",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-027-a4",
+      "title": "AI fundamentals",
+      "description": "Learn what AI is, how it works, and how tools like ChatGPT use large language models. A clear, beginner-friendly guide to understanding artificial intelligence.",
+      "url": "https://example.test/cr-027/4-openai-com-academy-what-is-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-027-a5",
+      "title": "Measuring Human Value Expression in Social Media Texts: Calibrated LLM Annotation and Encoder Transfer",
+      "description": "arXiv:2606.11018v3 Announce Type: replace \nAbstract: Measuring subjective constructs in naturally occurring social media text requires annotation procedures that are theoretically grounded, empirically validated, and transferable to an encoder model for scalable prediction. Using posts annotated acc",
+      "url": "https://example.test/cr-027/5-arxiv-org-abs-2606-11018",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-027-a6",
+      "title": "Mistral AI Releases 'Mistral Large 3' with Agentic Tool Calling and RAG",
+      "description": "Mistral Large 3 (230B) now includes native function calling and a built-in retriever, achieving top scores on the AgentEval and RAGAL benchmarks. Available under Mistral's open-weight license.",
+      "url": "https://example.test/cr-027/6-mistral-ai-news-mistral-large-3-agent-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-027-a7",
+      "title": "Watch: Another day, more Trump tariffs - but are they working?",
+      "description": "The BBC's Samira Hussain explains how President Trump's tariffs affect US economy, who pays the price, and whether they're working.",
+      "url": "https://example.test/cr-027/7-www-bbc-co-uk-news-videos-c5yw2xgnv2jo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-027-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-027/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-027-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-027/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-027-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-027/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-027-a5",
+    "cr-027-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-027-a1",
+    "cr-027-a2",
+    "cr-027-a3",
+    "cr-027-a4",
+    "cr-027-a7",
+    "cr-027-a8",
+    "cr-027-a9",
+    "cr-027-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv LLM annotation 评测, Mistral Large 3 RAG agent. 拒 8 条:OpenAI Academy 教程 x4, BBC 政治, SW llm release (非实质), github_trending buzz (非 AI), arXiv ROS 机器人 (纯机器人, 无 LLM), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

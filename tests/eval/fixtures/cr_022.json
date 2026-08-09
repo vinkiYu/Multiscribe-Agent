@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-022-a1",
+      "title": "BioPro: Towards Difference-Aware Gender Fairness for Vision-Language Models",
+      "description": "arXiv:2512.00807v2 Announce Type: replace \nAbstract: Vision-Language Models (VLMs) inherit significant social biases from their training data, notably in gender representation. Current fairness interventions often adopt a difference-unaware perspective that enforces uniform treatment across demograp",
+      "url": "https://example.test/cr-022/1-arxiv-org-abs-2512-00807",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-022-a2",
+      "title": "ChatGPT for research",
+      "description": "Learn how to use ChatGPT for research to gather sources, analyze information, and create structured, citation-backed insights.",
+      "url": "https://example.test/cr-022/2-openai-com-academy-research",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-022-a3",
+      "title": "NorBERTo: A ModernBERT Model Trained for Portuguese with 331 Billion Tokens Corpus",
+      "description": "arXiv:2605.00086v2 Announce Type: replace \nAbstract: High-quality corpora are essential for advancing Natural Language Processing (NLP) in Portuguese. Building on previous encoder-only models such as BERTimbau and Albertina PT-BR, we introduce NorBERTo, a modern encoder based on the ModernBERT archi",
+      "url": "https://example.test/cr-022/3-arxiv-org-abs-2605-00086",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-022-a4",
+      "title": "Meta open-sources Llama 4 70B – competitive with GPT-4 in benchmarks",
+      "description": "Llama 4 70B is released under a new open license, featuring improved multilingual performance, long context, and native function calling for agents.",
+      "url": "https://example.test/cr-022/4-ai-meta-com-blog-llama-4-open-source-70b",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-022-a5",
+      "title": "Angela Rayner rules out rent controls in England",
+      "description": "The housing secretary tells the BBC that the Renters Rights' Act is already having a significant impact on the market.",
+      "url": "https://example.test/cr-022/5-www-bbc-co-uk-news-articles-cx2dg54vprno",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-022-a6",
+      "title": "Quoting D. Richard Hipp",
+      "description": "<blockquote cite=\"https://www.youtube.com/watch?v=R57nUGzo7CA&amp;t=848s\"><p>Years ago, we didn’t have SQL. There were people whose job was to generate software that would query large data sets. Their job title was COBOL programmer.</p>\n<p>Then SQL comes along—I’m simplifying this only a little bit—",
+      "url": "https://example.test/cr-022/6-simonwillison-net-2026-jul-29-d-richard-hipp",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-022-a7",
+      "title": "[Java] OtterMind/Chat2DB (27,246 stars)",
+      "description": "🔥🔥🔥 AI-driven database tool and SQL client, The hottest GUI client, supporting MySQL, Oracle, PostgreSQL, DB2, SQL Server, DB2, SQLite, H2, ClickHouse, and more.",
+      "url": "https://example.test/cr-022/7-github-com-ottermind-chat2db",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-022-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-022/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-022-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-022/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-022-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-022/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-022-a1",
+    "cr-022-a3",
+    "cr-022-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-022-a2",
+    "cr-022-a5",
+    "cr-022-a6",
+    "cr-022-a7",
+    "cr-022-a8",
+    "cr-022-a9",
+    "cr-022-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv BioPro VLM 公平, arXiv NorBERTo ModernBERT, Meta Llama 4 70B 开源. 拒 7 条:OpenAI Academy 教程 x4, BBC 政治, SW D. Richard Hipp (非 AI), github_trending Chat2DB (数据库, 非 AI), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

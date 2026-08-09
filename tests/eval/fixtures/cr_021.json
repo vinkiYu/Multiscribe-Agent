@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-021-a1",
+      "title": "[TypeScript] CoreBunch/Instatic (5,816 stars)",
+      "description": "The open-source alternative to Webflow, Framer and WordPress. Agentic self-hosted visual CMS outputting clean static pages. Users, roles, plugins, content, database, it's all there.",
+      "url": "https://example.test/cr-021/1-github-com-corebunch-instatic",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-021-a2",
+      "title": "Balancing Centralized Learning and Distributed Self-Organization: A Hybrid Model for Embodied Morphogenesis",
+      "description": "arXiv:2511.10101v2 Announce Type: replace \nAbstract: Background: both embodied intelligence and developmental morphogenesis depend on a division of labour between centralized guidance and distributed material dynamics, but the amount of top-down control needed to steer self-organization remains uncl",
+      "url": "https://example.test/cr-021/2-arxiv-org-abs-2511-10101",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-021-a3",
+      "title": "Using projects in ChatGPT",
+      "description": "Learn how to use projects in ChatGPT to organize chats, files, and instructions, manage ongoing work, and collaborate more effectively.",
+      "url": "https://example.test/cr-021/3-openai-com-academy-projects",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-021-a4",
+      "title": "HumorRank: A Tournament-Based Leaderboard for Evaluating Humor Generation in Large Language Models",
+      "description": "arXiv:2604.19786v3 Announce Type: replace \nAbstract: Evaluating humor in large language models (LLMs) is an open challenge because existing approaches yield isolated, incomparable metrics rather than unified model rankings, making it difficult to track progress across systems. We introduce HumorRank",
+      "url": "https://example.test/cr-021/4-arxiv-org-abs-2604-19786",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-021-a5",
+      "title": "LlamaIndex releases LlamaCloud – managed RAG service for enterprises",
+      "description": "LlamaCloud offers a fully managed retrieval-augmented generation (RAG) stack with hybrid search, re-ranking, and real-time data connectors.",
+      "url": "https://example.test/cr-021/5-www-llamaindex-ai-blog-llamacloud-rag-service-20",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-021-a6",
+      "title": "Four men dead after car crashes into lamp-post",
+      "description": "The car left the road and crashed on Liverpool Road in Huyton just before 02:00 BST.",
+      "url": "https://example.test/cr-021/6-www-bbc-co-uk-news-articles-cwymj9jmnm0o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-021-a7",
+      "title": "AI Worming through Word",
+      "description": "<p><strong><a href=\"https://enklypesalt.com/posts/context-collapse-part3-ai-worming-through-word/\">AI Worming through Word</a></strong></p>\nNeat new prompt injection variant by Håkon Måløy, who found a way to upgrade prompt injection attacks against Microsoft Word to full self-replicating worms:</p>",
+      "url": "https://example.test/cr-021/7-simonwillison-net-2026-jul-29-ai-worming-through",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-021-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-021/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-021-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-021/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-021-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-021/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-021-a4",
+    "cr-021-a5",
+    "cr-021-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-021-a1",
+    "cr-021-a2",
+    "cr-021-a3",
+    "cr-021-a6",
+    "cr-021-a8",
+    "cr-021-a9",
+    "cr-021-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv HumorRank LLM, LlamaCloud (AI 公司), SW AI Worming Word (prompt injection). 拒 7 条:OpenAI Academy 教程 x4, github_trending Instatic (描述含 'agentic' 但实为 CMS), BBC 车祸, arXiv Morphogenesis (无 LLM), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

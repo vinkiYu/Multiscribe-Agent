@@ -1,16 +1,92 @@
 {
   "candidates": [
-    {"id": "cr5-a1", "title": "监管机构发布生成式 AI 指南", "description": "新指南明确模型服务的透明度、风险评估和内容标识要求。", "url": "https://example.test/cr5-a1", "source": "rss"},
-    {"id": "cr5-a2", "title": "旅游平台公布暑期活动", "description": "旅游平台公布暑期促销活动和目的地推荐。", "url": "https://example.test/cr5-a2", "source": "rss"},
-    {"id": "cr5-a3", "title": "医疗 Agent 辅助分诊试点", "description": "医院试点使用带审计和人工确认的 Agent 辅助分诊流程。", "url": "https://example.test/cr5-a3", "source": "rss"},
-    {"id": "cr5-a4", "title": "制造业采购指数公布", "description": "行业协会发布当月制造业采购经理指数。", "url": "https://example.test/cr5-a4", "source": "rss"},
-    {"id": "cr5-a5", "title": "企业知识助手落地客服中心", "description": "客服中心使用 RAG 知识助手生成回答草稿并保留来源引用。", "url": "https://example.test/cr5-a5", "source": "rss"},
-    {"id": "cr5-a6", "title": "银行发布年度经营报告", "description": "商业银行披露年度营收、资产和分支机构数据。", "url": "https://example.test/cr5-a6", "source": "rss"},
-    {"id": "cr5-a7", "title": "AI 版权诉讼出现新判例", "description": "法院判例讨论训练数据授权和生成内容版权归属，对模型公司有参考价值。", "url": "https://example.test/cr5-a7", "source": "rss"},
-    {"id": "cr5-a8", "title": "零售品牌推出夏季新品", "description": "零售品牌发布服装和家居类夏季新品。", "url": "https://example.test/cr5-a8", "source": "rss"},
-    {"id": "cr5-a9", "title": "开源医疗模型开放评测结果", "description": "研究团队公开医疗问答模型的评测数据、限制和安全卡片。", "url": "https://example.test/cr5-a9", "source": "rss"},
-    {"id": "cr5-a10", "title": "物流公司调整配送范围", "description": "物流服务商公布新的区域配送和时效规则。", "url": "https://example.test/cr5-a10", "source": "rss"}
+    {
+      "id": "cr-005-a1",
+      "title": "Nine men in court over historical child sexual exploitation offences",
+      "description": "The men are charged with a total of 41 historical sexual offences, relating to eight victims.",
+      "url": "https://example.test/cr-005/1-www-bbc-co-uk-news-articles-c171qd7v94no",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-005-a2",
+      "title": "Are AI labs pelicanmaxxing?",
+      "description": "<p><strong><a href=\"https://dylancastillo.co/posts/pelicanmaxxing.html\">Are AI labs pelicanmaxxing?</a></strong></p>\nExcellent piece of work by Dylan Castillo, who took a deep-dive into the frequently pondered question of whether the AI labs have been deliberately training models to draw pelicans ri",
+      "url": "https://example.test/cr-005/2-simonwillison-net-2026-jul-22-are-ai-labs-pelica",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-005-a3",
+      "title": "[Python] ansible/ansible (69,917 stars)",
+      "description": "Ansible is a radically simple IT automation platform that makes your applications and systems easier to deploy and maintain. Automate everything from code deployment to network configuration to cloud management, in a language that approaches plain English, using SSH, with no agents to install on remote systems. https://docs.ansible.com .",
+      "url": "https://example.test/cr-005/3-github-com-ansible-ansible",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-005-a4",
+      "title": "Decision-oriented joint optimization of evidence fusion based on event-conditioned credibility",
+      "description": "arXiv:2504.04128v3 Announce Type: replace \nAbstract: In decision-level fusion tasks involving heterogeneous sources with unequal precision and potential anomalies, evidence deviating from the majority may be either critical evidence supporting the correct decision or anomalous evidence supporting an",
+      "url": "https://example.test/cr-005/4-arxiv-org-abs-2504-04128",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-005-a5",
+      "title": "How data science teams use ChatGPT Work",
+      "description": "See how data science teams can use ChatGPT Work to build root-cause briefs, impact readouts, KPI memos, scoped analyses, and dashboard specs from real work inputs.",
+      "url": "https://example.test/cr-005/5-openai-com-academy-codex-for-work-how-data-scien",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-005-a6",
+      "title": "MedHallTune: An Instruction-Tuning Benchmark for Mitigating Medical Hallucination in Vision-Language Models",
+      "description": "arXiv:2502.20780v2 Announce Type: replace-cross \nAbstract: The increasing use of vision-language models (VLMs) in healthcare applications presents great challenges related to hallucinations, in which the models may generate seemingly plausible results that are in fact incorrect. Such hallucinations ",
+      "url": "https://example.test/cr-005/6-arxiv-org-abs-2502-20780",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-005-a7",
+      "title": "Hugging Face Releases Fine-Tuning Library for LLMs on Consumer GPUs",
+      "description": "New optimizations enable fine-tuning of 7B-parameter models on a single RTX 4090, democratizing LLM customization.",
+      "url": "https://example.test/cr-005/7-huggingface-co-blog-fine-tune-llm-consumer-gpus-",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-005-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-005/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-005-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-005/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-005-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-005/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
   ],
-  "expected_selected_ids": ["cr5-a1", "cr5-a3", "cr5-a5", "cr5-a7", "cr5-a9"],
-  "expected_rejected_ids": ["cr5-a2", "cr5-a4", "cr5-a6", "cr5-a8", "cr5-a10"]
+  "expected_selected_ids": [
+    "cr-005-a2",
+    "cr-005-a6",
+    "cr-005-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-005-a1",
+    "cr-005-a3",
+    "cr-005-a4",
+    "cr-005-a5",
+    "cr-005-a8",
+    "cr-005-a9",
+    "cr-005-a10"
+  ],
+  "selection_rationale": "选中 3 条:SW pelicanmaxxing (AI 实质评论), arXiv MedHallTune (VLM 医学), Hugging Face fine-tune library. 拒 7 条:OpenAI Academy 教程 x4, BBC 刑事, github_trending Ansible (非 AI), arXiv evidence fusion (纯统计).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

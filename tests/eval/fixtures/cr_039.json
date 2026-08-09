@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-039-a1",
+      "title": "Mistral AI Unveils Fine-Tuning Framework for RAG at Scale",
+      "description": "Mistral's new fine-tuning recipe adapts their open-source models for retrieval-augmented generation tasks, reducing hallucination rates by 40% on knowledge-intensive datasets.",
+      "url": "https://example.test/cr-039/1-mistral-ai-news-finetune-rag-2025",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-039-a2",
+      "title": "Many Ukrainian soldiers outraged over removal of defence minister, troops tell BBC",
+      "description": "Protests erupted in Ukraine on Thursday after Mykhailo Fedorov's removal - and now soldiers are also criticising the move.",
+      "url": "https://example.test/cr-039/2-www-bbc-co-uk-news-articles-cvg8w4dpjkwo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-039-a3",
+      "title": "nascheme/quixote",
+      "description": "<p><strong><a href=\"https://github.com/nascheme/quixote\">nascheme/quixote</a></strong></p>\nA certain vintage of Python web nerd might be delighted to learn that the most recent commit to the Quixote web framework was <a href=\"(https://github.com/nascheme/quixote/commit/7f775cf9d1e7e80fcbb2706b4a1d97",
+      "url": "https://example.test/cr-039/3-simonwillison-net-2026-jul-18-quixote",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-039-a4",
+      "title": "[Shell] obra/superpowers (261,338 stars)",
+      "description": "An agentic skills framework & software development methodology that works.",
+      "url": "https://example.test/cr-039/4-github-com-obra-superpowers",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-039-a5",
+      "title": "Adaptively Robust LLM Monitoring via Activation Watermarking",
+      "description": "arXiv:2603.23171v3 Announce Type: replace-cross \nAbstract: Providers monitor deployed large language models (LLMs) to detect misuse that they cannot prevent. LLM monitoring is deterministic and often openly available, so $\\emph{adaptive}$ attackers with a local copy can search offline for prompts th",
+      "url": "https://example.test/cr-039/5-arxiv-org-abs-2603-23171",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-039-a6",
+      "title": "Accelerating AI adoption in Europe",
+      "description": "OpenAI and Allied for Startups release the Hacktivate AI report with 20 actionable policy ideas to accelerate AI adoption in Europe, boost competitiveness, and empower innovators.",
+      "url": "https://example.test/cr-039/6-openai-com-global-affairs-accelerating-ai-uptake",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-039-a7",
+      "title": "Constitutional Midtraining: Content Presence Drives Alignment Gains",
+      "description": "arXiv:2607.26654v2 Announce Type: replace \nAbstract: Post-training alignment is often shallow, eroding under fine-tuning. It remains untested as to whether constitutional midtraining interventions can produce durable alignment when cleanly isolated from post-training. We build a 394M-token constitut",
+      "url": "https://example.test/cr-039/7-arxiv-org-abs-2607-26654",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-039-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-039/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-039-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-039/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-039-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-039/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-039-a1",
+    "cr-039-a4",
+    "cr-039-a5",
+    "cr-039-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-039-a2",
+    "cr-039-a3",
+    "cr-039-a6",
+    "cr-039-a8",
+    "cr-039-a9",
+    "cr-039-a10"
+  ],
+  "selection_rationale": "选中 4 条:Mistral fine-tuning RAG, github_trending superpowers agent, arXiv LLM monitoring, arXiv constitutional midtraining. 拒 6 条:OpenAI Academy 教程 x4, BBC 政治, SW quixote (非 AI), OpenAI EU uptake (企业稿, 拒), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

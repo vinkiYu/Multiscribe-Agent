@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-044-a1",
+      "title": "Disrupting malicious uses of AI: October 2025",
+      "description": "Discover how OpenAI is detecting and disrupting malicious uses of AI in our October 2025 report. Learn how we’re countering misuse, enforcing policies, and protecting users from real-world harms.",
+      "url": "https://example.test/cr-044/1-openai-com-global-affairs-disrupting-malicious-u",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-044-a2",
+      "title": "AI-assisted pre-review of open-source software submissions: an experience report from BOSC 2026",
+      "description": "arXiv:2607.27228v1 Announce Type: new \nAbstract: Most conferences rely on peer-review of submissions, but as generative AI makes it easier than ever to prepare submission materials, some conferences are seeing an overwhelming surge of submissions. We wanted to see if generative AI could help our con",
+      "url": "https://example.test/cr-044/2-arxiv-org-abs-2607-27228",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-044-a3",
+      "title": "Meta Open-Sources 'Llama 4' with Mixture-of-Experts Architecture",
+      "description": "Meta's Llama-4 models (8B, 70B, 400B) are now available under a permissive license. The checkpoint uses MoE layers for efficiency and shows competitive performance with closed-source alternatives.",
+      "url": "https://example.test/cr-044/3-venturebeat-com-2025-07-08-meta-llama-4-open-sou",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-044-a4",
+      "title": "Do declassified files support Trump's election security claims?",
+      "description": "BBC Verify has reviewed these documents, although some of them have been heavily redacted.",
+      "url": "https://example.test/cr-044/4-www-bbc-co-uk-news-articles-cz64wx8yjjdo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-044-a5",
+      "title": "Reverse-engineering is cheap now",
+      "description": "<p>I keep hearing anecdotes from people who used coding agents to reverse-engineer and automate devices in their homes.</p>\n<p>I think this is an interesting illustration of the impact of the reduced cost of writing code.</p>\n<p>Prior to agents, it was entirely possible to reverse-engineer home devi",
+      "url": "https://example.test/cr-044/5-simonwillison-net-2026-jul-20-cheap-reverse-engi",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-044-a6",
+      "title": "[TypeScript] likec4/likec4 (4,923 stars)",
+      "description": "Visualize, collaborate, and evolve the software architecture with always actual and live diagrams from your code",
+      "url": "https://example.test/cr-044/6-github-com-likec4-likec4",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-044-a7",
+      "title": "The Fast Lane Hypothesis: Von Economo Neurons Implement a Biological Speed-Accuracy Tradeoff",
+      "description": "arXiv:2604.09229v2 Announce Type: replace-cross \nAbstract: von Economo neurons (VENs) are large bipolar projection neurons found exclusively in the anterior cingulate cortex (ACC) and frontal insula of species with complex social cognition, including humans, great apes, cetaceans, and elephants. The",
+      "url": "https://example.test/cr-044/7-arxiv-org-abs-2604-09229",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-044-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-044/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-044-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-044/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-044-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-044/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-044-a2",
+    "cr-044-a3"
+  ],
+  "expected_rejected_ids": [
+    "cr-044-a1",
+    "cr-044-a4",
+    "cr-044-a5",
+    "cr-044-a6",
+    "cr-044-a7",
+    "cr-044-a8",
+    "cr-044-a9",
+    "cr-044-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv AI-assisted pre-review, Meta Llama 4 MoE 开源. 拒 8 条:OpenAI Academy 教程 x4, BBC 政治, SW reverse engineering (评论, 拒), github_trending likec4 (架构图, 非 AI), arXiv Von Economo (纯神经科学, 无 LLM), OpenAI malicious (企业稿).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

@@ -2,73 +2,91 @@
   "candidates": [
     {
       "id": "cr-007-a1",
-      "title": "Migrate your prompts to new models and optimize them on Amazon Bedrock",
-      "description": "Amazon Bedrock Advanced Prompt Optimization optimizes your prompts for up to 5 models at once and compares original versus optimized performance across quality, latency, and cost. Migrate to a new model or improve your current one in minutes instead of weeks.",
-      "url": "https://example.test/cr-007/1-aws-amazon-com-blogs-machine-learning-migrate-yo",
-      "source": "Artificial Intelligence"
+      "title": "[C#] dotnet/aspnetcore (38,300 stars)",
+      "description": "ASP.NET Core is a cross-platform .NET framework for building modern cloud-based web applications on Windows, Mac, or Linux.",
+      "url": "https://example.test/cr-007/1-github-com-dotnet-aspnetcore",
+      "source": "github_trending"
     },
     {
       "id": "cr-007-a2",
-      "title": "$100 million for open source: A milestone built by the community",
-      "description": "<p>Celebrating $100 million contributed by the community to the people who build and sustain open source every day.</p>\n<p>The post <a href=\"https://github.blog/open-source/maintainers/100-million-for-open-source-a-milestone-built-by-the-community/\">$100 million for open source: A milestone built by",
-      "url": "https://example.test/cr-007/2-github-blog-open-source-maintainers-100-million-",
-      "source": "The GitHub Blog"
+      "title": "When Should AI Follow? Task Structure and Joint Adaptation by Human and AI Agents",
+      "description": "arXiv:2504.20903v4 Announce Type: replace-cross \nAbstract: How should organizations divide and sequence decision tasks between human and artificial agents? We develop a computational model of joint sequential adaptation in which two agents differ in a single, precisely specified way: the memory regi",
+      "url": "https://example.test/cr-007/2-arxiv-org-abs-2504-20903",
+      "source": "cs.AI updates on arXiv.org"
     },
     {
       "id": "cr-007-a3",
-      "title": "AI safety needs social scientists",
-      "description": "We’ve written a paper arguing that long-term AI safety research needs social scientists to ensure AI alignment algorithms succeed when actual humans are involved. Properly aligning advanced AI systems with human values requires resolving many uncertainties related to the psychology of human rational",
-      "url": "https://example.test/cr-007/3-openai-com-index-ai-safety-needs-social-scientis",
+      "title": "Using custom GPTs",
+      "description": "Learn how to build and use custom GPTs to automate workflows, maintain consistent outputs, and create purpose-built AI assistants.",
+      "url": "https://example.test/cr-007/3-openai-com-academy-custom-gpts",
       "source": "OpenAI News"
     },
     {
       "id": "cr-007-a4",
-      "title": "Generate Autonomous Business Insights with AI Agent and MCP Servers",
-      "description": "Learn how Amazon Bedrock AgentCore delivers autonomous, cross-system business intelligence through configuration rather than custom code. Using pre-built MCP server connectors, fine-grained access control, and persistent memory, enterprises can query multiple data sources with natural language while",
-      "url": "https://example.test/cr-007/4-aws-amazon-com-blogs-machine-learning-generate-a",
-      "source": "Artificial Intelligence"
+      "title": "CRMWeaver: Building Powerful Business Agent via Agentic RL and Shared Memories",
+      "description": "arXiv:2510.25333v2 Announce Type: replace \nAbstract: Recent years have witnessed the rapid development of LLM-based agents, which shed light on using language agents to solve complex real-world problems. A prominent application lies in business agents, which interact with databases and internal know",
+      "url": "https://example.test/cr-007/4-arxiv-org-abs-2510-25333",
+      "source": "cs.CL updates on arXiv.org"
     },
     {
       "id": "cr-007-a5",
-      "title": "Accelerating the next phase of AI",
-      "description": "OpenAI raises $122 billion in new funding to expand frontier AI globally, invest in next-generation compute, and meet growing demand for ChatGPT, Codex, and enterprise AI.",
-      "url": "https://example.test/cr-007/5-openai-com-index-accelerating-the-next-phase-ai",
-      "source": "OpenAI News"
+      "title": "Meta Open Sources Llama 4 with 1T Parameters",
+      "description": "Meta releases Llama 4 under a permissive license, featuring state-of-the-art performance in reasoning and multilingual tasks, boosting open source AI.",
+      "url": "https://example.test/cr-007/5-techcrunch-com-2025-04-01-meta-llama-4-open-sour",
+      "source": "ai_search:perplexity"
     },
     {
       "id": "cr-007-a6",
-      "title": "Authenticate with Private Key JWT using Amazon Bedrock AgentCore Identity",
-      "description": "This post explains how Private Key JWT client authentication works in AgentCore Identity and reviews the supported grant flows. We then walk through creating an AWS KMS signing key, registering its public key with your identity provider, configuring a credential provider on the AWS Management Consol",
-      "url": "https://example.test/cr-007/6-aws-amazon-com-blogs-machine-learning-authentica",
-      "source": "Artificial Intelligence"
+      "title": "They became best friends - then discovered they were brother and sister",
+      "description": "Andrea Urmston knew she had a brother who had been adopted by another family, only to discover he was already her closest friend.",
+      "url": "https://example.test/cr-007/6-www-bbc-co-uk-news-articles-c4g397rl4nzo",
+      "source": "BBC News"
     },
     {
       "id": "cr-007-a7",
-      "title": "The state of enterprise AI",
-      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
-      "url": "https://example.test/cr-007/7-openai-com-business-guides-and-resources-the-sta",
-      "source": "OpenAI News"
+      "title": "Quoting Thomas Ptacek",
+      "description": "<blockquote cite=\"https://twitter.com/tqbf/status/2080045032162173329\"><p>I genuinely believe that if you took an open weights model from 2025 and built a pentest harness for it, it could do this kind of sandbox escape and scan/hack in most networks. This is only surprising because you assume OpenAI",
+      "url": "https://example.test/cr-007/7-simonwillison-net-2026-jul-22-thomas-ptacek",
+      "source": "Simon Willison's Weblog"
     },
     {
       "id": "cr-007-a8",
-      "title": "Evaluating AI Agents: A production blueprint with Strands and AgentCore",
-      "description": "Together, Motorway and AWS built an end-to-end evaluation pipeline that reduced incorrect results from 1 in 8 queries to 1 in 50 and cut issue detection time from few hours to few minutes. The pipeline combines the Strands Agents SDK with Amazon Bedrock AgentCore, a fully managed service for deployi",
-      "url": "https://example.test/cr-007/8-aws-amazon-com-blogs-machine-learning-evaluating",
-      "source": "Artificial Intelligence"
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-007/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-007-a9",
-      "title": "How Yahoo enhances search retargeting using Amazon Bedrock",
-      "description": "In this post, we demonstrate how Yahoo implemented Amazon Bedrock to enhance their Search Retargeting (SRT) capabilities in the Yahoo DSP ad tech suite. SRT is a core audience targeting solution that helps advertisers reach users based on their historical search behavior, bridging search intent with",
-      "url": "https://example.test/cr-007/9-aws-amazon-com-blogs-machine-learning-how-yahoo-",
-      "source": "Artificial Intelligence"
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-007/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
     },
     {
       "id": "cr-007-a10",
-      "title": "Deploying Kimi K3 on AWS",
-      "description": "This post walks through deploying Kimi K3 on AWS using two approaches: Amazon SageMaker HyperPod, and&nbsp; Amazon Elastic Kubernetes Service (Amazon EKS) cluster.",
-      "url": "https://example.test/cr-007/10-aws-amazon-com-blogs-machine-learning-deploying-",
-      "source": "Artificial Intelligence"
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-007/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
     }
-  ]
+  ],
+  "expected_selected_ids": [
+    "cr-007-a2",
+    "cr-007-a4",
+    "cr-007-a5",
+    "cr-007-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-007-a1",
+    "cr-007-a3",
+    "cr-007-a6",
+    "cr-007-a8",
+    "cr-007-a9",
+    "cr-007-a10"
+  ],
+  "selection_rationale": "选中 4 条:arXiv Human+AI agent, arXiv CRMWeaver agentic RL, Meta Llama 4 开源, SW pentest LLM 评论. 拒 6 条:github_trending ASP.NET (非 AI), OpenAI Academy 教程 x4, BBC 家庭, OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
 }

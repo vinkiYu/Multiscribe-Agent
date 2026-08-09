@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-049-a1",
+      "title": "On the Hybrid Nature of ABPMS Process Frames and its Implications on Automated Process Discovery",
+      "description": "arXiv:2604.22455v2 Announce Type: replace \nAbstract: A core component of any AI-Augmented Business Process Management System (ABPMS) is the process frame, which gives the system process-awareness and defines its maximal behavioral boundaries. Compared to traditional process models, the process frame",
+      "url": "https://example.test/cr-049/1-arxiv-org-abs-2604-22455",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-049-a2",
+      "title": "OpenAI’s letter to Governor Newsom on harmonized regulation",
+      "description": "We’ve just sent a letter to Gov. Gavin Newsom calling for California to lead the way in harmonizing state-based AI regulation with national—and, by virtue of US leadership, emerging global—standards.",
+      "url": "https://example.test/cr-049/2-openai-com-global-affairs-letter-to-governor-new",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-049-a3",
+      "title": "Explorative Modeling: Unlocking a Third Pretraining Axis and End-to-End Generation",
+      "description": "arXiv:2607.27372v1 Announce Type: cross \nAbstract: The deep learning revolution, kicked off by AlexNet, taught us that end-to-end training beats decomposing a problem into hand-designed stages. Generative modeling, however, has remained the exception-despite generative models being remarkably capabl",
+      "url": "https://example.test/cr-049/3-arxiv-org-abs-2607-27372",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-049-a4",
+      "title": "Stability AI Open Sources 'StableLM 3B' for Edge Devices: Lightweight LLM with RAG Optimizations",
+      "description": "A new 3B parameter model designed for on-device inference with quantized retrieval embeddings, enabling privacy-preserving RAG applications on phones and IoT.",
+      "url": "https://example.test/cr-049/4-stability-ai-news-stablelm-3b-open-source-edge-r",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-049-a5",
+      "title": "What this desert city can teach the world about tackling heat deaths",
+      "description": "Maricopa County in Arizona has some of the hottest temperatures, but it has reduced the number of heat-related deaths.",
+      "url": "https://example.test/cr-049/5-www-bbc-co-uk-news-articles-cgl3lnpxy6no",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-049-a6",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-049/6-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-049-a7",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-049/7-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-049-a8",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-049/8-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-049-a9",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-049/9-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-049-a10",
+      "title": "How data science teams use ChatGPT Work",
+      "description": "See how data science teams can use ChatGPT Work to build root-cause briefs, impact readouts, KPI memos, scoped analyses, and dashboard specs from real work inputs.",
+      "url": "https://example.test/cr-049/10-openai-com-academy-codex-for-work-how-data-scien",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-049-a3",
+    "cr-049-a4"
+  ],
+  "expected_rejected_ids": [
+    "cr-049-a1",
+    "cr-049-a2",
+    "cr-049-a5",
+    "cr-049-a6",
+    "cr-049-a7",
+    "cr-049-a8",
+    "cr-049-a9",
+    "cr-049-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv Explorative Modeling pretraining, Stability AI StableLM 3B 开源. 拒 8 条:OpenAI Academy 教程 x4, arXiv ABPMS (纯业务流程), BBC 热浪, OpenAI Governor letter (企业稿, 拒), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

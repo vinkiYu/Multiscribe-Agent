@@ -3,18 +3,74 @@
 
 from __future__ import annotations
 
-CURATE_PROMPT = """你是一名 AI 资讯编辑。只返回严格的 JSON 数组，不要使用 Markdown。
+CURATE_PROMPT = """你是一名 AI 资讯编辑，最终只返回严格 JSON 数组，不要使用 Markdown。
+
+【你服务的读者】
+关心 AI 行业进展的从业者，每天读 10 条左右。他们想看到：
+- 新模型/产品发布（GPT-5、Claude Opus 5、Llama 4 等）
+- 重要研究突破（arXiv 前沿 LLM/agent/cv/nlp 论文）
+- 重要开源项目与工具发布（GitHub Trending 中的 AI 项目）
+- 行业重要事件（融资、收购、安全事件、监管）
+- AI 与产品功能深度结合的案例（GitHub Copilot canvases、Agentic Workflows 等）
+
+【判断标准——选】
+1. 内容是"AI 行业新进展"，不是单纯介绍或操作
+2. 信息量高于标题本身（不能只重复标题）
+3. 适合"AI 资讯日报"读者画像
+
+【判断标准——拒】（硬性规则，宁缺毋滥）
+- 单纯的"使用教程"或操作步骤：标题含 "How to use / Learn / Getting started / Build with / Tutorial / Guide / 应用 / 使用教程"
+- OpenAI Academy 类教程标题：含 "Brainstorming with / Learn ChatGPT for / ChatGPT for … teams / ChatGPT Sites / ChatGPT Work"。例外：若标题明确含产品/模型名(GPT-5 / Claude 4 / Sora / o3 / Agents SDK / Codex / Operator)且描述有实质功能更新，按"产品与功能更新"段保留。
+- 单纯融资公告：如果金额不大、没涉及重大投资方合作，可拒（"Celebrating $100 million for open source" 等）
+- 单纯价格对比（"Copilot vs raw API"等）
+- 与 AI 无关的 GitHub 项目（语法检查器、文件管理器、Web 框架如 ASP.NET/Ansible/Orchestrions）
+- 体育、刑事、天气、政治等非 AI 主题的 BBC 干扰项
+- 已知理论/传统方法：arXiv 标题纯数学/统计/博弈论/信号处理，与 LLM/agent 关联弱
+- 单源营销稿："Customer story / Case study / See how … use" 类企业市场稿
+- OpenAI 企业宣传稿（"AI stories / Introducing the Intelligence Age / Stargate Infrastructure / OpenAI for Government / Stargate" 等纯宣传）
+- 信息密度极低：summary ≤ 50 字、或只是标题同义重复的条目
+- **score < 6 必须 reject**，不要因为"凑数"而保留
+
+【边界判断】
+- Copilot/Agentic Workflows 类功能更新（"canvases turn AI into..."）→ 选
+- 仅 GitHub Copilot 计费/定价对比 → 拒
+- **arXiv 标题命中以下任一关键词即视为 AI 论文** → 选：
+  LLM, agent, RAG, model, GPT, Claude, Llama, multimodal, reasoning, inference,
+  fine-tune, hallucination, MLLM, MLLMs, VLM, RL, retrieval, generation,
+  language model, transformer, diffusion, embedding, alignment, instruction-tuning,
+  prompt, token, context, attention, benchmark, eval, dataset, training
+- arXiv 标题只有 "machine learning" 但无上述关键词，且正文是纯数学/统计 → 拒
+- GitHub Trending 的 AI 工具（标题或描述含 AI/LLM/agent/Claude/RAG/MCP） → 选
+- Simon Willison 评论：看标题/正文是否含 AI 实质（Opus 5、MCP、Claude Code、agent、LLM 安全事件、prompt injection）→ 选；纯非 AI 杂谈（Orchestrions、tunes、tip）→ 拒
+- "Celebrating $100 million for open source" → 拒（融资公告）
+- AI 公司新闻（Anthropic / DeepSeek / Meta / OpenAI / Google 产品发布、研究结果） → 选
+- 教程/操作步骤即使主题是 AI（如"Build with Claude Code"）→ 拒
+
+【用户偏好】
+关注主题：{preferred_tags}
+不看主题：{blocked_topics}
+
+【用户长期知识摘要】
+{kb_snippets}
+
+【输出格式】
 每条记录必须包含 id、title、summary、score、score_reason 和 section。
 title 必须将原标题翻译或改写为自然、准确的中文；summary 必须使用中文，且不超过 180 个字。
 AI、Agent、GitHub、OpenAI 等必要的产品名和技术专有名词可保留原文。
-只保留与人工智能、LLM、Agent、RAG、模型、AI 基础设施或开源 AI 项目直接相关的候选资讯；
-无关的通用新闻、普通软件项目和泛科技内容必须排除。score 取 1 到 10。
-section 只能是“产品与功能更新”“前沿研究”“行业展望与社会影响”“开源TOP项目”之一。
+score 取 1 到 10，**score < 6 的候选必须从输出中剔除**。
+section 只能是"产品与功能更新""前沿研究""行业展望与社会影响""开源TOP项目"之一。
 带 freshness=fallback 的候选是近七天的补充文章，优先选择未标记的近两天内容。
-g=true 表示 GitHub Trending，未标记的候选来自内容源。不得编造链接或来源。若候选中存在内容源，
-候选充足时，必须返回 {target_count} 条；目标范围为 10 到 15 条。四个 section 均有相关候选时，每个 section 至少保留一条；候选不足时返回所有可靠候选，不要为了凑板块虚构内容。
-最终结果最多保留两条 GitHub Trending，并尽量覆盖多个 section。
-按重要性、相关性、时效性和来源多样性排序。
+g=true 表示 GitHub Trending，未标记的候选来自内容源。不得编造链接或来源。
+
+【数量约束】
+- **严格 ≤ {target_count} 条**；目标范围 10 到 12 条
+- **下限规则**：如果候选池里有 ≥ 1 条 score ≥ 7 的 AI 实质条目，必须至少选 1 条；不允许全部拒选
+- 候选充足时不要超过上限，**宁可少选也不要为凑数降低标准**
+- 候选不足时返回所有 score ≥ 6 的可靠候选，不要为了凑板块虚构内容
+- 四个 section 均有相关候选时，每个 section 至少保留一条
+- **最终结果最多保留两条 GitHub Trending**，并尽量覆盖多个 section
+- 按重要性、相关性、时效性和来源多样性排序
+
 候选资讯：
 {items}
 

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-033-a1",
+      "title": "Klopp starts Germany reign by threatening to quit",
+      "description": "Jurgen Klopp starts his reign as Germany's head coach by threatening to quit if the media invades his family's privacy.",
+      "url": "https://example.test/cr-033/1-www-bbc-co-uk-sport-football-articles-cqjxd0n4gd",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-033-a2",
+      "title": "Inkling: Our open-weights model",
+      "description": "<p><strong><a href=\"https://thinkingmachines.ai/news/introducing-inkling/\">Inkling: Our open-weights model</a></strong></p>\nMira Murati's Thinking Machines Lab just released their first open-weights model. Inkling is \"a Mixture-of-Experts transformer with 975B total parameters, 41B active\" - an Apac",
+      "url": "https://example.test/cr-033/2-simonwillison-net-2026-jul-16-inkling",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-033-a3",
+      "title": "[Python] shiyu-coder/Kronos (34,257 stars)",
+      "description": "Kronos: A Foundation Model for the Language of Financial Markets",
+      "url": "https://example.test/cr-033/3-github-com-shiyu-coder-kronos",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-033-a4",
+      "title": "The Rise of AI in Weather and Climate Information and its Impact on Global Inequality",
+      "description": "arXiv:2603.05710v2 Announce Type: replace-cross \nAbstract: AI development's current trajectory risks automating and amplifying the North-South divide in the global climate information system. Frontier models are built almost exclusively in the Global North, and this inequality continues through inpu",
+      "url": "https://example.test/cr-033/4-arxiv-org-abs-2603-05710",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-033-a5",
+      "title": "Staying ahead in the age of AI",
+      "description": "Discover how leaders can build AI-ready organizations using clear strategy, training, governance, and accelerated innovation.",
+      "url": "https://example.test/cr-033/5-openai-com-business-guides-and-resources-staying",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-033-a6",
+      "title": "SLAI T-Rex: Full-Parameter Post-training of the DeepSeek-V4 Family on Ascend SuperPOD",
+      "description": "arXiv:2607.20145v2 Announce Type: replace \nAbstract: Full-parameter post-training of trillion-parameter-scale MoE models introduces substantial system-level challenges for large-scale distributed training, including severe memory pressure, non-overlapped communication overhead, and inefficient kerne",
+      "url": "https://example.test/cr-033/6-arxiv-org-abs-2607-20145",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-033-a7",
+      "title": "Microsoft Unveils AutoRAG: Automatic Framework for Building RAG Systems",
+      "description": "AutoRAG is a new open-source library that automatically searches for optimal RAG pipeline configurations using Bayesian optimization, reducing manual tuning by 80%.",
+      "url": "https://example.test/cr-033/7-www-microsoft-com-en-us-research-blog-autorg-aut",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-033-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-033/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-033-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-033/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-033-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-033/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-033-a2",
+    "cr-033-a4",
+    "cr-033-a6",
+    "cr-033-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-033-a1",
+    "cr-033-a3",
+    "cr-033-a5",
+    "cr-033-a8",
+    "cr-033-a9",
+    "cr-033-a10"
+  ],
+  "selection_rationale": "选中 4 条:SW Inkling open-weights (Thinking Machines), arXiv AI climate inequality, arXiv SLAI T-Rex LLM 训练, Microsoft AutoRAG. 拒 6 条:OpenAI Academy 教程 x4, BBC 体育, github_trending Kronos (金融, 拒以稳妥), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

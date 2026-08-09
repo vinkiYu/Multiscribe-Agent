@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-024-a1",
+      "title": "Orchard: An Open-Source Agentic Modeling Framework",
+      "description": "arXiv:2605.15040v3 Announce Type: replace-cross \nAbstract: Agentic modeling aims to transform LLMs into autonomous agents capable of solving complex tasks through planning, reasoning, tool use, and multi-turn interaction with external environments. We present Orchard, an open-source framework for sc",
+      "url": "https://example.test/cr-024/1-arxiv-org-abs-2605-15040",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-024-a2",
+      "title": "Microsoft releases Phi-4 vision-language model as open source",
+      "description": "Phi-4 is a small multimodal model designed for edge AI, supporting both text and image inputs with efficient RAG integration.",
+      "url": "https://example.test/cr-024/2-azure-microsoft-com-en-us-blog-phi-4-vision-open",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-024-a3",
+      "title": "Andy Burnham's first week pledges – how much do they add up to?",
+      "description": "BBC Verify has looked at how much Burnham's new spending commitments cost and how they will be paid for",
+      "url": "https://example.test/cr-024/3-www-bbc-co-uk-news-articles-cy078kj0ezyo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-024-a4",
+      "title": "Adding a custom MCP server to Claude and ChatGPT",
+      "description": "<p><strong>TIL:</strong> <a href=\"https://til.simonwillison.net/llms/mcp-in-claude-and-chatgpt\">Adding a custom MCP server to Claude and ChatGPT</a></p>\n        <p>Connecting a custom MCP server to Claude and ChatGPT's standard chat interfaces is possible, but can take quite a few steps.</p>\n    \n  ",
+      "url": "https://example.test/cr-024/4-simonwillison-net-2026-jul-29-mcp-in-claude-and-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-024-a5",
+      "title": "[Go] alibaba/open-code-review (14,081 stars)",
+      "description": "Open-source & free — Battle-tested at Alibaba's scale. Hybrid architecture code review tool: deterministic pipelines + LLM Agent, precise line-level comments, built-in fine-tuned ruleset (NPE, thread-safety, XSS, SQL injection), OpenAI & Anthropic compatible.",
+      "url": "https://example.test/cr-024/5-github-com-alibaba-open-code-review",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-024-a6",
+      "title": "How does downsampling affect needle electromyography signals? A generalisable workflow for understanding downsampling effects on high-frequency time series",
+      "description": "arXiv:2601.10191v2 Announce Type: replace \nAbstract: Automated analysis of needle electromyography (nEMG) signals is emerging as a tool to support the detection of neuromuscular diseases (NMDs), yet the signals' high and heterogeneous sampling rates pose substantial computational challenges for feat",
+      "url": "https://example.test/cr-024/6-arxiv-org-abs-2601-10191",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-024-a7",
+      "title": "Learn ChatGPT for Sales Teams",
+      "description": "Learn how sales teams use ChatGPT to research accounts, personalize outreach, manage deals, and improve pipeline performance.",
+      "url": "https://example.test/cr-024/7-openai-com-academy-sales",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-024-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-024/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-024-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-024/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-024-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-024/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-024-a1",
+    "cr-024-a2",
+    "cr-024-a4",
+    "cr-024-a5"
+  ],
+  "expected_rejected_ids": [
+    "cr-024-a3",
+    "cr-024-a6",
+    "cr-024-a7",
+    "cr-024-a8",
+    "cr-024-a9",
+    "cr-024-a10"
+  ],
+  "selection_rationale": "选中 4 条:arXiv Orchard agentic framework, Microsoft Phi-4, SW MCP Claude, github_trending Alibaba LLM code review. 拒 6 条:OpenAI Academy 教程 x4, BBC 政治, arXiv electromyography (纯医学信号), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

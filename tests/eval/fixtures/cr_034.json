@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-034-a1",
+      "title": "Kimi K3, and what we can still learn from the pelican benchmark",
+      "description": "<p>Chinese AI lab Moonshot AI <a href=\"https://www.kimi.com/blog/kimi-k3\">announced Kimi K3</a> this morning, describing it as their \"most capable model to date, with 2.8 trillion parameters\". It's currently available via their website and API, but an open weight release is promised \"by July 27, 202",
+      "url": "https://example.test/cr-034/1-simonwillison-net-2026-jul-16-kimi-k3",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-034-a2",
+      "title": "[Rust] Automattic/harper (13,564 stars)",
+      "description": "Offline, privacy-first grammar checker. Fast, open-source, Rust-powered",
+      "url": "https://example.test/cr-034/2-github-com-automattic-harper",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-034-a3",
+      "title": "Making Implicit Premises Explicit in Logical Understanding of Enthymemes",
+      "description": "arXiv:2603.06114v2 Announce Type: replace-cross \nAbstract: Real-world arguments in text and dialogues are normally enthymemes (i.e. some of their premises and/or claims are implicit). Natural language processing (NLP) methods for handling enthymemes can potentially identify enthymemes in text but th",
+      "url": "https://example.test/cr-034/3-arxiv-org-abs-2603-06114",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-034-a4",
+      "title": "The state of enterprise AI",
+      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
+      "url": "https://example.test/cr-034/4-openai-com-business-guides-and-resources-the-sta",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-034-a5",
+      "title": "Accuracy Hides How Language Models Fail: Measuring Failure States Under Matched Output Budgets",
+      "description": "arXiv:2607.24268v2 Announce Type: replace \nAbstract: Language-model benchmarks collapse two distinct measurement questions into a single accuracy score: whether a response reached an evaluable state, and whether its answer was judged correct. We introduce a two-layer evaluation framework that separa",
+      "url": "https://example.test/cr-034/5-arxiv-org-abs-2607-24268",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-034-a6",
+      "title": "Weaviate Launches Hybrid RAG-as-a-Service with Open Source Backend",
+      "description": "Weaviate's new managed service combines dense and sparse retrieval with reranking, built on open-source Weaviate vector database. Supports any LLM via OpenAI/Azure compatibility.",
+      "url": "https://example.test/cr-034/6-weaviate-io-blog-hybrid-rag-service-launch",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-034-a7",
+      "title": "Newcastle seal £34m move for Monaco's Bamba",
+      "description": "Newcastle United have signed Monaco midfielder Aladji Bamba for a fee which could rise to £34m.",
+      "url": "https://example.test/cr-034/7-www-bbc-co-uk-sport-football-articles-cr593z81lq",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-034-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-034/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-034-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-034/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-034-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-034/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-034-a1",
+    "cr-034-a5",
+    "cr-034-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-034-a2",
+    "cr-034-a3",
+    "cr-034-a4",
+    "cr-034-a7",
+    "cr-034-a8",
+    "cr-034-a9",
+    "cr-034-a10"
+  ],
+  "selection_rationale": "选中 3 条:SW Moonshot Kimi K3, arXiv LLM failure modes, Weaviate RAG. 拒 7 条:OpenAI Academy 教程 x4, github_trending harper (语法, 非 AI), arXiv enthymemes (纯 NLP, 无 LLM), BBC 体育, OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

@@ -1,18 +1,156 @@
 name: curation-recall
 description: 带人工标注的每日 AI 资讯候选池，用于策展 Precision/Recall 回归。
+schema_version: 1
+labeled_at: "2026-08-09"
+labeled_by: zcode:P57-F1
 samples:
   - id: cr-001
     input_path: tests/eval/fixtures/cr_001.json
-    notes: 混合 LLM 发布、普通软件更新和消费电子干扰项。
+    notes: 真实英文新闻(OpenAI/Artificial Intelligence/GitHub/BBC), 选中 3/10 - 低选中率干扰场景
   - id: cr-002
     input_path: tests/eval/fixtures/cr_002.json
-    notes: 混合 Agent 工程、RAG 和传统后端资讯。
+    notes: 真实英文新闻, 选中 4/10 - 中选中率
   - id: cr-003
     input_path: tests/eval/fixtures/cr_003.json
-    notes: 混合开源模型、研究论文和非 AI 开源项目。
+    notes: 真实英文新闻, 选中 2/10 - 低选中率干扰极多
   - id: cr-004
     input_path: tests/eval/fixtures/cr_004.json
-    notes: 混合 AI 基础设施、推理优化和普通云产品。
+    notes: 真实英文新闻, 选中 4/10 - 中选中率
   - id: cr-005
     input_path: tests/eval/fixtures/cr_005.json
-    notes: 混合 AI 行业政策、应用案例和泛行业新闻。
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-006
+    input_path: tests/eval/fixtures/cr_006.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-007
+    input_path: tests/eval/fixtures/cr_007.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-008
+    input_path: tests/eval/fixtures/cr_008.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-009
+    input_path: tests/eval/fixtures/cr_009.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-010
+    input_path: tests/eval/fixtures/cr_010.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率干扰较多
+  - id: cr-011
+    input_path: tests/eval/fixtures/cr_011.json
+    notes: 真实英文新闻, 选中 6/10 - 高选中率 AI 内容主导
+  - id: cr-012
+    input_path: tests/eval/fixtures/cr_012.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率干扰
+  - id: cr-013
+    input_path: tests/eval/fixtures/cr_013.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-014
+    input_path: tests/eval/fixtures/cr_014.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-015
+    input_path: tests/eval/fixtures/cr_015.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-016
+    input_path: tests/eval/fixtures/cr_016.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-017
+    input_path: tests/eval/fixtures/cr_017.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-018
+    input_path: tests/eval/fixtures/cr_018.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率干扰
+  - id: cr-019
+    input_path: tests/eval/fixtures/cr_019.json
+    notes: 真实英文新闻, 选中 6/10 - 高选中率 AI 实质内容
+  - id: cr-020
+    input_path: tests/eval/fixtures/cr_020.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率 AWS 营销干扰
+  - id: cr-021
+    input_path: tests/eval/fixtures/cr_021.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-022
+    input_path: tests/eval/fixtures/cr_022.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率 AWS 营销干扰
+  - id: cr-023
+    input_path: tests/eval/fixtures/cr_023.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-024
+    input_path: tests/eval/fixtures/cr_024.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-025
+    input_path: tests/eval/fixtures/cr_025.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-026
+    input_path: tests/eval/fixtures/cr_026.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-027
+    input_path: tests/eval/fixtures/cr_027.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-028
+    input_path: tests/eval/fixtures/cr_028.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-029
+    input_path: tests/eval/fixtures/cr_029.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-030
+    input_path: tests/eval/fixtures/cr_030.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-031
+    input_path: tests/eval/fixtures/cr_031.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率干扰多
+  - id: cr-032
+    input_path: tests/eval/fixtures/cr_032.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-033
+    input_path: tests/eval/fixtures/cr_033.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-034
+    input_path: tests/eval/fixtures/cr_034.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率干扰极多
+  - id: cr-035
+    input_path: tests/eval/fixtures/cr_035.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-036
+    input_path: tests/eval/fixtures/cr_036.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-037
+    input_path: tests/eval/fixtures/cr_037.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-038
+    input_path: tests/eval/fixtures/cr_038.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-039
+    input_path: tests/eval/fixtures/cr_039.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-040
+    input_path: tests/eval/fixtures/cr_040.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-041
+    input_path: tests/eval/fixtures/cr_041.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-042
+    input_path: tests/eval/fixtures/cr_042.json
+    notes: 真实英文新闻, 选中 5/10 - 中选中率
+  - id: cr-043
+    input_path: tests/eval/fixtures/cr_043.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-044
+    input_path: tests/eval/fixtures/cr_044.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-045
+    input_path: tests/eval/fixtures/cr_045.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-046
+    input_path: tests/eval/fixtures/cr_046.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-047
+    input_path: tests/eval/fixtures/cr_047.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-048
+    input_path: tests/eval/fixtures/cr_048.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-049
+    input_path: tests/eval/fixtures/cr_049.json
+    notes: 真实英文新闻, 选中 4/10 - 低选中率
+  - id: cr-050
+    input_path: tests/eval/fixtures/cr_050.json
+    notes: 真实英文新闻, 选中 3/10 - 低选中率

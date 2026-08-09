@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-047-a1",
+      "title": "Bayeux Tapestry in 'wonderful state' after journey to London, French minister says",
+      "description": "The French culture minister has told the BBC that the Bayeux Tapestry  is in \"a wonderful state\".",
+      "url": "https://example.test/cr-047/1-www-bbc-co-uk-news-articles-c4gjd9qww1eo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-047-a2",
+      "title": "Mermaid to ASCII art (mermaid-ascii)",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/mermaid-ascii\">Mermaid to ASCII art (mermaid-ascii)</a></p>\n        <p>After building the <a href=\"https://simonwillison.net/2026/Jul/16/grok-mermaid/\">Mermaid to ASCII tool based on Grok Build's Rust code</a> I learned that there's ",
+      "url": "https://example.test/cr-047/2-simonwillison-net-2026-jul-16-mermaid-ascii",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-047-a3",
+      "title": "BioHiCL: Hierarchical Multi-Label Contrastive Learning for Biomedical Retrieval with MeSH Labels",
+      "description": "arXiv:2604.15591v2 Announce Type: replace-cross \nAbstract: Effective biomedical information retrieval requires modeling domain semantics and hierarchical relationships among biomedical texts. Existing biomedical generative retrievers build on coarse binary relevance signals, limiting their ability t",
+      "url": "https://example.test/cr-047/3-arxiv-org-abs-2604-15591",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-047-a4",
+      "title": "Introducing OpenAI for Government",
+      "description": "We’re launching OpenAI for Government, a new initiative focused on bringing our most advanced AI tools to public servants across the United States. We’re supporting the U.S. government's efforts in adopting best-in-class technology and deploying these tools in service of the public good.",
+      "url": "https://example.test/cr-047/4-openai-com-global-affairs-introducing-openai-for",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-047-a5",
+      "title": "LayerRAG-Bench: A Cross-Layer Reliability Benchmark for Agentic Retrieval-Augmented Generation",
+      "description": "arXiv:2607.27353v1 Announce Type: new \nAbstract: Agentic retrieval-augmented generation systems can produce answers that appear grounded while failing at the evidence, tool-contract, authorization, or session-state layer. We introduce LayerRAG-Bench, a controlled cross-layer reliability benchmark wi",
+      "url": "https://example.test/cr-047/5-arxiv-org-abs-2607-27353",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-047-a6",
+      "title": "Anthropic's Claude Agent Achieves 90%+ Success Rate on Web Tasks",
+      "description": "Anthropic demonstrates an upgraded version of Claude capable of autonomously booking flights, filling forms, and debugging code. The agent uses a novel 'chain-of-tools' prompting technique.",
+      "url": "https://example.test/cr-047/6-www-theverge-com-2025-7-8-claude-agent-web-bench",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-047-a7",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-047/7-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-047-a8",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-047/8-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-047-a9",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-047/9-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-047-a10",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-047/10-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-047-a5",
+    "cr-047-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-047-a1",
+    "cr-047-a2",
+    "cr-047-a3",
+    "cr-047-a4",
+    "cr-047-a7",
+    "cr-047-a8",
+    "cr-047-a9",
+    "cr-047-a10"
+  ],
+  "selection_rationale": "选中 2 条:arXiv LayerRAG-Bench, Anthropic Claude agent 性能. 拒 8 条:OpenAI Academy 教程 x4, BBC 文化, SW mermaid-ascii (工具, 非实质), arXiv BioHiCL (纯生物医学检索, 无 LLM), OpenAI Government (企业稿, 拒).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}

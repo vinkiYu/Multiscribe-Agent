@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-028-a1",
+      "title": "[JavaScript] citrolabs/ego-lite (4,908 stars)",
+      "description": "The fastest browser for AI agents to run web automation, built for sharing your logged-in browser state with your AI agents, like Codex or Claude Code, without disturbing you. Zero cost, zero config.",
+      "url": "https://example.test/cr-028/1-github-com-citrolabs-ego-lite",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-028-a2",
+      "title": "DialectLLM: A Dialect-Aware Dialog[ue] Generation Framework Beyond Standard American English",
+      "description": "arXiv:2601.22888v4 Announce Type: replace-cross \nAbstract: More than 80% of the 1.6B English speakers do not use Standard American English (SAE), yet LLMs often fail to correctly identify non-SAE dialects and generate stereotyped responses for their speakers. We introduce DialectLLM, the first large",
+      "url": "https://example.test/cr-028/2-arxiv-org-abs-2601-22888",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-028-a3",
+      "title": "Working with files in ChatGPT",
+      "description": "Learn how to upload and work with files in ChatGPT to analyze data, summarize documents, and generate content from PDFs, spreadsheets, and more.",
+      "url": "https://example.test/cr-028/3-openai-com-academy-working-with-files",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-028-a4",
+      "title": "MEDIAREF: A Public Knowledge Store for Media Background Checks",
+      "description": "arXiv:2607.02383v3 Announce Type: replace \nAbstract: LLM-based retrieval-augmented generation (RAG) is increasingly used for automated fact-checking (AFC) and related tasks. By grounding LLM outputs in retrieved evidence, RAG-based systems provide transparent justifications while allowing external i",
+      "url": "https://example.test/cr-028/4-arxiv-org-abs-2607-02383",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-028-a5",
+      "title": "CrewAI Releases Multi-Agent Orchestrator with Real-Time Web Search",
+      "description": "CrewAI's latest update enables agents to collaboratively perform web search and RAG, using a consensus mechanism to verify facts before acting. Open-source edition available.",
+      "url": "https://example.test/cr-028/5-www-crewai-com-blog-multi-agent-web-search-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-028-a6",
+      "title": "Andy Burnham Pauses Prison Early Release Plan",
+      "description": "The Prime Minister orders an ‘urgent review’ into plan to release some prisoners early.",
+      "url": "https://example.test/cr-028/6-www-bbc-co-uk-sounds-play-p0nzs7j9",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-028-a7",
+      "title": "llm 0.32rc2",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/llm/releases/tag/0.32rc2\">llm 0.32rc2</a></p>\n        <p>Hot on the heels of <a href=\"https://simonwillison.net/2026/Jul/30/llm-rc1/\">RC1</a>, this fixes a dependency issue and also adds two neat new features:</p>\n<blockquote>\n<ul>\n<li>",
+      "url": "https://example.test/cr-028/7-simonwillison-net-2026-jul-30-llm-rc2",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-028-a8",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-028/8-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-028-a9",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-028/9-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-028-a10",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-028/10-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-028-a2",
+    "cr-028-a4",
+    "cr-028-a5"
+  ],
+  "expected_rejected_ids": [
+    "cr-028-a1",
+    "cr-028-a3",
+    "cr-028-a6",
+    "cr-028-a7",
+    "cr-028-a8",
+    "cr-028-a9",
+    "cr-028-a10"
+  ],
+  "selection_rationale": "选中 3 条:arXiv DialectLLM, arXiv MEDIAREF RAG, CrewAI 多 agent. 拒 7 条:OpenAI Academy 教程 x4, github_trending ego-lite (浏览器, 边界, 拒以稳妥), BBC 政治, SW llm release (非实质), OpenAI Applications (Academy).",
+  "schema_version": 1,
+  "labeled_by": "zcode:P57-F1",
+  "labeled_at": "2026-08-09"
+}
