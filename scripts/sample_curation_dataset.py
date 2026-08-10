@@ -38,12 +38,20 @@ def main() -> None:
         help="Output directory or a .json path for one pool",
     )
     parser.add_argument("--start-index", type=int, default=6, help="First cr-NNN fixture index")
+    parser.add_argument(
+        "--balanced-per-source",
+        type=int,
+        default=0,
+        help="Each source contributes at most N rows; round-robin fills the rest. 0 = legacy by-data-volume.",
+    )
     args = parser.parse_args()
     if args.count < 1 or args.start_index < 1:
         parser.error("--count and --start-index must be positive")
+    if args.balanced_per_source < 0:
+        parser.error("--balanced-per-source must be non-negative")
 
     rows = _load_rows(Path(args.db))
-    pools = _build_pools(rows, args.count)
+    pools = _build_pools(rows, args.count, balanced_per_source=args.balanced_per_source)
     output = Path(args.output)
     if output.suffix.casefold() == ".json" and args.count != 1:
         parser.error("a .json output path can only be used with --count 1")
@@ -91,13 +99,20 @@ def _load_rows(db_path: Path) -> list[SourceRow]:
     ]
 
 
-def _build_pools(rows: list[SourceRow], count: int) -> list[list[SourceRow]]:
+def _build_pools(
+    rows: list[SourceRow], count: int, balanced_per_source: int = 0
+) -> list[list[SourceRow]]:
     """Build ``count`` pools of 10 with minimal candidate overlap across pools.
 
     Rows are grouped by source. Each pool pulls one row from up to 10 different
     sources (round-robin), advancing the per-source cursor so consecutive pools
     consume different rows. This ensures 50 pools draw from close to 500 unique
     rows rather than re-reading the same handful.
+
+    When ``balanced_per_source > 0``, the source rotation is sorted by per-pool
+    contribution (each source provides at most N rows per pool) and balanced so
+    smaller sources get fair representation instead of being crowded out by the
+    largest ones.
     """
     if len(rows) < 10:
         raise ValueError("source_data does not contain ten eligible candidates")
@@ -108,15 +123,24 @@ def _build_pools(rows: list[SourceRow], count: int) -> list[list[SourceRow]]:
     # - GitHub Blog: 营销/财务/教程为主
     # - AWS 两个源(Artificial Intelligence + AI): 主要是 Bedrock 教程/AWS 营销案例
     EXCLUDED_SOURCES = {"The GitHub Blog", "Artificial Intelligence", "AI"}
-    # 按数据量从大到小排
-    source_order = sorted(
-        [s for s in by_source if s not in EXCLUDED_SOURCES],
-        key=lambda s: -len(by_source[s]),
-    )
+    if balanced_per_source > 0:
+        # Sort by name to keep a stable per-pool rotation when balancing is on.
+        source_order = sorted(s for s in by_source if s not in EXCLUDED_SOURCES)
+        # Per-pool per-source cap (default 1). With 10 slots, balanced_per_source=1
+        # guarantees every contributing source can land at most one row per pool.
+        cap_per_source = balanced_per_source
+    else:
+        # Legacy: 按数据量从大到小排, 大源占满.
+        source_order = sorted(
+            [s for s in by_source if s not in EXCLUDED_SOURCES],
+            key=lambda s: -len(by_source[s]),
+        )
+        cap_per_source = 10  # 没有实际约束, 旧行为
     cursors: dict[str, int] = dict.fromkeys(source_order, 0)
     pools: list[list[SourceRow]] = []
     for index in range(count):
         selected: list[SourceRow] = []
+        per_source_count: dict[str, int] = dict.fromkeys(source_order, 0)
         seen: set[str] = set()
         # Rotate the starting source so no single source always fills slot 1.
         rotation = index % len(source_order)
@@ -124,11 +148,14 @@ def _build_pools(rows: list[SourceRow], count: int) -> list[list[SourceRow]]:
         for source in rotated:
             if len(selected) >= 10:
                 break
+            if per_source_count[source] >= cap_per_source:
+                continue
             queue = by_source[source]
             cursor = cursors[source]
             if cursor < len(queue) and queue[cursor]["id"] not in seen:
                 selected.append(queue[cursor])
                 seen.add(queue[cursor]["id"])
+                per_source_count[source] += 1
             cursors[source] += 1
         # If round-robin did not fill 10 (some sources exhausted), top up from
         # any remaining unused rows.

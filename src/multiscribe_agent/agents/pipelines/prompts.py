@@ -21,13 +21,15 @@ CURATE_PROMPT = """你是一名 AI 资讯编辑，最终只返回严格 JSON 数
 【判断标准——拒】（硬性规则，宁缺毋滥）
 - 单纯的"使用教程"或操作步骤：标题含 "How to use / Learn / Getting started / Build with / Tutorial / Guide / 应用 / 使用教程"
 - OpenAI Academy 类教程标题：含 "Brainstorming with / Learn ChatGPT for / ChatGPT for … teams / ChatGPT Sites / ChatGPT Work"。例外：若标题明确含产品/模型名(GPT-5 / Claude 4 / Sora / o3 / Agents SDK / Codex / Operator)且描述有实质功能更新，按"产品与功能更新"段保留。
+- OpenAI Marketing 标题：含 "New in / Demos / Webinar / Introducing OpenAI for / Inside GPT-" 等商业摘要，按"产品与功能更新"段保留需有数据/事件，否则拒
 - 单纯融资公告：如果金额不大、没涉及重大投资方合作，可拒（"Celebrating $100 million for open source" 等）
 - 单纯价格对比（"Copilot vs raw API"等）
 - 与 AI 无关的 GitHub 项目（语法检查器、文件管理器、Web 框架如 ASP.NET/Ansible/Orchestrions）
+- GitHub Trending 非 AI 工具：语言为 `[Rust] / [Shell] / [Assembly] / [Swift] / [Kotlin] / [C] / [C++] / [Jupyter Notebook] / [Java] / [Go]` 且描述无 AI/Claude/LLM/agent/RAG/MCP 关键词 → 拒；只有 `[TypeScript] / [Python]` 类且描述含 AI/Claude/LLM/agent/RAG/MCP 才视为 AI 工具
 - 体育、刑事、天气、政治等非 AI 主题的 BBC 干扰项
 - 已知理论/传统方法：arXiv 标题纯数学/统计/博弈论/信号处理，与 LLM/agent 关联弱
 - 单源营销稿："Customer story / Case study / See how … use" 类企业市场稿
-- OpenAI 企业宣传稿（"AI stories / Introducing the Intelligence Age / Stargate Infrastructure / OpenAI for Government / Stargate" 等纯宣传）
+- OpenAI 企业宣传稿（"AI stories / Introducing the Intelligence Age / Stargate Infrastructure / OpenAI for Government / Stargate / EU Code / Hacktivate AI / Intellectual freedom by design / Accelerating AI adoption" 等纯宣传）
 - 信息密度极低：summary ≤ 50 字、或只是标题同义重复的条目
 - **score < 6 必须 reject**，不要因为"凑数"而保留
 
@@ -40,8 +42,8 @@ CURATE_PROMPT = """你是一名 AI 资讯编辑，最终只返回严格 JSON 数
   language model, transformer, diffusion, embedding, alignment, instruction-tuning,
   prompt, token, context, attention, benchmark, eval, dataset, training
 - arXiv 标题只有 "machine learning" 但无上述关键词，且正文是纯数学/统计 → 拒
-- GitHub Trending 的 AI 工具（标题或描述含 AI/LLM/agent/Claude/RAG/MCP） → 选
-- Simon Willison 评论：看标题/正文是否含 AI 实质（Opus 5、MCP、Claude Code、agent、LLM 安全事件、prompt injection）→ 选；纯非 AI 杂谈（Orchestrions、tunes、tip）→ 拒
+- GitHub Trending 的 AI 工具（标题或描述含 AI/LLM/agent/Claude/RAG/MCP） → 选；纯实用工具/scaffolding/language/runtime → 拒
+- Simon Willison 评论：必须含具体技术/产品/事件/数据（Opus 5 模型发布 / MCP 协议 / Claude Code 安全事件 / prompt injection 漏洞 / Llama 4 / DeepSeek-R1 / Grok / Inkling open-weights）→ 选；纯议论/概览/感悟/AI 行业现象（AI Mania / Pelicanmaxxing / Cheap reverse-engineering / Spot birds not golf / AI stories）→ 拒
 - "Celebrating $100 million for open source" → 拒（融资公告）
 - AI 公司新闻（Anthropic / DeepSeek / Meta / OpenAI / Google 产品发布、研究结果） → 选
 - 教程/操作步骤即使主题是 AI（如"Build with Claude Code"）→ 拒
