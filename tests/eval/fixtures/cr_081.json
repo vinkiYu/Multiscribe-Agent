@@ -75,18 +75,18 @@
     "cr-081-a1",
     "cr-081-a4",
     "cr-081-a5",
-    "cr-081-a6"
-  ],
-  "expected_rejected_ids": [
-    "cr-081-a2",
-    "cr-081-a3",
-    "cr-081-a7",
+    "cr-081-a6",
     "cr-081-a8",
     "cr-081-a9",
     "cr-081-a10"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展”且信息量明显高于标题：分别覆盖 LLM 机理研究、OpenAI 面向工作场景的产品/数据报告、Simon Willison 对 GPT-5.6 文件删除问题的具体评论，以及 LangChain 新工具对 agent/RAG 工作流的发布。其余候选要么是非 AI 资讯、要么是缺少具体产品/模型名的 TLDR 标题噪音，按规则应拒。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-081-a2",
+    "cr-081-a3",
+    "cr-081-a7"
+  ],
+  "selection_rationale": "保留了与 LLM/agent/RAG/AI 产品发布直接相关的 arXiv、OpenAI、Simon Willison 和 TLDR AI 条目；拒绝了非 AI 的 GitHub Trending 和 BBC 新闻。TLDR AI 中包含具体模型/工具/公司名而非纯表情标题，因此也应纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

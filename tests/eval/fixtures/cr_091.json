@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-091-a3",
     "cr-091-a4",
     "cr-091-a5",
     "cr-091-a6",
+    "cr-091-a8",
+    "cr-091-a9",
     "cr-091-a10"
   ],
   "expected_rejected_ids": [
     "cr-091-a1",
     "cr-091-a2",
-    "cr-091-a3",
-    "cr-091-a7",
-    "cr-091-a8",
-    "cr-091-a9"
+    "cr-091-a7"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 有具体信息量 + 适合从业者日报”的要求，其中包含明确的模型/基准/公司动态；其余要么是非 AI 资讯、要么是纯评论、要么是标题化但缺少足够具体的 AI 产品/事件信息。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留了与 AI 从业者直接相关的资讯：包括 OpenAI/GPT-5、arXiv 上含 RAG/模型与基准的论文，以及 TLDR AI 中明确出现 Claude、Cursor、xAI、DeepSeek 等具体 AI 产品/公司。拒绝了明显的非 AI BBC 体育新闻和非 AI GitHub Trending 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

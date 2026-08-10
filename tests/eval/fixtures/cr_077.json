@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-077-a1",
     "cr-077-a2",
+    "cr-077-a4",
     "cr-077-a8",
     "cr-077-a9",
     "cr-077-a10"
   ],
   "expected_rejected_ids": [
-    "cr-077-a1",
     "cr-077-a3",
-    "cr-077-a4",
     "cr-077-a5",
     "cr-077-a6",
     "cr-077-a7"
   ],
-  "selection_rationale": "优先保留直接反映 AI 行业新进展且信息密度足够的条目：Mistral 新模型发布、TLDR AI 中明确点名具体产品/公司/事件的几条都符合日报读者的关注点。其余候选要么偏教程/新闻杂项，要么信息量不足或不够聚焦 AI 行业进展。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留与 AI 产品、模型或具体 LLM/agent 工具直接相关的条目，包括 Simon Willison 的 llm 发布、Mistral Large 3、含 LLM 注释/表征的 arXiv 论文，以及 TLDR AI 中明确点名 Claude/Cursor/xAI/DeepSeek 等项目。拒绝非 AI 的 BBC、GitHub non-AI 项目，以及仅为 OpenAI Academy 基础教程的内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

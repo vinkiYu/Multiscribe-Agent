@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-067-a3",
+    "cr-067-a4",
     "cr-067-a5",
     "cr-067-a6",
     "cr-067-a7",
-    "cr-067-a8"
-  ],
-  "expected_rejected_ids": [
-    "cr-067-a1",
-    "cr-067-a2",
-    "cr-067-a4",
+    "cr-067-a8",
     "cr-067-a9",
     "cr-067-a10"
   ],
-  "selection_rationale": "保留了有明确 AI 行业信息增量的条目：包含具体产品/模型发布、LLM/LoRA 研究进展、以及带有具体 AI 事件的评论和 AI 工具仓库。其余候选要么是明显非 AI 内容，要么属于教程/纯标题噪音，或信息不足以支撑日报价值。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-067-a1",
+    "cr-067-a2"
+  ],
+  "selection_rationale": "已选包含明显的 AI 相关内容：OpenAI/Simon Willison 对 AI 产品与事件的评论、TLDR AI 中出现具体模型/工具名、arXiv 的 LLM/LoRA/reward model 论文，以及 GitHub Trending 中带有 AI/LLM 语境的项目。已拒非 AI 新闻和 OpenAI Academy 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

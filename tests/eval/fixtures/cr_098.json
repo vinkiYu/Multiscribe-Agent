@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-098-a2",
     "cr-098-a3",
     "cr-098-a4",
     "cr-098-a5",
-    "cr-098-a6"
-  ],
-  "expected_rejected_ids": [
-    "cr-098-a1",
-    "cr-098-a2",
+    "cr-098-a6",
     "cr-098-a7",
     "cr-098-a8",
     "cr-098-a9",
     "cr-098-a10"
   ],
-  "selection_rationale": "优先保留信息量足、明确指向 AI 行业进展的候选：Simon Willison 的工具/事件评论、Hugging Face 的 Agent benchmark，以及两条 arXiv 论文都满足主题相关性和日报读者价值。OpenAI 广告偏品牌传播而非具体技术进展，TLDR AI 条目均为 emoji 标题且缺少足够具体信息，按严选标准不选。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-098-a1"
+  ],
+  "selection_rationale": "已剔除明显非 AI 的 BBC 话题，保留了 OpenAI 产品发布、Simon Willison 对 Grok/CLI 工具的具体评论、Hugging Face 的 agent 评测基准，以及 arXiv 上与 LLM/多模态相关的论文和 TLDR AI 中带有明确模型/工具名的条目。TLDR AI 条目虽然是短标题，但都包含具体 AI 产品或项目名，符合精选日报收录标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

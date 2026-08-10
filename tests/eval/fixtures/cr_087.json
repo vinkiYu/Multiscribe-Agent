@@ -85,8 +85,8 @@
     "cr-087-a6",
     "cr-087-a7"
   ],
-  "selection_rationale": "这些候选里，`cr-087-a1` 是明确的 AI 产品/公司进展且信息量足够；`cr-087-a3` 属于有具体基准与长上下文 agent 方向的 arXiv 新进展，适合日报读者。TLDR AI 的 `cr-087-a8`、`cr-087-a9`、`cr-087-a10` 都点出了具体 AI 产品或公司事件，不是纯表情噪音，且比标题本身提供了可读线索。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "已选包含明确 AI 产品/模型/agent 相关信息的候选：CrewAI 融资与多智能体编排、arXiv 的 agentic benchmark，以及 TLDR AI 中提到的 Claude、Cursor、xAI、DeepSeek 等具体 AI 产品或公司动态。其余如非 AI 新闻、无具体 AI 内容的评论、以及与 AI 无关的 GitHub Trending 均予以拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

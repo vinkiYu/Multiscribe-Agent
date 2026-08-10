@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-100-a2",
     "cr-100-a3",
-    "cr-100-a4"
-  ],
-  "expected_rejected_ids": [
-    "cr-100-a1",
-    "cr-100-a5",
+    "cr-100-a4",
     "cr-100-a6",
     "cr-100-a7",
     "cr-100-a8",
     "cr-100-a9",
     "cr-100-a10"
   ],
-  "selection_rationale": "这 3 条都明确是 AI 行业新进展，而且描述里提供了比标题更多的实质信息，适合面向从业者的日报。其余候选要么是非 AI 新闻，要么是 TLDR AI 的标题式碎片信息，信息密度不足或缺少具体产品/模型细节，不符合严选标准。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-100-a1",
+    "cr-100-a5"
+  ],
+  "selection_rationale": "保留了明确属于 AI 产品/模型发布、arXiv 中含 LLM 相关论文，以及 TLDR AI 标题中出现具体模型/工具名的条目；OpenAI 新闻也与 ChatGPT 经济影响相关，适合 AI 从业者日报。BBC 非 AI 条目未选，其余条目均不符合精选标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

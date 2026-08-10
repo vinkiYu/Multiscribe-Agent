@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-082-a3",
-    "cr-082-a4",
     "cr-082-a5",
-    "cr-082-a6"
-  ],
-  "expected_rejected_ids": [
-    "cr-082-a1",
-    "cr-082-a2",
+    "cr-082-a6",
     "cr-082-a7",
     "cr-082-a8",
     "cr-082-a9",
     "cr-082-a10"
   ],
-  "selection_rationale": "保留了 4 条信息密度高且对 AI 从业者有直接价值的内容：OpenAI 的企业 AI 规模化实践、Simon Willison 对 Firefox in WebAssembly 的具体产品/事件评论、Hugging Face Agent SDK v2.0 发布，以及 arXiv 上关于 LLM 反奉承行为的研究进展。其余候选要么与 AI 无关，要么只有情绪化/标题化信息，信息量不足以进入日报。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-082-a1",
+    "cr-082-a2",
+    "cr-082-a4"
+  ],
+  "selection_rationale": "保留与 AI 产品、模型、Agent/RAG 研究直接相关的条目，包括 OpenAI 的企业 AI 文章、Hugging Face Agent SDK、两篇 arXiv 论文以及 TLDR AI 中明确提到 Claude/Cursor/xAI/DeepSeek 等具体 AI 主题。拒绝非 AI 的 GitHub/BBC/Simon Willison 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

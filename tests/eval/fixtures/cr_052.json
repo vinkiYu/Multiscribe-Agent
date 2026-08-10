@@ -75,18 +75,18 @@
     "cr-052-a2",
     "cr-052-a3",
     "cr-052-a4",
-    "cr-052-a6"
+    "cr-052-a6",
+    "cr-052-a9",
+    "cr-052-a10"
   ],
   "expected_rejected_ids": [
     "cr-052-a1",
     "cr-052-a5",
     "cr-052-a7",
-    "cr-052-a8",
-    "cr-052-a9",
-    "cr-052-a10"
+    "cr-052-a8"
   ],
-  "selection_rationale": "保留的是对 AI 从业者有直接信息增量的条目：包含具体产品/工具或明确的 LLM/agent 研究进展，且标题与描述都提供了比标题本身更高的信息量。其余候选要么是教程、无关新闻、非 AI GitHub 项，或 TLDR AI 仅标题化且信息不足，不符合严选日报标准。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留了明确涉及 AI 产品、模型或 agent 相关进展的条目，包括 Simon Willison 对本地运行 AI 模型工具的评论、TLDR AI 中带具体 AI 产品名的标题、以及包含 LLM 主题的 arXiv 论文和 DeepMind 的 agentic 框架发布。拒绝了 OpenAI Academy 的基础教程、非 AI 的 GitHub Trending、以及 BBC 非 AI 内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

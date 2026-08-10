@@ -75,18 +75,18 @@
     "cr-059-a3",
     "cr-059-a4",
     "cr-059-a5",
-    "cr-059-a7"
+    "cr-059-a6",
+    "cr-059-a7",
+    "cr-059-a9",
+    "cr-059-a10"
   ],
   "expected_rejected_ids": [
     "cr-059-a1",
     "cr-059-a2",
-    "cr-059-a6",
-    "cr-059-a8",
-    "cr-059-a9",
-    "cr-059-a10"
+    "cr-059-a8"
   ],
-  "selection_rationale": "保留了 4 条真正对应 AI 行业新进展且信息量高的候选：包含 Simon Willison 对 OpenAI 相关事件的具体评论、TLDR AI 中带有明确产品/公司名的更新，以及一条开源大模型发布和一条 LLM 机理类 arXiv 论文。其余候选要么是明显非 AI 内容，要么是教程/低信息标题或泛化干扰，不适合精选日报。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "已保留包含具体 AI 产品、模型、agent 或 arXiv LLM/RAG 相关研究的条目，这些都符合面向 AI 从业者的精选日报标准；OpenAI 教程、非 AI BBC、以及缺少明确 AI 产品/事件信息的候选未纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-090-a1",
     "cr-090-a3",
     "cr-090-a5",
     "cr-090-a6",
-    "cr-090-a7"
-  ],
-  "expected_rejected_ids": [
-    "cr-090-a1",
-    "cr-090-a2",
-    "cr-090-a4",
+    "cr-090-a7",
     "cr-090-a8",
     "cr-090-a9",
     "cr-090-a10"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”三项要求：OpenAI 教育合作、微软 Phi-4-Mini 发布，以及两篇 arXiv LLM 研究都提供了明确的行业信号。其余候选要么是非 AI 干扰，要么信息不足，或虽带 AI 关键词但标题过于碎片化、缺少可供日报提炼的具体内容。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-090-a2",
+    "cr-090-a4"
+  ],
+  "selection_rationale": "已保留与 AI 直接相关且符合规则的 GitHub AI 工具、OpenAI 产品/项目、arXiv 的 LLM 研究，以及 TLDR AI 中明确提到模型、工具或公司动态的条目；BBC 非 AI 资讯与 Simon Willison 这条虽有工具但不含明确 AI 产品/事件，按规则不纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-072-a1",
     "cr-072-a3",
     "cr-072-a7",
+    "cr-072-a8",
     "cr-072-a9",
     "cr-072-a10"
   ],
   "expected_rejected_ids": [
-    "cr-072-a1",
     "cr-072-a2",
     "cr-072-a4",
     "cr-072-a5",
-    "cr-072-a6",
-    "cr-072-a8"
+    "cr-072-a6"
   ],
-  "selection_rationale": "保留了信息量足够、且对 AI 从业者有直接价值的候选：一个明确的 AI 数据库工具发布、一个具体模型开源进展、以及两条包含可识别 AI 公司/产品事件的 TLDR AI 条目。其余要么是非 AI 新闻、教程类低信息内容，或者标题过于空泛/偏噪声，不适合进入精选日报。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留包含明确 AI 研究或产品/工具信息的条目：arXiv 里的 VLM 公平性与 Llama 4、GitHub Trending 的 AI 数据库工具、以及 TLDR AI 中出现具体模型/工具名的标题都符合日报筛选标准。BBC、OpenAI 教程和与 AI 主题无关的评论项不选；此候选池中另有多条有效 AI 资讯，因此选取 6 条覆盖研究、产品和工具动态。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

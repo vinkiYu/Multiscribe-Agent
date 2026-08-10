@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-097-a1",
     "cr-097-a3",
-    "cr-097-a4",
-    "cr-097-a5"
-  ],
-  "expected_rejected_ids": [
-    "cr-097-a2",
-    "cr-097-a6",
+    "cr-097-a5",
     "cr-097-a7",
     "cr-097-a8",
     "cr-097-a9",
     "cr-097-a10"
   ],
-  "selection_rationale": "优先保留信息量高且直接指向 AI 行业进展的条目：arXiv 的 LayerRAG-Bench 属于 agentic RAG 评测新工作，OpenAI for Government 是明确的产品/业务发布，Simon Willison 的 Mermaid to ASCII 提供了具体 AI 工具与实现背景，Anthropic Claude Agent 也包含明确能力进展与方法细节。其余候选要么是非 AI 新闻，要么是 TLDR 式标题化且缺少足够具体信息，不满足严选标准。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-097-a2",
+    "cr-097-a4",
+    "cr-097-a6"
+  ],
+  "selection_rationale": "保留了明确属于 AI 研究/产品/工具发布的条目：包含 Agentic RAG 的 arXiv 论文、OpenAI 面向政府的新发布、Anthropic Claude agent 事件，以及 TLDR AI 中带有具体模型/产品名的标题。拒绝了明显非 AI 的 BBC 新闻；其余 TLDR AI 标题虽然有具体 AI 名称或模型名，但都符合“含模型/工具/产品名”标准，因此一并保留。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

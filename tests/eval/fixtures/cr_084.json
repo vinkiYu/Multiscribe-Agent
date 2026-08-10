@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-084-a2",
     "cr-084-a3",
+    "cr-084-a4",
     "cr-084-a5",
+    "cr-084-a8",
+    "cr-084-a9",
     "cr-084-a10"
   ],
   "expected_rejected_ids": [
     "cr-084-a1",
-    "cr-084-a4",
     "cr-084-a6",
-    "cr-084-a7",
-    "cr-084-a8",
-    "cr-084-a9"
+    "cr-084-a7"
   ],
-  "selection_rationale": "优先保留信息密度高、明确指向 AI 产品或模型进展的条目：Kimi K3 属于具体新模型发布，Weaviate 是面向 AI 应用的 RAG 产品更新，arXiv 论文直接讨论语言模型评测缺陷，TLDR AI 中 DeepSeek IPO/算力市场/手机模型也包含明确 AI 行业事件。其余候选要么偏泛泛、要么标题信息不足、要么不符合 AI 资讯日报画像。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留了包含明确 AI 模型/产品/工具信息的条目，包括 Simon Willison 对 Kimi K3 的评论、Weaviate 的 RAG 服务，以及 arXiv 中涉及语言模型评估的论文。TLDR AI 中含有具体 AI 产品名或事件的标题也保留；BBC、非 AI GitHub Trending 和纯通用资讯则拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

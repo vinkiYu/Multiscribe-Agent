@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-062-a1",
     "cr-062-a2",
     "cr-062-a3",
     "cr-062-a4",
+    "cr-062-a9",
     "cr-062-a10"
   ],
   "expected_rejected_ids": [
-    "cr-062-a1",
     "cr-062-a5",
     "cr-062-a6",
     "cr-062-a7",
-    "cr-062-a8",
-    "cr-062-a9"
+    "cr-062-a8"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展”且信息量不止标题本身：分别覆盖了带实时 Web RAG 的模型发布、LLM 指纹识别研究、医疗影像多模态强化学习，以及包含明确 AI 产品/公司动态的 TLDR 摘要。其余候选要么是非 AI 内容、教程类低信息量内容，或只是泛化/干扰性标题，不适合精选日报。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "这些候选都明确涉及 AI 相关模型、RAG、LLM 或 agent 产品/动态，符合面向 AI 从业者日报的选题标准；其余候选分别属于非 AI 内容、OpenAI 教程、普通工具更新或缺少具体 AI 产品信息，因此不选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

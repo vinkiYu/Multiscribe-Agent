@@ -75,18 +75,18 @@
     "cr-095-a1",
     "cr-095-a2",
     "cr-095-a6",
-    "cr-095-a9"
+    "cr-095-a7",
+    "cr-095-a8",
+    "cr-095-a9",
+    "cr-095-a10"
   ],
   "expected_rejected_ids": [
     "cr-095-a3",
     "cr-095-a4",
-    "cr-095-a5",
-    "cr-095-a7",
-    "cr-095-a8",
-    "cr-095-a10"
+    "cr-095-a5"
   ],
-  "selection_rationale": "优先保留信息密度高、明确涉及 AI 产品/模型/行业动态的条目：LangChain Agent SDK、LLM 多智能体 arXiv 论文、OpenAI 与 EU Code of Practice，以及 TLDR AI 中带具体公司和工具名的汇总。其余要么偏泛化研究、要么信息不足、要么明显不符合 AI 日报的选题标准。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留包含明确 AI 产品/模型/代理相关信息的条目，如 LangChain Agent SDK、arXiv 的 LLM/multi-agent 研究、OpenAI 相关公告、Simon Willison 对 Sam Altman/模型策略的评论，以及 TLDR AI 中提到的 Claude、Cursor、xAI、DeepSeek 等具体产品或公司。BBC 非 AI、GitHub 非 AI 项目与无具体产品名的干扰项已排除。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

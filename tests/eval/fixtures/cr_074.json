@@ -75,18 +75,18 @@
     "cr-074-a1",
     "cr-074-a4",
     "cr-074-a5",
-    "cr-074-a7"
+    "cr-074-a7",
+    "cr-074-a9",
+    "cr-074-a10"
   ],
   "expected_rejected_ids": [
     "cr-074-a2",
     "cr-074-a3",
     "cr-074-a6",
-    "cr-074-a8",
-    "cr-074-a9",
-    "cr-074-a10"
+    "cr-074-a8"
   ],
-  "selection_rationale": "这 4 条都符合 AI 行业新进展且信息量不止标题本身：分别覆盖了开源 LLM/Agent 代码评审工具、Claude/ChatGPT 的 MCP 接入实践、微软开源多模态模型 Phi-4 vision-language、以及面向 LLM 的 agentic modeling 研究框架。其余候选要么是非 AI 新闻、纯教程、或 TLDR 标题过于碎片化且缺少具体模型/产品信息。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "这些候选都明确涉及 AI 工具、模型或产品发布：包括带 LLM Agent 的 GitHub AI 工具、Claude/ChatGPT 相关实践、开源多模态模型，以及 TLDR AI 中含具体 AI 产品/公司名的条目。已排除非 AI BBC 和 OpenAI 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

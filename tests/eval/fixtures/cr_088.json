@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-088-a1",
     "cr-088-a2",
-    "cr-088-a5",
-    "cr-088-a6"
-  ],
-  "expected_rejected_ids": [
-    "cr-088-a3",
-    "cr-088-a4",
+    "cr-088-a6",
     "cr-088-a7",
     "cr-088-a8",
     "cr-088-a9",
     "cr-088-a10"
   ],
-  "selection_rationale": "保留了两条信息量较高的 arXiv 研究，分别覆盖多轮安全与 RAG/检索范式的规模化评估，符合 AI 从业者日报的技术深度要求。另选 OpenAI 与 Simon Willison 的具体产品/事件更新；其余候选要么与 AI 关联弱、要么是标题化拼贴且缺少足够信息量。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-088-a3",
+    "cr-088-a4",
+    "cr-088-a5"
+  ],
+  "selection_rationale": "保留了明确属于 AI 资讯范围的 arXiv 论文、AI 产品/模型发布、以及含具体 AI 产品名的 Simon Willison 和 TLDR AI 条目；剔除了明显非 AI 的 BBC 和无关 GitHub Trending。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

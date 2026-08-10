@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
+    "cr-070-a1",
     "cr-070-a2",
     "cr-070-a3",
     "cr-070-a4",
-    "cr-070-a8"
-  ],
-  "expected_rejected_ids": [
-    "cr-070-a1",
-    "cr-070-a5",
-    "cr-070-a6",
-    "cr-070-a7",
     "cr-070-a9",
     "cr-070-a10"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 有具体信息增量 + 适合从业者”三个条件：包括 Cohere 的 RAG/citation 产品发布、两篇 arXiv 上与 LLM/提示注入/评测相关的研究，以及 Simon Willison 对 `uv 0.12.0` 中 AI 开发工具生态变化的具体评论。其余候选要么是明显教程/非 AI 内容，要么是 TLDR AI 里只有表情堆砌、缺少具体产品或模型名，信息密度不够。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-070-a5",
+    "cr-070-a6",
+    "cr-070-a7",
+    "cr-070-a8"
+  ],
+  "selection_rationale": "保留包含明确 AI 产品/模型/研究主题的候选：TLDR AI 标题中有具体产品名或功能（GPT-5.6、Agent Plugins、Claude Code、Cursor、xAI、Prime Intellect 等），arXiv 条目涉及 LLM、prompt injection detection 等 AI 研究，且 Cohere 的 Command-R+ 明确是带 RAG 的模型发布。拒绝 BBC、OpenAI Academy 教程、非 AI GitHub Trending 以及无具体 AI 产品信息的 Simon Willison/emoji-only 线索。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

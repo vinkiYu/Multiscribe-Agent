@@ -75,18 +75,18 @@
     "cr-099-a2",
     "cr-099-a3",
     "cr-099-a4",
-    "cr-099-a5"
+    "cr-099-a6"
   ],
   "expected_rejected_ids": [
     "cr-099-a1",
-    "cr-099-a6",
+    "cr-099-a5",
     "cr-099-a7",
     "cr-099-a8",
     "cr-099-a9",
     "cr-099-a10"
   ],
-  "selection_rationale": "已选条目都满足 AI 行业新进展且信息量高于标题：包含 OpenAI 监管提案、StableLM 3B 端侧开源、以及两条 arXiv 研究更新，适合 AI 从业者日报。其余 TLDR AI 候选均为表情化标题且缺少足够具体信息，按严格标准拒绝。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留与 AI 产品、模型发布或 arXiv AI 研究直接相关的条目；其中 OpenAI 监管倡议、Stability AI 的 StableLM 3B、以及含 LLM/agent 工具的 TLDR AI 标题都符合日报选取标准。BBC 非 AI 资讯应拒绝，纯 emoji 且无具体 AI 产品名的 TLDR AI 条目也不纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

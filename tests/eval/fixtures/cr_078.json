@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-078-a1",
     "cr-078-a2",
-    "cr-078-a4",
-    "cr-078-a7"
-  ],
-  "expected_rejected_ids": [
     "cr-078-a3",
-    "cr-078-a5",
-    "cr-078-a6",
-    "cr-078-a8",
+    "cr-078-a4",
+    "cr-078-a7",
     "cr-078-a9",
     "cr-078-a10"
   ],
-  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”三个条件：分别覆盖多智能体编排、arXiv 上的 LLM 方言生成、面向 AI agent 的浏览器工具、以及 Simon Willison 对 `llm` 新版本的具体更新。其余候选要么是明显非 AI 内容，要么是教程/纯标题式 TLDR，信息密度或日报相关性不足。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-078-a5",
+    "cr-078-a6",
+    "cr-078-a8"
+  ],
+  "selection_rationale": "已选包含明确的 AI 产品/模型/工具更新、arXiv 中含 LLM/RAG 相关研究，以及 GitHub Trending 和 Simon Willison 对具体 AI 工具的评论，符合面向 AI 从业者精选日报标准；已拒与 AI 无关的 BBC 资讯，以及 OpenAI Academy 的通用教程类内容。TLDR AI 中带有具体产品名或 AI 事件的条目也保留，纯表情无实质产品名的情况未出现。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

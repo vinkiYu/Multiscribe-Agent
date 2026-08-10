@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-073-a1",
-    "cr-073-a6"
+    "cr-073-a6",
+    "cr-073-a8",
+    "cr-073-a9",
+    "cr-073-a10"
   ],
   "expected_rejected_ids": [
     "cr-073-a2",
     "cr-073-a3",
     "cr-073-a4",
     "cr-073-a5",
-    "cr-073-a7",
-    "cr-073-a8",
-    "cr-073-a9",
-    "cr-073-a10"
+    "cr-073-a7"
   ],
-  "selection_rationale": "这两条都属于明确的 AI 行业新进展，且描述提供了超出标题的信息量：一个是面向 agent 评测/仿真场景的平台 arXiv 论文，另一个是 Mistral 的开源代码模型发布，符合日报读者对模型与 agent 工具进展的关注。其余候选要么是非 AI 内容、教程类低信息密度内容，要么只有标题化概述且缺少足够具体的产品/模型信息。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "selection_rationale": "保留了与 AI 直接相关的 arXiv 论文、Mistral 新模型发布，以及 TLDR AI 中包含明确产品/模型名的条目；其余为非 AI 新闻、非 AI GitHub、OpenAI 教程或与具体 AI 产品无关的评论，按规则拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }

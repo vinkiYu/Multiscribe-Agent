@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-071-a1",
+    "cr-071-a2",
     "cr-071-a3",
     "cr-071-a4",
-    "cr-071-a7"
-  ],
-  "expected_rejected_ids": [
-    "cr-071-a2",
-    "cr-071-a5",
-    "cr-071-a6",
+    "cr-071-a7",
     "cr-071-a8",
     "cr-071-a9",
     "cr-071-a10"
   ],
-  "selection_rationale": "保留了信息密度高、且对 AI 从业者有直接价值的条目：企业级 RAG 产品发布、LLM 评测方法的新 arXiv 进展、带有具体 AI 工具描述的 GitHub Trending 项目，以及 Simon Willison 对 prompt injection 新攻击面的具体评论。其余要么是非 AI/教程/低信息 emoji 标题，要么相关性和日报价值不足。",
-  "schema_version": 3,
-  "labeled_by": "zcode:P57-F5",
+  "expected_rejected_ids": [
+    "cr-071-a5",
+    "cr-071-a6"
+  ],
+  "selection_rationale": "已选包含明确的 AI 产品/服务发布、arXiv 论文（含 LLM 相关）、GitHub Trending AI 工具、Simon Willison 对具体 AI 安全事件的评论，以及 TLDR AI 中带有具体模型/工具/公司名称的条目；已排除与 AI 无关的 BBC 新闻和 OpenAI 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
   "labeled_at": "2026-08-10"
 }
