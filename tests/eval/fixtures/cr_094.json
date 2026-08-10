@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-094-a1",
-    "cr-094-a3",
+    "cr-094-a6",
     "cr-094-a7",
-    "cr-094-a8",
-    "cr-094-a9",
-    "cr-094-a10"
+    "cr-094-a9"
   ],
   "expected_rejected_ids": [
     "cr-094-a2",
+    "cr-094-a3",
     "cr-094-a4",
     "cr-094-a5",
-    "cr-094-a6"
+    "cr-094-a8",
+    "cr-094-a10"
   ],
-  "selection_rationale": "保留了明确属于 AI 领域的产品/模型发布、含 generative AI 的 arXiv 论文，以及 Simon Willison 对 coding agents 的具体评论；TLDR AI 中也有明确的模型、工具和公司事件标题，符合精选日报标准。已排除非 AI 的 BBC、无关 GitHub Trending，以及仅为泛泛 AI 资讯但不如候选更具体的内容。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留明确的 AI 行业新进展且信息密度较高的条目：Llama 4 开源、OpenAI 反滥用报告、Simon Willison 对 coding agents 影响的具体评论，以及 TLDR AI 中包含具体主体和 AI 相关动作的汇总。其余候选要么是非 AI 主题、纯学术弱相关，或缺少足够的具体 AI 产品/模型信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

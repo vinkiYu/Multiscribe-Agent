@@ -75,18 +75,18 @@
     "cr-086-a1",
     "cr-086-a2",
     "cr-086-a3",
+    "cr-086-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-086-a4",
+    "cr-086-a5",
     "cr-086-a6",
-    "cr-086-a7",
     "cr-086-a8",
     "cr-086-a9",
     "cr-086-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-086-a4",
-    "cr-086-a5"
-  ],
-  "selection_rationale": "保留了明确涉及 LLM/agent/RAG 的 arXiv、AI 公司产品发布，以及包含具体 AI 工具或产品名的 Simon Willison 与 TLDR AI 条目；这些都符合面向 AI 从业者的日报选题标准。拒绝了非 AI 的 BBC 条目和纯教程类内容，其他候选均含具体模型、工具或 AI 事件，信息密度较高。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留信息密度高、明确涉及 AI 模型/多智能体/LLM 工具的新进展：Anthropic Claude 4、arXiv 的 VLM/多智能体论文、以及 Simon Willison 对具体 LLM 工具的评论都符合日报读者画像。其余候选要么是明显非 AI 内容、要么是教程/纯标题党、要么只有表情式罗列而缺少可验证的具体产品信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

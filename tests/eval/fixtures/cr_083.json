@@ -75,18 +75,18 @@
     "cr-083-a3",
     "cr-083-a4",
     "cr-083-a5",
-    "cr-083-a6",
+    "cr-083-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-083-a1",
+    "cr-083-a2",
     "cr-083-a7",
     "cr-083-a8",
     "cr-083-a9",
     "cr-083-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-083-a1",
-    "cr-083-a2"
-  ],
-  "selection_rationale": "已保留与 AI 直接相关的模型发布、RAG、arXiv 论文、GitHub AI 项目以及包含具体产品名的 TLDR AI 条目；BBC 新闻和 OpenAI 教程类内容不符合精选日报的 AI 资讯标准，因此未选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合日报读者”的要求：分别覆盖新开源大模型、RAG 基建、AI 影响与不平等研究、以及大模型后训练/分布式训练系统进展。其余候选要么是非 AI 内容，要么信息过于标题化/低质干扰，或缺少足够具体的 AI 产品/模型信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

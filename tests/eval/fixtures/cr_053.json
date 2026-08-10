@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-053-a2",
     "cr-053-a3",
     "cr-053-a4",
     "cr-053-a6",
-    "cr-053-a9",
     "cr-053-a10"
   ],
   "expected_rejected_ids": [
     "cr-053-a1",
+    "cr-053-a2",
     "cr-053-a5",
     "cr-053-a7",
-    "cr-053-a8"
+    "cr-053-a8",
+    "cr-053-a9"
   ],
-  "selection_rationale": "保留了明确涉及 AI 产品/模型/工具发布的候选：TLDR AI 中包含具体项目名，arXiv 中有 LLM 安全评估主题，GitHub Trending 里是面向 Claude/Codex 等的 agent 工具；同时剔除了非 AI 的 BBC、OpenAI 教程以及与 AI 无关的自然图片/泛话题内容。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "已保留信息量明确、面向 AI 从业者且属于行业新进展的条目：模型发布、LLM 安全/临床评估、GitHub Trending 的 AI 代理工具，以及包含具体产品/事件名的 TLDR AI 汇总。其余候选要么是非 AI 内容、纯教程/低信息量，或标题缺少足够的新进展信息，不满足严选标准。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

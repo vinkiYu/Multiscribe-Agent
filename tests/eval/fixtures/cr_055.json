@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-055-a1",
-    "cr-055-a2",
     "cr-055-a3",
     "cr-055-a7",
-    "cr-055-a9",
     "cr-055-a10"
   ],
   "expected_rejected_ids": [
+    "cr-055-a2",
     "cr-055-a4",
     "cr-055-a5",
     "cr-055-a6",
-    "cr-055-a8"
+    "cr-055-a8",
+    "cr-055-a9"
   ],
-  "selection_rationale": "保留了与 AI 研发/产品直接相关的候选：Hugging Face 的 LLM 微调库、arXiv 上的 LLM/VLM 论文、以及 Simon Willison 对 AI 话题的具体评论；TLDR AI 中含明确产品/模型名和 Agent/Claude 相关内容也应入选。已排除非 AI 的 GitHub Trending、BBC 新闻，以及仅有泛泛工作流介绍的 OpenAI 教程类内容。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留有明确 AI 行业新进展且信息量足够的条目：Hugging Face 的 LLM 微调库、面向 VLM 幻觉缓解的 arXiv 研究、Simon Willison 对具体 AI 现象的评论，以及包含具体产品/公司动向的 TLDR AI 汇总。其余要么是非 AI、要么标题信息不足或属于明显低质干扰，不适合进入精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

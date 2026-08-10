@@ -75,18 +75,18 @@
     "cr-089-a1",
     "cr-089-a4",
     "cr-089-a6",
-    "cr-089-a7",
-    "cr-089-a8",
-    "cr-089-a9",
-    "cr-089-a10"
+    "cr-089-a7"
   ],
   "expected_rejected_ids": [
     "cr-089-a2",
     "cr-089-a3",
-    "cr-089-a5"
+    "cr-089-a5",
+    "cr-089-a8",
+    "cr-089-a9",
+    "cr-089-a10"
   ],
-  "selection_rationale": "保留了明确属于 AI 研究或产品动态的条目：arXiv 论文涉及 alignment/LLM，OpenAI 新闻与 Mistral 的 RAG 框架是典型 AI 产品/发布，TLDR AI 中也包含具体模型、工具和公司动态。拒绝了非 AI 的 BBC 与非 AI GitHub/Simon Willison 条目，因其不符合日报面向 AI 从业者的筛选标准。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这几条都属于 AI 行业新进展，且标题之外还有足够信息量：涵盖 LLM 对齐训练、OpenAI 的政策/落地报告、Mistral 的 RAG 微调框架、以及 LLM 监控方法，适合面向 AI 从业者的日报。其余候选要么明显非 AI，要么信息噪声偏高、缺少具体 AI 产品/模型名，按严选标准不收。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

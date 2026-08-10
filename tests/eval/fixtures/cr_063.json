@@ -85,8 +85,8 @@
     "cr-063-a6",
     "cr-063-a8"
   ],
-  "selection_rationale": "选取了与 AI 从业者直接相关的模型/agent/RAG/产品动态：Claude 4 工具调用与多步 agent、arXiv 上的推理效率研究、Simon Willison 对 LLM token 转售/欺诈市场的具体评论，以及 TLDR AI 中明确点名 Claude Code、Cursor、xAI 等产品/工具的条目。其余为非 AI 新闻、OpenAI 教程类内容、非 AI GitHub 项目或只有表情符号且无具体产品名的标题，按规则拒绝。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这些条目都属于 AI 行业的具体新进展，且信息量明显高于标题本身：包含新模型/新能力、推理效率研究、以及 Simon Willison 对 LLM 相关商业现象的具体评论。OpenAI 教程、BBC 非 AI 新闻和纯标题噪声项已排除；`cr-063-a8` 只给出 emoji 式概览且缺少具体模型/产品名，信息密度不足，因此不选。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

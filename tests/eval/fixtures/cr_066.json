@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-066-a1",
     "cr-066-a4",
-    "cr-066-a5",
     "cr-066-a6",
-    "cr-066-a7",
-    "cr-066-a8",
-    "cr-066-a9",
-    "cr-066-a10"
+    "cr-066-a8"
   ],
   "expected_rejected_ids": [
     "cr-066-a2",
-    "cr-066-a3"
+    "cr-066-a3",
+    "cr-066-a5",
+    "cr-066-a7",
+    "cr-066-a9",
+    "cr-066-a10"
   ],
-  "selection_rationale": "已保留所有与 AI 工具、模型发布或 arXiv LLM/agent 相关的候选：GitHub AI Agent 工具、Simon Willison 提到的 Kimi-K3、OpenAI/GPT-5、以及两篇 arXiv 论文都符合精选日报标准。TLDR AI 条目虽然标题里有 emoji，但同时明确包含 Claude、Cursor、xAI、Prime Intellect 等具体 AI 产品/项目名，不属于纯表情干扰。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”三项要求：分别覆盖 Agent 治理工具、开源大模型权重发布、GPT-5 产品升级、以及新的 LLM 表征/embedding 研究。其余要么是非 AI 内容、教程型低信息量，或 TLDR 标题过于口号化且缺少具体可判断的信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

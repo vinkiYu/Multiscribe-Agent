@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-064-a1",
+    "cr-064-a2",
     "cr-064-a3",
+    "cr-064-a8"
+  ],
+  "expected_rejected_ids": [
+    "cr-064-a4",
+    "cr-064-a5",
+    "cr-064-a6",
     "cr-064-a7",
-    "cr-064-a8",
     "cr-064-a9",
     "cr-064-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-064-a2",
-    "cr-064-a4",
-    "cr-064-a5",
-    "cr-064-a6"
-  ],
-  "selection_rationale": "保留了与 AI 研究、AI 工具/产品发布直接相关的候选：arXiv 多模态/语言模型论文、GitHub AI 工具、以及 TLDR AI 中带有明确模型/产品名的条目。拒绝了非 AI 新闻、OpenAI 教程类内容和与 AI 无关的 Simon Willison/BBC 条目。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 新进展 + 信息量高于标题 + 适合从业者”的要求：两条 arXiv 分别覆盖多模态医学推理和语言模型正确性表示，`aisuite` 是明确的 AI 开发工具，AutoGPT 2.0 也属于有实际产品进展的 agent 发布。其余候选里，BBC 与 OpenAI 教程不符合精选日报标准，Simon/ TLDR 的条目要么信息不足、要么只有标题式拼接，相关性不如以上几条。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

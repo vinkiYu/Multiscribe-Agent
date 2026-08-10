@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-056-a1",
-    "cr-056-a2",
     "cr-056-a3",
-    "cr-056-a5",
     "cr-056-a6",
+    "cr-056-a8"
+  ],
+  "expected_rejected_ids": [
+    "cr-056-a2",
+    "cr-056-a4",
+    "cr-056-a5",
     "cr-056-a7",
-    "cr-056-a8",
     "cr-056-a9",
     "cr-056-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-056-a4"
-  ],
-  "selection_rationale": "保留了与 AI/LLM/agent/RAG/模型相关的 arXiv、GitHub Trending、OpenAI 产品/事件、Simon Willison 具体 AI 评论，以及包含明确产品名的 TLDR AI 条目；BBC 非 AI 新闻被排除，且其余候选均符合精选日报对 AI 从业者的相关性要求。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留了信息量足够、且对 AI 从业者有直接价值的四条：机器人规划方向的 arXiv 论文、明确指向 Claude Cowork 替代品的 GitHub AI 工具、包含具体 OpenAI/Hugging Face 事件细节的评论，以及 AWS Bedrock Agents+RAG 连接器的产品发布。其余候选要么偏泛教程/低信息量，要么是仅列名的 TLDR 标题，或与 AI 受众相关性不够强。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

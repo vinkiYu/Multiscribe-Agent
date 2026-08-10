@@ -75,18 +75,18 @@
     "cr-068-a2",
     "cr-068-a4",
     "cr-068-a5",
-    "cr-068-a6",
-    "cr-068-a9",
-    "cr-068-a10"
+    "cr-068-a6"
   ],
   "expected_rejected_ids": [
     "cr-068-a1",
     "cr-068-a3",
     "cr-068-a7",
-    "cr-068-a8"
+    "cr-068-a8",
+    "cr-068-a9",
+    "cr-068-a10"
   ],
-  "selection_rationale": "保留了明确涉及 AI 产品/事件的 Simon Willison 评论、LLM/agent/RAG 相关产品发布，以及包含具体模型/工具名的 arXiv 和 TLDR AI 条目；BBC 非 AI 与非 AI 的 GitHub Trending 已排除。OpenAI 教程类内容按规则拒绝，因此未选 cr-068-a1。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 新进展 + 信息量高于标题 + 适合从业者”三项要求，且覆盖了技术事件、产品发布和高质量 arXiv 研究。其余候选要么是教程/泛化内容、要么信息不足或明显无关，按严格标准应拒。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

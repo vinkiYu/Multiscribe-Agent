@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-076-a2",
     "cr-076-a3",
-    "cr-076-a4",
     "cr-076-a5",
     "cr-076-a6"
   ],
   "expected_rejected_ids": [
     "cr-076-a1",
+    "cr-076-a4",
     "cr-076-a7",
     "cr-076-a8",
     "cr-076-a9",
     "cr-076-a10"
   ],
-  "selection_rationale": "保留了与 AI 从业者高度相关的条目：包含具体 LLM/agent/RAG 模型或工具的 arXiv 论文、Claude 相关 GitHub 工具，以及 Simon Willison 对 LLM 相关发布的评论。其余候选要么是 OpenAI Academy 式教程、非 AI 新闻，或 TLDR AI 仅标题化罗列且缺少足够具体的新产品信息，因此不选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留的是信息量明确、且对 AI 从业者有直接价值的条目：包含具体工具/模型发布、代码代理与 RAG、以及 Claude 相关工具合集。其余候选要么是明显教程/非 AI 资讯，要么是标题过于泛化或仅有 emoji 概览，信息密度不足以进入精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

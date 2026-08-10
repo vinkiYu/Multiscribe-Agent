@@ -1,11 +1,11 @@
 {
   "dataset_name": "curation-recall",
   "total": 100,
-  "passed": 71,
-  "failed": 29,
-  "avg_precision": 0.7589484126984126,
-  "avg_recall": 0.8419801587301587,
-  "avg_f1": 0.7713667166167165,
-  "overall": 0.7713667166167165,
-  "report_path": "data\\eval\\reports\\curation-recall_20260810-020017.md"
+  "passed": 65,
+  "failed": 35,
+  "avg_precision": 0.6706666666666666,
+  "avg_recall": 0.9043333333333333,
+  "avg_f1": 0.7549567099567099,
+  "overall": 0.7549567099567099,
+  "report_path": "data\\eval\\reports\\curation-recall_20260810-032125.md"
 }

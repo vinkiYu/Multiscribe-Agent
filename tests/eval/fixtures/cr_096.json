@@ -75,18 +75,18 @@
     "cr-096-a1",
     "cr-096-a5",
     "cr-096-a6",
-    "cr-096-a7",
     "cr-096-a10"
   ],
   "expected_rejected_ids": [
     "cr-096-a2",
     "cr-096-a3",
     "cr-096-a4",
+    "cr-096-a7",
     "cr-096-a8",
     "cr-096-a9"
   ],
-  "selection_rationale": "保留了明确包含 LLM/AI 产品或事件的候选：arXiv LLM 论文、Simon Willison 对 Linus Torvalds/AI 争议的评论、以及 Databricks 收购 RAGFlow 的产品动态。TLDR AI 中含具体 AI 工具/模型名的条目（Claude Code、Cursor、Thinking Machines、Perplexity 等）也符合精选日报标准；其余非 AI 新闻或仅为泛化/无具体产品信息的条目不选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留了信息量足、且明确对应 AI 研究或产品进展的候选：arXiv 论文 cr-096-a1 与 Databricks 收购 RAGFlow 的 cr-096-a6 都有明确行业价值，Simon Willison 对 Linux/AI 争议的评论 cr-096-a5 也包含具体事件。TLDR AI 中 cr-096-a10 虽标题偏短，但点名了 Thinking Machines、GPT-Red、Perplexity sandboxes 等具体 AI 产品/功能，适合日报读者。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

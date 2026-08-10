@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-057-a1",
     "cr-057-a5",
-    "cr-057-a6",
     "cr-057-a7",
-    "cr-057-a9",
-    "cr-057-a10"
+    "cr-057-a9"
   ],
   "expected_rejected_ids": [
     "cr-057-a2",
     "cr-057-a3",
     "cr-057-a4",
-    "cr-057-a8"
+    "cr-057-a6",
+    "cr-057-a8",
+    "cr-057-a10"
   ],
-  "selection_rationale": "已保留包含 LLM/agent、AI 产品发布或明确 AI 工具/模型名的候选；例如 arXiv 论文、Simon Willison 对 open weights model 的具体评论，以及 TLDR AI 中出现的 Claude、Cursor、Kimi Work、Llama 4、xAI 等都符合精选日报标准。已排除非 AI 的 BBC、通用 OpenAI 教程和不含 AI 关键词的 GitHub 项目。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留信息量足、明确指向 AI 行业进展的条目：arXiv 的 agent/RL 论文、Simon Willison 对具体模型安全/能力的评论、Meta 开源 Llama 4，以及包含 Claude Code / Cursor 的 TLDR AI 汇总。其余候选要么是非 AI 内容、教程类内容，或标题过泛且信息密度不足，不适合精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

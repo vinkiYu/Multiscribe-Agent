@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-080-a1",
     "cr-080-a2",
-    "cr-080-a3",
     "cr-080-a6",
-    "cr-080-a7",
+    "cr-080-a7"
+  ],
+  "expected_rejected_ids": [
+    "cr-080-a3",
+    "cr-080-a4",
+    "cr-080-a5",
     "cr-080-a8",
     "cr-080-a9",
     "cr-080-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-080-a4",
-    "cr-080-a5"
-  ],
-  "selection_rationale": "保留了与 LLM、agent、RAG、AI 工具或具体 AI 产品/事件直接相关的候选：arXiv 论文、GitHub Trending AI 项目、Simon Willison 对 Anthropic 相关事件的评论，以及 TLDR AI 中含明确产品名的条目；OpenAI 教程和 BBC 非 AI 内容已剔除。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”的标准：前两条是 arXiv 上与 LLM 测量、LLM Agent 评估直接相关的研究进展，`cr-080-a6` 是 Simon Willison 对 Anthropic 安全评测事件的具体评论，`cr-080-a7` 则是面向 LLM agents 的新基准与开源评测工具，信息密度和行业相关性都足够高。其余候选要么是明确应拒的教程/非 AI 内容，要么只有标题化的 emoji 摘要、缺少具体产品或模型信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

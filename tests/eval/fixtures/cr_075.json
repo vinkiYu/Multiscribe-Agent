@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-075-a3",
     "cr-075-a4",
     "cr-075-a5",
     "cr-075-a6",
-    "cr-075-a8",
-    "cr-075-a9",
     "cr-075-a10"
   ],
   "expected_rejected_ids": [
     "cr-075-a1",
     "cr-075-a2",
-    "cr-075-a7"
+    "cr-075-a3",
+    "cr-075-a7",
+    "cr-075-a8",
+    "cr-075-a9"
   ],
-  "selection_rationale": "已排除明显非 AI 的 BBC 条目，以及 OpenAI Academy 式教程内容；保留了含具体 AI 产品/模型/研究的 Simon Willison、arXiv、AI 公司发布与 TLDR AI 条目。GitHub 候选不含 AI 关键词，故未选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留的是明确的 AI 行业新进展且信息量足够的条目：OpenAI 的 GPT-5 发布、两条 arXiv 模型/框架更新，以及包含具体公司/产品名的 TLDR AI 汇总。其余要么是非 AI 内容、OpenAI 教程、缺少具体 AI 事件信息，或标题过于泛化/表情化，不适合精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

@@ -75,7 +75,6 @@
     "cr-054-a2",
     "cr-054-a3",
     "cr-054-a4",
-    "cr-054-a9",
     "cr-054-a10"
   ],
   "expected_rejected_ids": [
@@ -83,10 +82,11 @@
     "cr-054-a5",
     "cr-054-a6",
     "cr-054-a7",
-    "cr-054-a8"
+    "cr-054-a8",
+    "cr-054-a9"
   ],
-  "selection_rationale": "保留了包含 LLM、agent、RAG、模型评测等明确 AI 研究/产品信号的条目，且来源覆盖 arXiv、AI 搜索与 TLDR AI，符合精选日报标准。其余候选要么是非 AI 内容、要么是 OpenAI 教程类、要么是无具体 AI 产品信息的干扰项，因此不选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留的是信息量明确、且对 AI 从业者有直接参考价值的进展：两条 arXiv 涉及 LLM/RAG/agent 评估，符合日报选题标准；TLDR AI 中 xAI/Prime Intellect/Sakana 都是具体 AI 产品或研究相关实体，不是纯标题噪音。其余候选要么是教程、非 AI 新闻、无具体 AI 信息的博客，或 TLDR 只有泛化表述和表情符号，按严选规则拒绝。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

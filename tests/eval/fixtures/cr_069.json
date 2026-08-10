@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-069-a1",
-    "cr-069-a2",
     "cr-069-a3",
     "cr-069-a4",
+    "cr-069-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-069-a2",
     "cr-069-a5",
-    "cr-069-a6",
+    "cr-069-a7",
+    "cr-069-a8",
     "cr-069-a9",
     "cr-069-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-069-a7",
-    "cr-069-a8"
-  ],
-  "selection_rationale": "已选包含具体 AI 产品、模型、arXiv 论文或 GitHub AI 工具的条目，符合面向 AI 从业者的精选日报标准；已排除明显非 AI 的 BBC 新闻，以及 OpenAI 教程类内容。TLDR AI 条目虽为标题式聚合，但都含明确 AI 产品/公司名，因此保留。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”三个条件：分别覆盖 Claude 安全研究、DeepSeek 开源推理模型、面向 LLM 的上下文压缩方法，以及与 Claude Code 相关的实用 GitHub 工具。其余候选要么是明显教程/新闻噪音，要么只有标题式拼盘且缺少具体模型或产品信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

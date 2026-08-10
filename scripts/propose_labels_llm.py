@@ -38,13 +38,16 @@ SYSTEM_INSTRUCTION = (
 
 PROMPT_TEMPLATE = """对以下策展候选池做选/拒标注,输出严格 JSON 对象:
 {{
-  "selected_ids": ["cr-NNN-aK", ...],   // 必须出现在 candidates 里, 选 ≥ 1 条
-  "rationale": "用 1-2 句中文解释为什么这样标注。候选充足时选 2-4 条;候选全是干扰时选最相关的 1 条。"
+  "selected_ids": ["cr-NNN-aK", ...],   // 必须出现在 candidates 里, 选 1-4 条(从严)
+  "rationale": "用 1-2 句中文解释为什么这样标注。"
 }}
 
-【判断标准】
-- 选:arXiv 含 LLM/agent/RAG/model/multimodal 关键词;AI 公司产品发布;GitHub Trending AI 工具(含 Claude/LLM/agent 描述);Simon Willison 评论含具体 AI 产品/事件;TLDR AI 含模型/工具/产品名
-- 拒:OpenAI Academy 教程(Brainstorming/ChatGPT Sites/How to use);非 AI BBC;非 AI GitHub Trending([Rust]/[Shell]/[Assembly] 等且无 AI 关键词);非 AI SW 评论;TLDR AI 全是 emoji 标题且无具体 AI 产品
+【判断标准 — 严选】
+- 选(必须 3 个条件同时满足):(1) 标题/描述是 AI 行业新进展 (2) 信息量高于标题本身 (3) 适合 AI 资讯日报读者画像
+- 严格选 1-4 条, 优先 arXiv 含 LLM/agent/RAG/model/multimodal 关键词;AI 公司产品发布;GitHub Trending AI 工具(含 Claude/LLM/agent 描述);Simon Willison 评论含具体 AI 产品/事件;TLDR AI 含模型/工具/产品名
+- 候选池全是低质干扰时, 选最相关的 1 条;候选池 ≥ 5 条优质时, 选 3-4 条最佳
+
+- 拒(下述任一即拒):OpenAI Academy 教程(Brainstorming/ChatGPT Sites/How to use);非 AI BBC;非 AI GitHub Trending([Rust]/[Shell]/[Assembly] 等且无 AI 关键词);非 AI SW 评论;TLDR AI 全是 emoji 标题且无具体 AI 产品/模型名
 
 candidates:
 {candidates_json}

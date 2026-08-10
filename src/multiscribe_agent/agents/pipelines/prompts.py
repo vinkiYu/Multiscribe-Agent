@@ -64,6 +64,11 @@ section 只能是"产品与功能更新""前沿研究""行业展望与社会影�
 带 freshness=fallback 的候选是近七天的补充文章，优先选择未标记的近两天内容。
 g=true 表示 GitHub Trending，未标记的候选来自内容源。不得编造链接或来源。
 
+【短描述容忍】
+- 部分 newsletter (TLDR AI / Hacker News 等) summary 字段为空, 实质内容集中在 title。允许基于 title 单独判断, 不要因 desc 字段缺失而默认拒选。
+- 短描述(< 30 字)但 title 含具体 AI 产品/模型/工具名 → 视为"信息密度高", 可入选。
+- 短描述且 title 只有 emoji + 通用关键词(无具体产品/模型名) → 仍按 reject。
+
 【数量约束】
 - **严格 ≤ {target_count} 条**；目标范围 10 到 12 条
 - **下限规则**：如果候选池里有 ≥ 1 条 score ≥ 7 的 AI 实质条目，必须至少选 1 条；不允许全部拒选

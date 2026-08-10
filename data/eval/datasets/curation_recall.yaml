@@ -1,8 +1,8 @@
 name: curation-recall
 description: 带人工标注的每日 AI 资讯候选池，用于策展 Precision/Recall 回归。
-schema_version: 2
-labeled_at: "2026-08-10"
-labeled_by: zcode:P57-F4
+schema_version: 3
+labeled_at: "2026-08-11"
+labeled_by: zcode:P57-F5
 samples:
   - id: cr-001
     input_path: tests/eval/fixtures/cr_001.json

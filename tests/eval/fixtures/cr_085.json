@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-085-a1",
     "cr-085-a2",
     "cr-085-a3",
-    "cr-085-a5",
+    "cr-085-a4",
+    "cr-085-a5"
+  ],
+  "expected_rejected_ids": [
+    "cr-085-a1",
+    "cr-085-a6",
     "cr-085-a7",
     "cr-085-a8",
     "cr-085-a9",
     "cr-085-a10"
   ],
-  "expected_rejected_ids": [
-    "cr-085-a4",
-    "cr-085-a6"
-  ],
-  "selection_rationale": "保留了明确涉及 LLM/多模态模型、Claude/agent 工具、以及含具体产品名的 TLDR AI/产品发布和 Simon Willison 评论；BBC 非 AI 新闻被排除。TLDR AI 条目虽部分是标题式汇总，但都含具体 AI 产品或公司名，符合精选日报标准。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留信息量明确、和 AI 行业进展直接相关的条目：Llama 4 属于典型模型发布，arXiv 两篇是带有 LLM 研究进展的论文，Claude Skills 也属于 AI 工具生态更新。其余如 BBC 非 AI、OpenAI 教程类不符合严选标准，TLDR 条目标题过于碎片化且缺少足够具体产品/模型信息。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

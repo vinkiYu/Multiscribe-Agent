@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-061-a1",
     "cr-061-a2",
-    "cr-061-a3",
     "cr-061-a4",
     "cr-061-a6",
-    "cr-061-a9",
     "cr-061-a10"
   ],
   "expected_rejected_ids": [
+    "cr-061-a1",
+    "cr-061-a3",
     "cr-061-a5",
     "cr-061-a7",
-    "cr-061-a8"
+    "cr-061-a8",
+    "cr-061-a9"
   ],
-  "selection_rationale": "保留了包含具体 AI 模型、RAG/LLM 研究、AI 工具或产品事件的条目；其中 Simon Willison 对 Opus 5 的评论、TLDR AI 中带有明确产品名的标题、arXiv 的 LLM/RAG 论文，以及 GitHub Trending 的 AI agent 工具都符合精选日报标准。拒绝了 BBC 非 AI 新闻、OpenAI Academy/资源页，以及仅泛泛而无具体 AI 产品细节的条目。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留有明确 AI 产品/模型/工具信息量的候选：TLDR AI 中涉及 Claude Code、Cursor agent、xAI codebases、Prime Intellect verifiers，和 arXiv 的长上下文 LLM/memory agent 研究，以及一个具备具体能力描述的 AI agent GitHub 项目。其余要么是过度标题化、信息增量不足，要么属于非 AI 新闻或不适合日报的泛教程/非 AI 内容。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

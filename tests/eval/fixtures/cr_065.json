@@ -75,18 +75,18 @@
     "cr-065-a1",
     "cr-065-a2",
     "cr-065-a5",
-    "cr-065-a6",
     "cr-065-a7",
-    "cr-065-a8",
-    "cr-065-a9",
-    "cr-065-a10"
+    "cr-065-a8"
   ],
   "expected_rejected_ids": [
     "cr-065-a3",
-    "cr-065-a4"
+    "cr-065-a4",
+    "cr-065-a6",
+    "cr-065-a9",
+    "cr-065-a10"
   ],
-  "selection_rationale": "保留了包含 LLM/agent/RAG/model 等明确 AI 主题的 arXiv、GitHub Trending、Simon Willison 评论以及 TLDR AI 中带具体模型/产品名的条目；OpenAI 教程、BBC 非 AI 和无具体 AI 产品的纯表情标题不纳入。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "保留的是明确的 AI 新进展且信息量足够的条目：包含 LLM 剪枝、Claude 视频工具、Simon Willison 对具体 AI 选型的评论、Hugging Face Agents Hub，以及面向小模型的医疗基准。其余要么是纯教程、无关新闻，或 TLDR 标题过于碎片化且缺少具体产品/模型信息，不适合精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

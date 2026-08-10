@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-058-a1",
-    "cr-058-a3",
     "cr-058-a5",
-    "cr-058-a6",
     "cr-058-a7",
-    "cr-058-a9",
-    "cr-058-a10"
+    "cr-058-a9"
   ],
   "expected_rejected_ids": [
     "cr-058-a2",
+    "cr-058-a3",
     "cr-058-a4",
-    "cr-058-a8"
+    "cr-058-a6",
+    "cr-058-a8",
+    "cr-058-a10"
   ],
-  "selection_rationale": "保留的是与 AI 从业者直接相关的 GitHub AI 工具、OpenAI 相关产品内容、Agent/LLM 研究以及包含具体模型/产品名的 TLDR AI 条目；BBC 非 AI 资讯与 Simon Willison 这条偏基础设施/包管理、无明确 AI 产品事件，不符合精选日报标准。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留直接反映 AI 产品、工具或模型进展且信息量足够的候选：开源语音代理、TLDR AI 中明确点名的 Gemini/OpenAI/Devin 与 Claude Code/Cursor 相关动态，以及 arXiv 上关于 LLM 低精度训练的综述，均符合 AI 行业读者的日报需求。其余项要么是非 AI 资讯、要么更像教程/泛话题、或标题信息不足，不满足严选标准。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

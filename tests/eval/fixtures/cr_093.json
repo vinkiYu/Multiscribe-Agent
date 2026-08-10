@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-093-a1",
     "cr-093-a2",
-    "cr-093-a3",
     "cr-093-a4",
-    "cr-093-a7",
-    "cr-093-a8",
-    "cr-093-a9",
+    "cr-093-a5",
     "cr-093-a10"
   ],
   "expected_rejected_ids": [
-    "cr-093-a5",
-    "cr-093-a6"
+    "cr-093-a1",
+    "cr-093-a3",
+    "cr-093-a6",
+    "cr-093-a7",
+    "cr-093-a8",
+    "cr-093-a9"
   ],
-  "selection_rationale": "已选与 AI 从业者直接相关的模型、arXiv 论文、OpenAI 事件以及包含具体 AI 产品/工具名的 TLDR AI 条目；拒绝了纯新闻、BBC 非 AI 和无具体 AI 产品信息的干扰项。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留有明确 AI 行业新进展且信息量足够的候选：开源模型发布、具备应用场景的多模态医疗/语言治疗系统、带 AI 功能描述的 GitHub 热门项目，以及包含具体公司/模型名的 TLDR 条目。其余要么偏评论性但信息增量不足，要么标题过于泛化或缺少足够可验证的 AI 资讯价值。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

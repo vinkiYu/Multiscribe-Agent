@@ -74,19 +74,19 @@
   "expected_selected_ids": [
     "cr-060-a2",
     "cr-060-a4",
-    "cr-060-a5",
-    "cr-060-a6",
-    "cr-060-a9",
     "cr-060-a10"
   ],
   "expected_rejected_ids": [
     "cr-060-a1",
     "cr-060-a3",
+    "cr-060-a5",
+    "cr-060-a6",
     "cr-060-a7",
-    "cr-060-a8"
+    "cr-060-a8",
+    "cr-060-a9"
   ],
-  "selection_rationale": "保留了与 AI 模型、agent、RAG 或具体 AI 产品/事件直接相关的条目，包括 Simon Willison 对 Claude Opus 5 的评论、OpenAI/GPT-5 相关发布、arXiv 的 AI/CL 论文，以及 TLDR AI 中明确提到 Claude Code、Cursor、xAI、Prime Intellect、Sakana 等产品或公司。拒绝了 OpenAI 教程、非 AI 的 BBC 和 GitHub Trending 以及纯泛化/无具体 AI 信息的内容。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这三条都满足“AI 行业新进展 + 信息量高于标题 + 适合日报读者”标准：分别是 Anthropic 新模型点评、OpenAI GPT-5/agent 能力发布、以及 TLDR AI 中带有具体 AI 公司/产品进展的汇总。其余候选要么是教程、非 AI、非具体 AI 资讯，或标题过于噪声化，不适合严选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

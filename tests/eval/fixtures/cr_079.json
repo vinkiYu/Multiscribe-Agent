@@ -73,20 +73,20 @@
   ],
   "expected_selected_ids": [
     "cr-079-a1",
-    "cr-079-a3",
     "cr-079-a7",
     "cr-079-a8",
-    "cr-079-a9",
     "cr-079-a10"
   ],
   "expected_rejected_ids": [
     "cr-079-a2",
+    "cr-079-a3",
     "cr-079-a4",
     "cr-079-a5",
-    "cr-079-a6"
+    "cr-079-a6",
+    "cr-079-a9"
   ],
-  "selection_rationale": "保留了明确涉及 LLM/RAG/agent 的 arXiv 与 AI 产品/公司发布，以及 Simon Willison 对 OpenAI GPT-5.6 的具体评论；TLDR AI 标题中也都包含具体 AI 产品或公司名，符合精选日报标准。剔除与 AI 无关的 GitHub/BBC/OpenAI 教程类内容，并未选纯模型理论且不含 LLM/agent/RAG 关键词的候选。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "优先保留有明确 AI 行业新进展且信息密度高的条目：Gemma 2 开源与 RAG/agent 适配、Simon 对 GPT-5.6 价格调整的具体评论、以及 TLDR AI 中点名 Claude Code / Cursor / DeepSeek / 模型与产品的汇总。其余多为基础研究题目、非 AI 新闻或无具体 AI 产品名的低信息量内容，不适合精选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }

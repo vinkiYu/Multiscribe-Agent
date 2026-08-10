@@ -72,21 +72,21 @@
     }
   ],
   "expected_selected_ids": [
-    "cr-092-a1",
     "cr-092-a2",
     "cr-092-a3",
     "cr-092-a4",
-    "cr-092-a6",
-    "cr-092-a10"
+    "cr-092-a6"
   ],
   "expected_rejected_ids": [
+    "cr-092-a1",
     "cr-092-a5",
     "cr-092-a7",
     "cr-092-a8",
-    "cr-092-a9"
+    "cr-092-a9",
+    "cr-092-a10"
   ],
-  "selection_rationale": "保留与 AI 产品、LLM/agent、RAG 或 arXiv 研究直接相关的候选，包括 OpenAI 的区域项目、Simon Willison 对 Claude Code 的具体评论、RAG 研究、编码 agent 评测论文、AI GitHub Trending 工具，以及含明确模型/产品名的 TLDR AI 条目。拒绝非 AI 新闻、纯天气 BBC，以及仅有表情且缺少具体 AI 产品信息的 TLDR AI 条目。",
-  "schema_version": 2,
-  "labeled_by": "zcode:P57-F4",
+  "selection_rationale": "这 4 条都满足“AI 行业新进展 + 信息量高于标题 + 适合从业者”三项要求：分别覆盖 Claude Code 相关实现细节、医疗 RAG 系统、编码代理评测方法、以及具备明确 AI 能力与生态集成的 GitHub Trending 工具。其余候选要么是泛新闻、纯标题化 TLDR 低信息量、要么信息不足，不适合严选日报。",
+  "schema_version": 3,
+  "labeled_by": "zcode:P57-F5",
   "labeled_at": "2026-08-10"
 }
