@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-084-a1",
+      "title": "The state of enterprise AI",
+      "description": "A data-driven look at enterprise AI adoption, showing how organizations move from experimentation to real productivity gains and new capabilities.",
+      "url": "https://example.test/cr-084/1-openai-com-business-guides-and-resources-the-sta",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-084-a2",
+      "title": "Kimi K3, and what we can still learn from the pelican benchmark",
+      "description": "<p>Chinese AI lab Moonshot AI <a href=\"https://www.kimi.com/blog/kimi-k3\">announced Kimi K3</a> this morning, describing it as their \"most capable model to date, with 2.8 trillion parameters\". It's currently available via their website and API, but an open weight release is promised \"by July 27, 202",
+      "url": "https://example.test/cr-084/2-simonwillison-net-2026-jul-16-kimi-k3",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-084-a3",
+      "title": "Weaviate Launches Hybrid RAG-as-a-Service with Open Source Backend",
+      "description": "Weaviate's new managed service combines dense and sparse retrieval with reranking, built on open-source Weaviate vector database. Supports any LLM via OpenAI/Azure compatibility.",
+      "url": "https://example.test/cr-084/3-weaviate-io-blog-hybrid-rag-service-launch",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-084-a4",
+      "title": "Making Implicit Premises Explicit in Logical Understanding of Enthymemes",
+      "description": "arXiv:2603.06114v2 Announce Type: replace-cross \nAbstract: Real-world arguments in text and dialogues are normally enthymemes (i.e. some of their premises and/or claims are implicit). Natural language processing (NLP) methods for handling enthymemes can potentially identify enthymemes in text but th",
+      "url": "https://example.test/cr-084/4-arxiv-org-abs-2603-06114",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-084-a5",
+      "title": "Accuracy Hides How Language Models Fail: Measuring Failure States Under Matched Output Budgets",
+      "description": "arXiv:2607.24268v2 Announce Type: replace \nAbstract: Language-model benchmarks collapse two distinct measurement questions into a single accuracy score: whether a response reached an evaluable state, and whether its answer was judged correct. We introduce a two-layer evaluation framework that separa",
+      "url": "https://example.test/cr-084/5-arxiv-org-abs-2607-24268",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-084-a6",
+      "title": "[Rust] Automattic/harper (13,564 stars)",
+      "description": "Offline, privacy-first grammar checker. Fast, open-source, Rust-powered",
+      "url": "https://example.test/cr-084/6-github-com-automattic-harper",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-084-a7",
+      "title": "Newcastle seal £34m move for Monaco's Bamba",
+      "description": "Newcastle United have signed Monaco midfielder Aladji Bamba for a fee which could rise to £34m.",
+      "url": "https://example.test/cr-084/7-www-bbc-co-uk-sport-football-articles-cr593z81lq",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-084-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-084/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-084-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-084/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-084-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-084/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-084-a2",
+    "cr-084-a3",
+    "cr-084-a4",
+    "cr-084-a5",
+    "cr-084-a8",
+    "cr-084-a9",
+    "cr-084-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-084-a1",
+    "cr-084-a6",
+    "cr-084-a7"
+  ],
+  "selection_rationale": "保留了包含明确 AI 模型/产品/工具信息的条目，包括 Simon Willison 对 Kimi K3 的评论、Weaviate 的 RAG 服务，以及 arXiv 中涉及语言模型评估的论文。TLDR AI 中含有具体 AI 产品名或事件的标题也保留；BBC、非 AI GitHub Trending 和纯通用资讯则拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

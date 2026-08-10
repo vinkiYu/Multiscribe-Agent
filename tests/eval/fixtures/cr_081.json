@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-081-a1",
+      "title": "Auditing Question-Order Effects in Large Language Models with the QQ Equality: Mechanism Characterization and a Saturation Caveat",
+      "description": "arXiv:2607.17219v2 Announce Type: replace \nAbstract: Question-order effects in human survey data have been reported to approximately satisfy the QQ (quantum question) equality, a parameter-free prediction of the standard projective quantum question-order model. We develop this equality into an audit",
+      "url": "https://example.test/cr-081/1-arxiv-org-abs-2607-17219",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-081-a2",
+      "title": "[Swift] permissionlesstech/bitchat (30,791 stars)",
+      "description": "bluetooth mesh chat, IRC vibes",
+      "url": "https://example.test/cr-081/2-github-com-permissionlesstech-bitchat",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-081-a3",
+      "title": "Guardiola turns down Italy manager job",
+      "description": "Former Manchester City manager Pep Guardiola turns down the chance to coach Italy.",
+      "url": "https://example.test/cr-081/3-www-bbc-co-uk-sport-football-articles-cd7len4lvy",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-081-a4",
+      "title": "Inside GPT-5 for Work: How Businesses Use GPT-5",
+      "description": "A data-driven report on how workers across industries use ChatGPT—covering adoption trends, top tasks, departmental patterns, and the future of AI at work.",
+      "url": "https://example.test/cr-081/4-openai-com-business-guides-and-resources-chatgpt",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-081-a5",
+      "title": "Quoting Thibault Sottiaux",
+      "description": "<blockquote cite=\"https://twitter.com/thsottiaux/status/2077630111499882637\"><p>On file deletions. We’ve investigated a handful of reports where GPT-5.6 unexpectedly deleted files. </p>\n<p>What we have  found is that this most commonly occurs when:</p>\n<ul>\n<li>Full access mode is enabled and codex ",
+      "url": "https://example.test/cr-081/5-simonwillison-net-2026-jul-16-bad-codex-bug",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-081-a6",
+      "title": "LangChain Introduces LangGraph Studio: Visual Agent Workflow Builder",
+      "description": "LangGraph Studio allows developers to design, debug, and deploy complex agentic RAG pipelines using a drag-and-drop interface. Supports open-source models from Ollama and vLLM.",
+      "url": "https://example.test/cr-081/6-blog-langchain-dev-langgraph-studio-visual-agent",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-081-a7",
+      "title": "PatchDenoiser: Parameter-efficient multi-scale patch learning and fusion denoiser for Low-dose CT imaging",
+      "description": "arXiv:2602.21987v3 Announce Type: replace-cross \nAbstract: Low-dose CT images are essential for reducing radiation exposure in cancer screening, pediatric imaging, and longitudinal monitoring protocols, but their quality is often degraded by noise from low-dose acquisition, patient motion, or scanne",
+      "url": "https://example.test/cr-081/7-arxiv-org-abs-2602-21987",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-081-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-081/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-081-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-081/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-081-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-081/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-081-a1",
+    "cr-081-a4",
+    "cr-081-a5",
+    "cr-081-a6",
+    "cr-081-a8",
+    "cr-081-a9",
+    "cr-081-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-081-a2",
+    "cr-081-a3",
+    "cr-081-a7"
+  ],
+  "selection_rationale": "保留了与 LLM/agent/RAG/AI 产品发布直接相关的 arXiv、OpenAI、Simon Willison 和 TLDR AI 条目；拒绝了非 AI 的 GitHub Trending 和 BBC 新闻。TLDR AI 中包含具体模型/工具/公司名而非纯表情标题，因此也应纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-097-a1",
+      "title": "LayerRAG-Bench: A Cross-Layer Reliability Benchmark for Agentic Retrieval-Augmented Generation",
+      "description": "arXiv:2607.27353v1 Announce Type: new \nAbstract: Agentic retrieval-augmented generation systems can produce answers that appear grounded while failing at the evidence, tool-contract, authorization, or session-state layer. We introduce LayerRAG-Bench, a controlled cross-layer reliability benchmark wi",
+      "url": "https://example.test/cr-097/1-arxiv-org-abs-2607-27353",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-097-a2",
+      "title": "Bayeux Tapestry in 'wonderful state' after journey to London, French minister says",
+      "description": "The French culture minister has told the BBC that the Bayeux Tapestry  is in \"a wonderful state\".",
+      "url": "https://example.test/cr-097/2-www-bbc-co-uk-news-articles-c4gjd9qww1eo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-097-a3",
+      "title": "Introducing OpenAI for Government",
+      "description": "We’re launching OpenAI for Government, a new initiative focused on bringing our most advanced AI tools to public servants across the United States. We’re supporting the U.S. government's efforts in adopting best-in-class technology and deploying these tools in service of the public good.",
+      "url": "https://example.test/cr-097/3-openai-com-global-affairs-introducing-openai-for",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-097-a4",
+      "title": "Mermaid to ASCII art (mermaid-ascii)",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/mermaid-ascii\">Mermaid to ASCII art (mermaid-ascii)</a></p>\n        <p>After building the <a href=\"https://simonwillison.net/2026/Jul/16/grok-mermaid/\">Mermaid to ASCII tool based on Grok Build's Rust code</a> I learned that there's ",
+      "url": "https://example.test/cr-097/4-simonwillison-net-2026-jul-16-mermaid-ascii",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-097-a5",
+      "title": "Anthropic's Claude Agent Achieves 90%+ Success Rate on Web Tasks",
+      "description": "Anthropic demonstrates an upgraded version of Claude capable of autonomously booking flights, filling forms, and debugging code. The agent uses a novel 'chain-of-tools' prompting technique.",
+      "url": "https://example.test/cr-097/5-www-theverge-com-2025-7-8-claude-agent-web-bench",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-097-a6",
+      "title": "BioHiCL: Hierarchical Multi-Label Contrastive Learning for Biomedical Retrieval with MeSH Labels",
+      "description": "arXiv:2604.15591v2 Announce Type: replace-cross \nAbstract: Effective biomedical information retrieval requires modeling domain semantics and hierarchical relationships among biomedical texts. Existing biomedical generative retrievers build on coarse binary relevance signals, limiting their ability t",
+      "url": "https://example.test/cr-097/6-arxiv-org-abs-2604-15591",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-097-a7",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-097/7-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-097-a8",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-097/8-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-097-a9",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-097/9-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-097-a10",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-097/10-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-097-a1",
+    "cr-097-a3",
+    "cr-097-a5",
+    "cr-097-a7",
+    "cr-097-a8",
+    "cr-097-a9",
+    "cr-097-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-097-a2",
+    "cr-097-a4",
+    "cr-097-a6"
+  ],
+  "selection_rationale": "保留了明确属于 AI 研究/产品/工具发布的条目：包含 Agentic RAG 的 arXiv 论文、OpenAI 面向政府的新发布、Anthropic Claude agent 事件，以及 TLDR AI 中带有具体模型/产品名的标题。拒绝了明显非 AI 的 BBC 新闻；其余 TLDR AI 标题虽然有具体 AI 名称或模型名，但都符合“含模型/工具/产品名”标准，因此一并保留。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

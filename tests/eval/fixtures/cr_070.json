@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-070-a1",
+      "title": "GPT-5.6 Luna default 🌙, Agent Plugins 🔌, AMD Taalas acquisition 🧩",
+      "description": "",
+      "url": "https://example.test/cr-070/1-tldr-tech-ai-2026-08-07",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-070-a2",
+      "title": "Cohere releases Command-R+ with advanced RAG and citation capabilities",
+      "description": "Command-R+ specializes in retrieval-augmented generation, offering automatic citation and improved accuracy for enterprise knowledge bases.",
+      "url": "https://example.test/cr-070/2-cohere-com-blog-command-r-plus-rag-citations",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-070-a3",
+      "title": "Measure what Matters: Psychometric Evaluation of AI with Situational Judgment Tests",
+      "description": "arXiv:2510.22170v3 Announce Type: replace \nAbstract: Persona conditioning is widely used to steer large language model (LLM) behavior, but it is unclear whether it induces stable behavioral structure or superficial variation. We propose a framework to measure consistent behavioral tendencies using s",
+      "url": "https://example.test/cr-070/3-arxiv-org-abs-2510-22170",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-070-a4",
+      "title": "Beyond Pattern Matching: Seven Cross-Domain Techniques for Prompt Injection Detection",
+      "description": "arXiv:2604.18248v4 Announce Type: replace-cross \nAbstract: Current open-source prompt-injection detectors converge on two architectural choices: regular-expression pattern matching and fine-tuned transformer classifiers. Both share failure modes recent work has made concrete. Regular expressions mis",
+      "url": "https://example.test/cr-070/4-arxiv-org-abs-2604-18248",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-070-a5",
+      "title": "[Go] yorukot/superfile (21,229 stars)",
+      "description": "Pretty fancy and modern terminal file manager",
+      "url": "https://example.test/cr-070/5-github-com-yorukot-superfile",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-070-a6",
+      "title": "Edinburgh's tourist tax is here - how much is it and who pays?",
+      "description": "The Scottish capital has become the first city in the country to introduce a charge for overnight stays.",
+      "url": "https://example.test/cr-070/6-www-bbc-co-uk-news-articles-cvgl8j37839o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-070-a7",
+      "title": "Personalizing ChatGPT",
+      "description": "Learn how to personalize ChatGPT using custom instructions and memory to get more relevant, consistent, and tailored responses.",
+      "url": "https://example.test/cr-070/7-openai-com-academy-personalization",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-070-a8",
+      "title": "uv 0.12.0",
+      "description": "<p><strong><a href=\"https://github.com/astral-sh/uv/releases/tag/0.12.0\">uv 0.12.0</a></strong></p>\nSome interesting breaking changes in this release of <code>uv</code>, in particular to the default project produced by the <code>uv init</code> command.</p>\n<p><a href=\"https://docs.astral.sh/uv/conce",
+      "url": "https://example.test/cr-070/8-simonwillison-net-2026-jul-28-uv",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-070-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-070/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-070-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-070/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-070-a1",
+    "cr-070-a2",
+    "cr-070-a3",
+    "cr-070-a4",
+    "cr-070-a9",
+    "cr-070-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-070-a5",
+    "cr-070-a6",
+    "cr-070-a7",
+    "cr-070-a8"
+  ],
+  "selection_rationale": "保留包含明确 AI 产品/模型/研究主题的候选：TLDR AI 标题中有具体产品名或功能（GPT-5.6、Agent Plugins、Claude Code、Cursor、xAI、Prime Intellect 等），arXiv 条目涉及 LLM、prompt injection detection 等 AI 研究，且 Cohere 的 Command-R+ 明确是带 RAG 的模型发布。拒绝 BBC、OpenAI Academy 教程、非 AI GitHub Trending 以及无具体 AI 产品信息的 Simon Willison/emoji-only 线索。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

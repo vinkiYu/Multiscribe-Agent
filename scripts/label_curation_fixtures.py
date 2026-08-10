@@ -1,11 +1,20 @@
-"""Label all 50 fixtures with expected_selected_ids / expected_rejected_ids / schema_version.
+"""Label fixtures with expected_selected_ids / expected_rejected_ids / schema_version.
 
-Labeling rubric:
-- SELECT: arXiv title contains LLM/agent/RAG/model/multimodal/reasoning/MLLM/VLM/inference/fine-tune/LLM/transformer/diffusion/embedding/alignment/benchmark/eval/dataset/training; or GitHub Trending AI tool (title/desc contains AI/LLM/agent/Claude/RAG/MCP); or AI company news (Anthropic/DeepSeek/Meta/OpenAI product launch/research); or SW post with AI substance (Opus 5, MCP, Claude Code, agent, LLM security, prompt injection).
-- REJECT: OpenAI Academy tutorial (Brainstorming/ChatGPT Sites/How to use ChatGPT Work/etc.); non-AI BBC news; non-AI GitHub Trending; SW post without AI substance.
-- SCORE < 6 = reject.
+Two modes:
+
+1. Legacy (default, no flags):  write the 50 hard-coded labels for cr-001..cr-050
+   produced during P57 Phase 1. Use --no-legacy to disable.
+
+2. JSON-driven:  load labels from ``--labels-source FILE.json`` (a single object
+   keyed by sample id) or from a directory of per-fixture JSON files when
+   ``--labels-source`` points to a directory. This mode is what Phase 4 uses to
+   promote the LLM-proposed labels into fixtures.
+
+When ``--dry-run`` is set, no fixture is overwritten and the script just
+validates the label set against each fixture's candidate IDs.
 """
 
+import argparse
 import glob
 import json
 from pathlib import Path
@@ -217,31 +226,121 @@ labels = {
 fixtures_dir = Path("tests/eval/fixtures")
 files = sorted(glob.glob(str(fixtures_dir / "cr_*.json")))
 
-LABELED_AT = "2026-08-09"
-SCHEMA_VERSION = 1
-LABELED_BY = "zcode:P57-F1"
+LEGACY_LABELED_AT = "2026-08-09"
+LEGACY_SCHEMA_VERSION = 1
+LEGACY_LABELED_BY = "zcode:P57-F1"
 
-count = 0
-for fp in files:
-    name = Path(fp).stem  # cr_001
-    sample_id = name.replace("_", "-")  # cr-001
-    if sample_id not in labels:
-        print(f"WARNING: no labels for {sample_id}")
-        continue
-    data = json.loads(open(fp, encoding="utf-8").read())
-    label = labels[sample_id]
-    selected = label["selected"]
-    all_ids = [c["id"] for c in data["candidates"]]
-    rejected = [cid for cid in all_ids if cid not in selected]
-    data["expected_selected_ids"] = selected
-    data["expected_rejected_ids"] = rejected
-    data["selection_rationale"] = label["rationale"]
-    data["schema_version"] = SCHEMA_VERSION
-    data["labeled_by"] = LABELED_BY
-    data["labeled_at"] = LABELED_AT
-    with open(fp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-    count += 1
 
-print(f"Labeled {count} fixtures")
+def _load_json_labels(source: Path) -> dict[str, dict[str, object]]:
+    """Read labels either from a single JSON file or from a directory of files."""
+    if source.is_dir():
+        labels: dict[str, dict[str, object]] = {}
+        for fp in sorted(source.glob("cr_*.json")):
+            sample_id = fp.stem.replace("_", "-")
+            payload = json.loads(fp.read_text(encoding="utf-8"))
+            labels[sample_id] = payload
+        return labels
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    return {key.replace("_", "-"): value for key, value in payload.items()}
+
+
+def _apply_labels(
+    labels: dict[str, dict[str, object]],
+    *,
+    schema_version: int,
+    labeled_by: str,
+    labeled_at: str,
+    dry_run: bool,
+) -> int:
+    count = 0
+    for fp in files:
+        name = Path(fp).stem  # cr_001
+        sample_id = name.replace("_", "-")  # cr-001
+        if sample_id not in labels:
+            print(f"WARNING: no labels for {sample_id}")
+            continue
+        data = json.loads(open(fp, encoding="utf-8").read())
+        label = labels[sample_id]
+        selected = list(label.get("selected_ids") or label.get("selected") or [])
+        all_ids = [c["id"] for c in data["candidates"]]
+        candidate_set = set(all_ids)
+        unknown = [sid for sid in selected if sid not in candidate_set]
+        if unknown:
+            raise ValueError(f"{sample_id}: selected_ids not in candidates: {unknown}")
+        rejected = [cid for cid in all_ids if cid not in selected]
+        data["expected_selected_ids"] = selected
+        data["expected_rejected_ids"] = rejected
+        data["selection_rationale"] = str(label.get("rationale", ""))
+        data["schema_version"] = schema_version
+        data["labeled_by"] = labeled_by
+        data["labeled_at"] = labeled_at
+        if not dry_run:
+            with open(fp, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.write("\n")
+        count += 1
+    return count
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--labels-source",
+        type=Path,
+        help="Path to labels.json or to a directory of per-fixture cr_NNN.json labels.",
+    )
+    parser.add_argument(
+        "--schema-version",
+        type=int,
+        default=LEGACY_SCHEMA_VERSION,
+        help="schema_version to write into each fixture (default: legacy 1).",
+    )
+    parser.add_argument(
+        "--labeled-by",
+        default=LEGACY_LABELED_BY,
+        help="labeled_by value to stamp onto each fixture.",
+    )
+    parser.add_argument(
+        "--labeled-at",
+        default=LEGACY_LABELED_AT,
+        help="labeled_at value to stamp onto each fixture.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate labels without writing back to fixtures.",
+    )
+    parser.add_argument(
+        "--no-legacy",
+        action="store_true",
+        help="Skip the legacy hard-coded cr-001..cr-050 fallback when --labels-source is unset.",
+    )
+    args = parser.parse_args()
+
+    if args.labels_source is None and not args.no_legacy:
+        effective_labels = labels
+        schema_version = LEGACY_SCHEMA_VERSION
+        labeled_by = LEGACY_LABELED_BY
+        labeled_at = LEGACY_LABELED_AT
+    elif args.labels_source is not None:
+        effective_labels = _load_json_labels(args.labels_source)
+        schema_version = args.schema_version
+        labeled_by = args.labeled_by
+        labeled_at = args.labeled_at
+    else:
+        print("No labels source and --no-legacy given; nothing to do.")
+        return
+
+    count = _apply_labels(
+        effective_labels,
+        schema_version=schema_version,
+        labeled_by=labeled_by,
+        labeled_at=labeled_at,
+        dry_run=args.dry_run,
+    )
+    mode = "validated" if args.dry_run else "labeled"
+    print(f"{mode.capitalize()} {count} fixtures")
+
+
+if __name__ == "__main__":
+    main()

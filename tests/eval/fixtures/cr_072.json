@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-072-a1",
+      "title": "BioPro: Towards Difference-Aware Gender Fairness for Vision-Language Models",
+      "description": "arXiv:2512.00807v2 Announce Type: replace \nAbstract: Vision-Language Models (VLMs) inherit significant social biases from their training data, notably in gender representation. Current fairness interventions often adopt a difference-unaware perspective that enforces uniform treatment across demograp",
+      "url": "https://example.test/cr-072/1-arxiv-org-abs-2512-00807",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-072-a2",
+      "title": "NorBERTo: A ModernBERT Model Trained for Portuguese with 331 Billion Tokens Corpus",
+      "description": "arXiv:2605.00086v2 Announce Type: replace \nAbstract: High-quality corpora are essential for advancing Natural Language Processing (NLP) in Portuguese. Building on previous encoder-only models such as BERTimbau and Albertina PT-BR, we introduce NorBERTo, a modern encoder based on the ModernBERT archi",
+      "url": "https://example.test/cr-072/2-arxiv-org-abs-2605-00086",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-072-a3",
+      "title": "[Java] OtterMind/Chat2DB (27,246 stars)",
+      "description": "🔥🔥🔥 AI-driven database tool and SQL client, The hottest GUI client, supporting MySQL, Oracle, PostgreSQL, DB2, SQL Server, DB2, SQLite, H2, ClickHouse, and more.",
+      "url": "https://example.test/cr-072/3-github-com-ottermind-chat2db",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-072-a4",
+      "title": "Angela Rayner rules out rent controls in England",
+      "description": "The housing secretary tells the BBC that the Renters Rights' Act is already having a significant impact on the market.",
+      "url": "https://example.test/cr-072/4-www-bbc-co-uk-news-articles-cx2dg54vprno",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-072-a5",
+      "title": "ChatGPT for research",
+      "description": "Learn how to use ChatGPT for research to gather sources, analyze information, and create structured, citation-backed insights.",
+      "url": "https://example.test/cr-072/5-openai-com-academy-research",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-072-a6",
+      "title": "Quoting D. Richard Hipp",
+      "description": "<blockquote cite=\"https://www.youtube.com/watch?v=R57nUGzo7CA&amp;t=848s\"><p>Years ago, we didn’t have SQL. There were people whose job was to generate software that would query large data sets. Their job title was COBOL programmer.</p>\n<p>Then SQL comes along—I’m simplifying this only a little bit—",
+      "url": "https://example.test/cr-072/6-simonwillison-net-2026-jul-29-d-richard-hipp",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-072-a7",
+      "title": "Meta open-sources Llama 4 70B – competitive with GPT-4 in benchmarks",
+      "description": "Llama 4 70B is released under a new open license, featuring improved multilingual performance, long context, and native function calling for agents.",
+      "url": "https://example.test/cr-072/7-ai-meta-com-blog-llama-4-open-source-70b",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-072-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-072/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-072-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-072/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-072-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-072/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-072-a1",
+    "cr-072-a3",
+    "cr-072-a7",
+    "cr-072-a8",
+    "cr-072-a9",
+    "cr-072-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-072-a2",
+    "cr-072-a4",
+    "cr-072-a5",
+    "cr-072-a6"
+  ],
+  "selection_rationale": "保留包含明确 AI 研究或产品/工具信息的条目：arXiv 里的 VLM 公平性与 Llama 4、GitHub Trending 的 AI 数据库工具、以及 TLDR AI 中出现具体模型/工具名的标题都符合日报筛选标准。BBC、OpenAI 教程和与 AI 主题无关的评论项不选；此候选池中另有多条有效 AI 资讯，因此选取 6 条覆盖研究、产品和工具动态。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

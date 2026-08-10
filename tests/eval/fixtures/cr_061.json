@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-061-a1",
+      "title": "Quoting Boris Cherny",
+      "description": "<blockquote cite=\"https://twitter.com/bcherny/status/2080713091688583312\"><p>More than any of these eval scores, what is most exciting to me is something else: Opus 5 is our least prompt injectable model yet. It is a bit buried in the system card, but across PI evals and red teaming, Opus 5 is very ",
+      "url": "https://example.test/cr-061/1-simonwillison-net-2026-jul-25-boris-cherny",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-061-a2",
+      "title": "Claude Opus 5 🧠, inside OpenAI’s hack 👨‍💻, NVIDIA open weights 🔓",
+      "description": "",
+      "url": "https://example.test/cr-061/2-tldr-tech-ai-2026-07-27",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-061-a3",
+      "title": "Anthropic's Claude 4 Achieves Breakthrough in Long-Context RAG",
+      "description": "Claude 4 now supports 1M token context windows with near-perfect retrieval accuracy, enabling whole-book Q&A and complex document analysis.",
+      "url": "https://example.test/cr-061/3-www-anthropic-com-news-claude-4-long-context-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-061-a4",
+      "title": "MemAgent: Reshaping Long-Context LLM with Multi-Conv RL-based Memory Agent",
+      "description": "arXiv:2507.02259v2 Announce Type: replace-cross \nAbstract: Despite improvements by length extrapolation, efficient attention and memory modules, handling infinitely long documents with linear complexity without performance degradation during extrapolation remains the ultimate challenge in long-text ",
+      "url": "https://example.test/cr-061/4-arxiv-org-abs-2507-02259",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-061-a5",
+      "title": "Select or Project? Evaluating Lower-dimensional Vectors for LLM Training Data Explanations",
+      "description": "arXiv:2601.16651v3 Announce Type: replace \nAbstract: Gradient-based methods for instance-based explanation for large language models (LLMs) are hindered by the immense dimensionality of model gradients. In practice, influence estimation is restricted to a subset of model parameters to make computati",
+      "url": "https://example.test/cr-061/5-arxiv-org-abs-2601-16651",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-061-a6",
+      "title": "[Python] mvanhorn/last30days-skill (55,622 stars)",
+      "description": "AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a grounded summary",
+      "url": "https://example.test/cr-061/6-github-com-mvanhorn-last30days-skill",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-061-a7",
+      "title": "This new bridge aimed to show US-Canada unity but instead stoked divisions",
+      "description": "A bridge linking Michigan to Ontario is about to open but Canada has disinvited US dignitaries from the ceremony.",
+      "url": "https://example.test/cr-061/7-www-bbc-co-uk-news-articles-cewr57kd21vo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-061-a8",
+      "title": "Financial services",
+      "description": "Explore AI resources for financial services, including prompt packs, GPTs, guides, and tools to help institutions deploy and scale AI securely.",
+      "url": "https://example.test/cr-061/8-openai-com-academy-financial-services",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-061-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-061/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-061-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-061/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-061-a1",
+    "cr-061-a2",
+    "cr-061-a3",
+    "cr-061-a4",
+    "cr-061-a6",
+    "cr-061-a9",
+    "cr-061-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-061-a5",
+    "cr-061-a7",
+    "cr-061-a8"
+  ],
+  "selection_rationale": "保留了包含具体 AI 模型、RAG/LLM 研究、AI 工具或产品事件的条目；其中 Simon Willison 对 Opus 5 的评论、TLDR AI 中带有明确产品名的标题、arXiv 的 LLM/RAG 论文，以及 GitHub Trending 的 AI agent 工具都符合精选日报标准。拒绝了 BBC 非 AI 新闻、OpenAI Academy/资源页，以及仅泛泛而无具体 AI 产品细节的条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

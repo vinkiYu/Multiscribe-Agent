@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-068-a1",
+      "title": "ChatGPT for marketing teams",
+      "description": "Learn how marketing teams use ChatGPT to plan campaigns, generate content, analyze performance, and move from ideas to execution faster.",
+      "url": "https://example.test/cr-068/1-openai-com-academy-marketing",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-068-a2",
+      "title": "Anatomy of a Frontier Lab Agent Intrusion: A Technical Timeline of the July 2026 Incident",
+      "description": "<p><strong><a href=\"https://huggingface.co/blog/agent-intrusion-technical-timeline\">Anatomy of a Frontier Lab Agent Intrusion: A Technical Timeline of the July 2026 Incident</a></strong></p>\nHugging Face just released this extremely detailed technical description of <a href=\"https://simonwillison.ne",
+      "url": "https://example.test/cr-068/2-simonwillison-net-2026-jul-28-anatomy-of-a-front",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-068-a3",
+      "title": "Google LLM router ➡️, Cloudflare Wallets 💳, Anthropic and Volta 🤝",
+      "description": "",
+      "url": "https://example.test/cr-068/3-tldr-tech-ai-2026-08-05",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-068-a4",
+      "title": "LangChain releases LangGraph Studio – visual debugger for agent LLM applications",
+      "description": "LangGraph Studio provides a visual environment to design, debug, and monitor AI agents built with LangChain and LangGraph, including RAG loops.",
+      "url": "https://example.test/cr-068/4-blog-langchain-dev-langgraph-studio-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-068-a5",
+      "title": "VideoNorms: Benchmarking Cultural Awareness of Video Language Models",
+      "description": "arXiv:2510.08543v2 Announce Type: replace-cross \nAbstract: As Video Large Language Models (VideoLLMs) are deployed globally, it is important to assess their ability to reason across cultural contexts. To advance cultural norm awareness evaluation in VideoLLMs, we introduce VideoNorms, a dataset of c",
+      "url": "https://example.test/cr-068/5-arxiv-org-abs-2510-08543",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-068-a6",
+      "title": "How Can We Synthesize High-Quality Pretraining Data? A Systematic Study of Prompt Design, Generator Model, and Source Data",
+      "description": "arXiv:2604.13977v2 Announce Type: replace \nAbstract: Synthetic data is a standard component in training large language models, yet systematic comparisons across design dimensions, including rephrasing strategy, generator model, and source data, remain absent. We conduct extensive controlled experime",
+      "url": "https://example.test/cr-068/6-arxiv-org-abs-2604-13977",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-068-a7",
+      "title": "[TypeScript] opengeos/GeoLibre (3,107 stars)",
+      "description": "A lightweight, cloud-native GIS platform for visualizing, exploring, and analyzing geospatial data. It runs in the web browser, on the desktop, on mobile, and inside Jupyter notebooks.",
+      "url": "https://example.test/cr-068/7-github-com-opengeos-geolibre",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-068-a8",
+      "title": "Sarah Ferguson's charity formally closes down",
+      "description": "Sarah’s Trust had previously said it was closing “for the foreseeable future”.",
+      "url": "https://example.test/cr-068/8-www-bbc-co-uk-news-articles-cvg0w7xxk72o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-068-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-068/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-068-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-068/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-068-a2",
+    "cr-068-a4",
+    "cr-068-a5",
+    "cr-068-a6",
+    "cr-068-a9",
+    "cr-068-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-068-a1",
+    "cr-068-a3",
+    "cr-068-a7",
+    "cr-068-a8"
+  ],
+  "selection_rationale": "保留了明确涉及 AI 产品/事件的 Simon Willison 评论、LLM/agent/RAG 相关产品发布，以及包含具体模型/工具名的 arXiv 和 TLDR AI 条目；BBC 非 AI 与非 AI 的 GitHub Trending 已排除。OpenAI 教程类内容按规则拒绝，因此未选 cr-068-a1。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

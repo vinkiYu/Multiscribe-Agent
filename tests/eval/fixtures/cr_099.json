@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-099-a1",
+      "title": "What this desert city can teach the world about tackling heat deaths",
+      "description": "Maricopa County in Arizona has some of the hottest temperatures, but it has reduced the number of heat-related deaths.",
+      "url": "https://example.test/cr-099/1-www-bbc-co-uk-news-articles-cgl3lnpxy6no",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-099-a2",
+      "title": "OpenAI’s letter to Governor Newsom on harmonized regulation",
+      "description": "We’ve just sent a letter to Gov. Gavin Newsom calling for California to lead the way in harmonizing state-based AI regulation with national—and, by virtue of US leadership, emerging global—standards.",
+      "url": "https://example.test/cr-099/2-openai-com-global-affairs-letter-to-governor-new",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-099-a3",
+      "title": "Stability AI Open Sources 'StableLM 3B' for Edge Devices: Lightweight LLM with RAG Optimizations",
+      "description": "A new 3B parameter model designed for on-device inference with quantized retrieval embeddings, enabling privacy-preserving RAG applications on phones and IoT.",
+      "url": "https://example.test/cr-099/3-stability-ai-news-stablelm-3b-open-source-edge-r",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-099-a4",
+      "title": "On the Hybrid Nature of ABPMS Process Frames and its Implications on Automated Process Discovery",
+      "description": "arXiv:2604.22455v2 Announce Type: replace \nAbstract: A core component of any AI-Augmented Business Process Management System (ABPMS) is the process frame, which gives the system process-awareness and defines its maximal behavioral boundaries. Compared to traditional process models, the process frame",
+      "url": "https://example.test/cr-099/4-arxiv-org-abs-2604-22455",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-099-a5",
+      "title": "Explorative Modeling: Unlocking a Third Pretraining Axis and End-to-End Generation",
+      "description": "arXiv:2607.27372v1 Announce Type: cross \nAbstract: The deep learning revolution, kicked off by AlexNet, taught us that end-to-end training beats decomposing a problem into hand-designed stages. Generative modeling, however, has remained the exception-despite generative models being remarkably capabl",
+      "url": "https://example.test/cr-099/5-arxiv-org-abs-2607-27372",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-099-a6",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-099/6-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-099-a7",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-099/7-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-099-a8",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-099/8-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-099-a9",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-099/9-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-099-a10",
+      "title": "Kimi K3 🌕, Gemini 3.5 delayed ⏳, crushing ARC-AGI 3 🤖",
+      "description": "",
+      "url": "https://example.test/cr-099/10-tldr-tech-ai-2026-07-17",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-099-a2",
+    "cr-099-a3",
+    "cr-099-a4",
+    "cr-099-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-099-a1",
+    "cr-099-a5",
+    "cr-099-a7",
+    "cr-099-a8",
+    "cr-099-a9",
+    "cr-099-a10"
+  ],
+  "selection_rationale": "保留与 AI 产品、模型发布或 arXiv AI 研究直接相关的条目；其中 OpenAI 监管倡议、Stability AI 的 StableLM 3B、以及含 LLM/agent 工具的 TLDR AI 标题都符合日报选取标准。BBC 非 AI 资讯应拒绝，纯 emoji 且无具体 AI 产品名的 TLDR AI 条目也不纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

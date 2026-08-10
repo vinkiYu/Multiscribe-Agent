@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-096-a1",
+      "title": "Facial-Expression-Aware Prompting for Empathetic LLM Tutoring",
+      "description": "arXiv:2604.15336v2 Announce Type: replace-cross \nAbstract: Large language models (LLMs) enable increasingly capable tutoring-style conversational agents, yet effective tutoring requires sensitivity to learners' affective and cognitive states beyond text alone. Facial expressions provide immediate an",
+      "url": "https://example.test/cr-096/1-arxiv-org-abs-2604-15336",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-096-a2",
+      "title": "THGFM: Dual-Branch Temporal Heterogeneous Graph Fusion Model",
+      "description": "arXiv:2607.27303v1 Announce Type: cross \nAbstract: Temporal heterogeneous graphs offer a natural abstraction for dynamic relational systems in which diverse node and relation types co-exist and evolve over time. Learning on such graphs requires jointly modeling cross-type structural heterogeneity an",
+      "url": "https://example.test/cr-096/2-arxiv-org-abs-2607-27303",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-096-a3",
+      "title": "Conman targeted the elderly to defraud them out of millions",
+      "description": "Victims speak out after Steven Long stole £11.5m from 115 people to fund his lavish lifestyle.",
+      "url": "https://example.test/cr-096/3-www-bbc-co-uk-news-articles-c2d89kjkkwlo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-096-a4",
+      "title": "Intellectual freedom by design",
+      "description": "ChatGPT is designed to be useful, trustworthy, and adaptable—so you can make it your own.",
+      "url": "https://example.test/cr-096/4-openai-com-global-affairs-intellectual-freedom-b",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-096-a5",
+      "title": "Quoting Linus Torvalds",
+      "description": "<blockquote cite=\"https://lore.kernel.org/linux-media/CAHk-=wi4zC+Ze8e+p3tMv8TtG_80KzsZ1syL9anBtmEh5Z40vg@mail.gmail.com/\"><p>I realize that some people really dislike AI, but this is an area where I'm willing to absolutely put my foot down as the top-level maintainer.</p>\n<p>Linux is not one of tho",
+      "url": "https://example.test/cr-096/5-simonwillison-net-2026-jul-16-linus-torvalds",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-096-a6",
+      "title": "Databricks Acquires Knowledge Retrieval Startup 'RAGFlow'",
+      "description": "Databricks bolsters its Mosaic AI platform by acquiring RAGFlow, a startup specializing in real-time retrieval pipelines with vector and hybrid search capabilities.",
+      "url": "https://example.test/cr-096/6-techcrunch-com-2025-07-09-databricks-acquires-ra",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-096-a7",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-096/7-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-096-a8",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-096/8-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-096-a9",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-096/9-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-096-a10",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-096/10-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-096-a1",
+    "cr-096-a5",
+    "cr-096-a6",
+    "cr-096-a7",
+    "cr-096-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-096-a2",
+    "cr-096-a3",
+    "cr-096-a4",
+    "cr-096-a8",
+    "cr-096-a9"
+  ],
+  "selection_rationale": "保留了明确包含 LLM/AI 产品或事件的候选：arXiv LLM 论文、Simon Willison 对 Linus Torvalds/AI 争议的评论、以及 Databricks 收购 RAGFlow 的产品动态。TLDR AI 中含具体 AI 工具/模型名的条目（Claude Code、Cursor、Thinking Machines、Perplexity 等）也符合精选日报标准；其余非 AI 新闻或仅为泛化/无具体产品信息的条目不选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

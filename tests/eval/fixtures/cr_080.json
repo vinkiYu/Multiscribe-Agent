@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-080-a1",
+      "title": "Calibrate Globally, Measure Everywhere: Scaling LLM-Based Prevalence Measurement Across A/B Experiments",
+      "description": "arXiv:2602.16111v2 Announce Type: replace-cross \nAbstract: Online media platforms track the share of impressions associated with content attributes, or prevalence, to evaluate trade-offs and set guardrails in A/B experiments. LLM-based labeling provides a high-fidelity reference measurement, but is ",
+      "url": "https://example.test/cr-080/1-arxiv-org-abs-2602-16111",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-080-a2",
+      "title": "Who Grades the Grader? Co-Evolving Evaluation Metrics and Skills for Self-Improving LLM Agents",
+      "description": "arXiv:2607.12790v2 Announce Type: replace-cross \nAbstract: Self-evolving agent systems create, revise, and retire their own skills, but every such loop assumes a reliable evaluation metric already exists. In many real applications none does. We show the metric itself can be the evolving object: our ",
+      "url": "https://example.test/cr-080/2-arxiv-org-abs-2607-12790",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-080-a3",
+      "title": "[JavaScript] pbakaus/impeccable (50,845 stars)",
+      "description": "The design language that makes your AI harness better at design.",
+      "url": "https://example.test/cr-080/3-github-com-pbakaus-impeccable",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-080-a4",
+      "title": "The two days which could make or break Fury-Joshua",
+      "description": "BBC Sport looks at how a proposed bout between Tyson Fury and Anthony Joshua hinges on a 24-hour-period between Friday and Saturday.",
+      "url": "https://example.test/cr-080/4-www-bbc-co-uk-sport-boxing-articles-c2k758w1xdzo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-080-a5",
+      "title": "Writing with ChatGPT",
+      "description": "Learn how to use ChatGPT for writing to draft, revise, and refine content with clear structure, tone, and intent.",
+      "url": "https://example.test/cr-080/5-openai-com-academy-writing",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-080-a6",
+      "title": "Investigating three real-world incidents in our cybersecurity evaluations",
+      "description": "<p><strong><a href=\"https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals\">Investigating three real-world incidents in our cybersecurity evaluations</a></strong></p>\nIt happened again! This is turning into something of a pattern.</p>\n<p>Last week <a href=\"https://simonwillison.n",
+      "url": "https://example.test/cr-080/6-simonwillison-net-2026-jul-30-three-real-world-i",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-080-a7",
+      "title": "Stanford Researchers Open-Source 'AgentBench 2.0' for Evaluating LLM Agents",
+      "description": "AgentBench 2.0 extends the original benchmark with new tasks requiring multi-turn RAG, tool use, and long-horizon planning. Includes leaderboard and open-source evaluation harness.",
+      "url": "https://example.test/cr-080/7-github-com-stanford-crfm-agentbench2",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-080-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-080/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-080-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-080/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-080-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-080/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-080-a1",
+    "cr-080-a2",
+    "cr-080-a3",
+    "cr-080-a6",
+    "cr-080-a7",
+    "cr-080-a8",
+    "cr-080-a9",
+    "cr-080-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-080-a4",
+    "cr-080-a5"
+  ],
+  "selection_rationale": "保留了与 LLM、agent、RAG、AI 工具或具体 AI 产品/事件直接相关的候选：arXiv 论文、GitHub Trending AI 项目、Simon Willison 对 Anthropic 相关事件的评论，以及 TLDR AI 中含明确产品名的条目；OpenAI 教程和 BBC 非 AI 内容已剔除。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

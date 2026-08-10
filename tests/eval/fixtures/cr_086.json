@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-086-a1",
+      "title": "Anthropic's Claude 4: Agentic AI with Real-Time RAG",
+      "description": "Anthropic released Claude 4, which introduces a new 'Agentic RAG' pipeline that dynamically retrieves and re-ranks knowledge, achieving SOTA on HotpotQA. The model also improves safety alignment.",
+      "url": "https://example.test/cr-086/1-www-anthropic-com-news-claude-4-agent-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-086-a2",
+      "title": "Deep Expert Injection for Anchoring Retinal VLMs with Domain-Specific Knowledge",
+      "description": "arXiv:2603.07131v4 Announce Type: replace-cross \nAbstract: Large Vision Language Models (LVLMs) show immense potential for automated ophthalmic diagnosis. However, their clinical deployment is severely hindered by lacking domain-specific knowledge. In this work, we identify two structural deficienci",
+      "url": "https://example.test/cr-086/2-arxiv-org-abs-2603-07131",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-086-a3",
+      "title": "SourceMinds at CheckThat! 2026: NLI-Grounded Citation Auditing in a Multi-Agent Pipeline for Full Fact-Checking Article Generation",
+      "description": "arXiv:2607.24802v2 Announce Type: replace-cross \nAbstract: This paper presents our system for Task 3 of the CLEF 2026 CheckThat! Lab, which focuses on generating full fact-checking articles from claims, veracity labels, and evidence documents. We propose a multi-agent pipeline that combines evidence",
+      "url": "https://example.test/cr-086/3-arxiv-org-abs-2607-24802",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-086-a4",
+      "title": "[Jupyter Notebook] Lordog/dive-into-llms (45,506 stars)",
+      "description": "《动手学大模型Dive into LLMs》系列编程实践教程",
+      "url": "https://example.test/cr-086/4-github-com-lordog-dive-into-llms",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-086-a5",
+      "title": "Promising results from new Aston Martin, says Newey",
+      "description": "Adrian Newey says the new Aston Martin had showed \"promising results\" in its first on-track session at the Hungarian Grand Prix.",
+      "url": "https://example.test/cr-086/5-www-bbc-co-uk-sport-formula1-articles-c3v0wp9yvd",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-086-a6",
+      "title": "New in ChatGPT for Business: March 2025",
+      "description": "Join us as we share our latest releases and how ChatGPT is becoming more interactive, customized to the way your teams work, and agentic.",
+      "url": "https://example.test/cr-086/6-openai-com-business-new-in-chatgpt-for-work-marc",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-086-a7",
+      "title": "LLM cliché highlighter",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/llm-cliche-highlighter\">LLM cliché highlighter</a></p>\n        <p>I got frustrated reading <em>yet another</em> article that was crammed with the clichés of LLM-generated writing - \"no fluff, no filler, no jargon\" type stuff - so I h",
+      "url": "https://example.test/cr-086/7-simonwillison-net-2026-jul-17-llm-cliche-highlig",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-086-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-086/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-086-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-086/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-086-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-086/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-086-a1",
+    "cr-086-a2",
+    "cr-086-a3",
+    "cr-086-a6",
+    "cr-086-a7",
+    "cr-086-a8",
+    "cr-086-a9",
+    "cr-086-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-086-a4",
+    "cr-086-a5"
+  ],
+  "selection_rationale": "保留了明确涉及 LLM/agent/RAG 的 arXiv、AI 公司产品发布，以及包含具体 AI 工具或产品名的 Simon Willison 与 TLDR AI 条目；这些都符合面向 AI 从业者的日报选题标准。拒绝了非 AI 的 BBC 条目和纯教程类内容，其他候选均含具体模型、工具或 AI 事件，信息密度较高。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

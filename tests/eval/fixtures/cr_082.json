@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-082-a1",
+      "title": "[Kotlin] permissionlesstech/bitchat-android (6,804 stars)",
+      "description": "bluetooth mesh chat, IRC vibes",
+      "url": "https://example.test/cr-082/1-github-com-permissionlesstech-bitchat-android",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-082-a2",
+      "title": "Jurgen Klopp starts his new job as Germany's head coach by threatening to quit",
+      "description": "Jurgen Klopp starts his reign as Germany's head coach by threatening to quit if the media invades his family's privacy.",
+      "url": "https://example.test/cr-082/2-www-bbc-co-uk-sport-football-articles-cqjxd0n4gd",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-082-a3",
+      "title": "How enterprises are scaling AI",
+      "description": "How enterprises scale AI: from early experiments to compounding impact through trust, governance, workflow design, and quality at scale.",
+      "url": "https://example.test/cr-082/3-openai-com-business-guides-and-resources-how-ent",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-082-a4",
+      "title": "Firefox in WebAssembly",
+      "description": "<p><strong><a href=\"https://developer.puter.com/labs/firefox-wasm/\">Firefox in WebAssembly</a></strong></p>\nThis is absurdly cool: Puter compiled Firefox to WebAssembly such that the whole browser runs in another browser.</p>\n<p>Here's my blog, running in Firefox, running in WebAssembly, running in ",
+      "url": "https://example.test/cr-082/4-simonwillison-net-2026-jul-16-firefox-in-webasse",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-082-a5",
+      "title": "Hugging Face Releases Open-Source Agent SDK v2.0",
+      "description": "The new version of Hugging Face's Agent SDK adds multi-agent orchestration, declarative workflow definitions, and seamless integration with Hugging Face datasets for RAG.",
+      "url": "https://example.test/cr-082/5-huggingface-co-blog-agent-sdk-v2",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-082-a6",
+      "title": "Ask don't tell: Reducing sycophancy in large language models",
+      "description": "arXiv:2602.23971v4 Announce Type: replace-cross \nAbstract: Sycophancy, the tendency of large language models to favour user-affirming responses over critical engagement, has been identified as an alignment failure, particularly in high-stakes advisory and social contexts. While prior work has docume",
+      "url": "https://example.test/cr-082/6-arxiv-org-abs-2602-23971",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-082-a7",
+      "title": "MagicSelector: Joint Optimization for Agent Tool Selection via Counterfactual Decomposition and Progressive Reranking",
+      "description": "arXiv:2607.17751v2 Announce Type: cross \nAbstract: We present MagicSelector, a joint optimization framework integrating Counterfactual task decomposition, Progressive reranking, and Dynamic Top-K, designed to address the fundamental challenges of tool retrieval in agents. MagicSelector is a speciali",
+      "url": "https://example.test/cr-082/7-arxiv-org-abs-2607-17751",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-082-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-082/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-082-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-082/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-082-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-082/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-082-a3",
+    "cr-082-a5",
+    "cr-082-a6",
+    "cr-082-a7",
+    "cr-082-a8",
+    "cr-082-a9",
+    "cr-082-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-082-a1",
+    "cr-082-a2",
+    "cr-082-a4"
+  ],
+  "selection_rationale": "保留与 AI 产品、模型、Agent/RAG 研究直接相关的条目，包括 OpenAI 的企业 AI 文章、Hugging Face Agent SDK、两篇 arXiv 论文以及 TLDR AI 中明确提到 Claude/Cursor/xAI/DeepSeek 等具体 AI 主题。拒绝非 AI 的 GitHub/BBC/Simon Willison 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

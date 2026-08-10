@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-074-a1",
+      "title": "[Go] alibaba/open-code-review (14,081 stars)",
+      "description": "Open-source & free — Battle-tested at Alibaba's scale. Hybrid architecture code review tool: deterministic pipelines + LLM Agent, precise line-level comments, built-in fine-tuned ruleset (NPE, thread-safety, XSS, SQL injection), OpenAI & Anthropic compatible.",
+      "url": "https://example.test/cr-074/1-github-com-alibaba-open-code-review",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-074-a2",
+      "title": "Andy Burnham's first week pledges – how much do they add up to?",
+      "description": "BBC Verify has looked at how much Burnham's new spending commitments cost and how they will be paid for",
+      "url": "https://example.test/cr-074/2-www-bbc-co-uk-news-articles-cy078kj0ezyo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-074-a3",
+      "title": "Learn ChatGPT for Sales Teams",
+      "description": "Learn how sales teams use ChatGPT to research accounts, personalize outreach, manage deals, and improve pipeline performance.",
+      "url": "https://example.test/cr-074/3-openai-com-academy-sales",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-074-a4",
+      "title": "Adding a custom MCP server to Claude and ChatGPT",
+      "description": "<p><strong>TIL:</strong> <a href=\"https://til.simonwillison.net/llms/mcp-in-claude-and-chatgpt\">Adding a custom MCP server to Claude and ChatGPT</a></p>\n        <p>Connecting a custom MCP server to Claude and ChatGPT's standard chat interfaces is possible, but can take quite a few steps.</p>\n    \n  ",
+      "url": "https://example.test/cr-074/4-simonwillison-net-2026-jul-29-mcp-in-claude-and-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-074-a5",
+      "title": "Microsoft releases Phi-4 vision-language model as open source",
+      "description": "Phi-4 is a small multimodal model designed for edge AI, supporting both text and image inputs with efficient RAG integration.",
+      "url": "https://example.test/cr-074/5-azure-microsoft-com-en-us-blog-phi-4-vision-open",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-074-a6",
+      "title": "How does downsampling affect needle electromyography signals? A generalisable workflow for understanding downsampling effects on high-frequency time series",
+      "description": "arXiv:2601.10191v2 Announce Type: replace \nAbstract: Automated analysis of needle electromyography (nEMG) signals is emerging as a tool to support the detection of neuromuscular diseases (NMDs), yet the signals' high and heterogeneous sampling rates pose substantial computational challenges for feat",
+      "url": "https://example.test/cr-074/6-arxiv-org-abs-2601-10191",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-074-a7",
+      "title": "Orchard: An Open-Source Agentic Modeling Framework",
+      "description": "arXiv:2605.15040v3 Announce Type: replace-cross \nAbstract: Agentic modeling aims to transform LLMs into autonomous agents capable of solving complex tasks through planning, reasoning, tool use, and multi-turn interaction with external environments. We present Orchard, an open-source framework for sc",
+      "url": "https://example.test/cr-074/7-arxiv-org-abs-2605-15040",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-074-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-074/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-074-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-074/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-074-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-074/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-074-a1",
+    "cr-074-a4",
+    "cr-074-a5",
+    "cr-074-a7",
+    "cr-074-a9",
+    "cr-074-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-074-a2",
+    "cr-074-a3",
+    "cr-074-a6",
+    "cr-074-a8"
+  ],
+  "selection_rationale": "这些候选都明确涉及 AI 工具、模型或产品发布：包括带 LLM Agent 的 GitHub AI 工具、Claude/ChatGPT 相关实践、开源多模态模型，以及 TLDR AI 中含具体 AI 产品/公司名的条目。已排除非 AI BBC 和 OpenAI 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

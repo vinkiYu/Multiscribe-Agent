@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-053-a1",
+      "title": "California Sea Lion",
+      "description": "<p><img alt=\"California Sea Lion\" src=\"https://static.inaturalist.org/photos/702321069/large.jpg\" /></p><p><img alt=\"California Sea Lion\" src=\"https://static.inaturalist.org/photos/702321114/large.jpg\" /></p><p>California Sea Lion, in San Francisco County, US, CA</p><p>We took some visiting family t",
+      "url": "https://example.test/cr-053/1-simonwillison-net-2026-jul-21-sighting-383713864",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-053-a2",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-053/2-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-053-a3",
+      "title": "Mistral AI Releases Open-Source Mixtral 8x22B for Free",
+      "description": "Mixtral 8x22B, a mixture-of-experts model, is now available under Apache 2.0, offering competitive performance with lower inference costs.",
+      "url": "https://example.test/cr-053/3-mistral-ai-news-mixtral-8x22b-open-source",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-053-a4",
+      "title": "MEDIC: Comprehensive Evaluation of Leading Indicators for LLM Safety and Utility in Clinical Applications",
+      "description": "arXiv:2409.07314v4 Announce Type: replace-cross \nAbstract: While Large Language Models (LLMs) achieve superhuman performance on standardized medical licensing exams, these static benchmarks have become saturated and increasingly disconnected from the functional requirements of clinical workflows. To",
+      "url": "https://example.test/cr-053/4-arxiv-org-abs-2409-07314",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-053-a5",
+      "title": "Metareasoning constraints couple narratives, affect and cognition",
+      "description": "arXiv:2502.09487v4 Announce Type: replace \nAbstract: Narratives and emotions shape thoughts, and thoughts shape our feelings and stories we tell. Why narrative, affective and cognitive states interact remains unclear. We examine whether this mutual relationship reflects constraints on metareasoning ",
+      "url": "https://example.test/cr-053/5-arxiv-org-abs-2502-09487",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-053-a6",
+      "title": "[JavaScript] affaan-m/ECC (236,284 stars)",
+      "description": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
+      "url": "https://example.test/cr-053/6-github-com-affaan-m-ecc",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-053-a7",
+      "title": "BBC News app",
+      "description": "Top stories, breaking news, live reporting, and follow news topics that match your interests",
+      "url": "https://example.test/cr-053/7-www-bbc-co-uk-news-10628994",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-053-a8",
+      "title": "ChatGPT Sites",
+      "description": "Create that kind of lightweight website or app with Codex.",
+      "url": "https://example.test/cr-053/8-openai-com-academy-chatgpt-sites",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-053-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-053/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-053-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-053/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-053-a2",
+    "cr-053-a3",
+    "cr-053-a4",
+    "cr-053-a6",
+    "cr-053-a9",
+    "cr-053-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-053-a1",
+    "cr-053-a5",
+    "cr-053-a7",
+    "cr-053-a8"
+  ],
+  "selection_rationale": "保留了明确涉及 AI 产品/模型/工具发布的候选：TLDR AI 中包含具体项目名，arXiv 中有 LLM 安全评估主题，GitHub Trending 里是面向 Claude/Codex 等的 agent 工具；同时剔除了非 AI 的 BBC、OpenAI 教程以及与 AI 无关的自然图片/泛话题内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

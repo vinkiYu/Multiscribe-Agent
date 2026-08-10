@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-051-a1",
+      "title": "Rodri to have back surgery but Maresca brushes off transfer speculation",
+      "description": "World Cup winner Rodri to undergo back surgery, new Manchester City boss Enzo Maresca confirms.",
+      "url": "https://example.test/cr-051/1-www-bbc-co-uk-sport-football-articles-c36dw0nwex",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-051-a2",
+      "title": "Applications of AI at OpenAI",
+      "description": "Explore how OpenAI products like ChatGPT, Codex, and APIs bring AI into real-world use for work, development, and everyday tasks.",
+      "url": "https://example.test/cr-051/2-openai-com-academy-applications-of-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-051-a3",
+      "title": "A Fireside Chat with Cat and Thariq from the Claude Code team",
+      "description": "<p>Earlier this month I hosted a fireside chat session at the <a href=\"https://www.ai.engineer/worldsfair/2026\">AI Engineer World's Fair</a> with Cat Wu and Thariq Shihipar from Anthropic's Claude Code team. We talked about Claude Code, Claude Tag, Fable, coding agent security, evals, tool design, a",
+      "url": "https://example.test/cr-051/3-simonwillison-net-2026-jul-21-cat-and-thariq",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-051-a4",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-051/4-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-051-a5",
+      "title": "Microsoft Introduces Autonomous RAG Pipelines for Enterprise",
+      "description": "New framework automates retrieval-augmented generation workflows, reducing latency and improving accuracy in knowledge-intensive tasks.",
+      "url": "https://example.test/cr-051/5-www-microsoft-com-en-us-research-blog-auto-rag-e",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-051-a6",
+      "title": "Pushing the Frontier on Approximate EFX Allocations",
+      "description": "arXiv:2406.12413v3 Announce Type: replace-cross \nAbstract: We study the problem of allocating a set of indivisible goods to a set of agents with additive valuation functions, aiming to achieve approximate envy-freeness up to any good ($\\alpha$-EFX). The state-of-the-art results on the problem includ",
+      "url": "https://example.test/cr-051/6-arxiv-org-abs-2406-12413",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-051-a7",
+      "title": "Safety Verification of Wait-Only Non-Blocking Broadcast Protocols",
+      "description": "arXiv:2403.18591v3 Announce Type: replace-cross \nAbstract: Broadcast protocols are programs designed to be executed by networks of processes. Each process runs the same protocol, and communication between them occurs in synchronously in two ways: broadcast, where one process sends a message to all o",
+      "url": "https://example.test/cr-051/7-arxiv-org-abs-2403-18591",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-051-a8",
+      "title": "[TypeScript] ChromeDevTools/chrome-devtools-mcp (48,117 stars)",
+      "description": "Chrome DevTools for coding agents",
+      "url": "https://example.test/cr-051/8-github-com-chromedevtools-chrome-devtools-mcp",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-051-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-051/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-051-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-051/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-051-a3",
+    "cr-051-a4",
+    "cr-051-a5",
+    "cr-051-a8"
+  ],
+  "expected_rejected_ids": [
+    "cr-051-a1",
+    "cr-051-a2",
+    "cr-051-a6",
+    "cr-051-a7",
+    "cr-051-a9",
+    "cr-051-a10"
+  ],
+  "selection_rationale": "已保留与 AI 产品、代理/编码工具、RAG 相关的候选：Simon Willison 对 Claude Code 的讨论、TLDR AI 中具体提到 Claude/Cursor/Fable、微软的 Autonomous RAG Pipelines，以及 GitHub Trending 的 chrome-devtools-mcp。其余为非 AI 新闻、与 AI 无关的 arXiv 论文，或 TLDR 仅标题堆砌且信息不足。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-058-a1",
+      "title": "[Python] huggingface/speech-to-speech (9,055 stars)",
+      "description": "Build local voice agents with open-source models",
+      "url": "https://example.test/cr-058/1-github-com-huggingface-speech-to-speech",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-058-a2",
+      "title": "Using a bathroom 20 times a day - life in the middle of US cyclospora outbreak",
+      "description": "A historic cyclospora outbreak spreading across the US is causing havoc in pockets of Michigan, the hardest hit state.",
+      "url": "https://example.test/cr-058/2-www-bbc-co-uk-news-articles-c8dn92m0mqjo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-058-a3",
+      "title": "ChatGPT for customer success teams",
+      "description": "Learn how customer success teams use ChatGPT to manage accounts, improve communication, reduce churn, and drive adoption and renewals.",
+      "url": "https://example.test/cr-058/3-openai-com-academy-customer-success",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-058-a4",
+      "title": "Quoting Seth Larson",
+      "description": "<blockquote cite=\"https://blog.pypi.org/posts/2026-07-22-releases-now-reject-new-files-after-14-days/\"><p>The Python Package Index (PyPI) now rejects new files being uploaded to releases that are older than 14 days. This restriction was <a href=\"https://github.com/pypi/warehouse/pull/19727\">put in p",
+      "url": "https://example.test/cr-058/4-simonwillison-net-2026-jul-23-seth-larson",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-058-a5",
+      "title": "Gemini 3.6 Flash ✨, OpenAI security escape 🚨, Devin Outposts 🛰️",
+      "description": "",
+      "url": "https://example.test/cr-058/5-tldr-tech-ai-2026-07-22",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-058-a6",
+      "title": "Stanford AI Lab Publishes Survey on Autonomous Agent Benchmarks",
+      "description": "Comprehensive evaluation of current agent frameworks highlights gaps in real-world task completion and suggests unified metrics.",
+      "url": "https://example.test/cr-058/6-ai-stanford-edu-blog-agent-benchmarks-2025",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-058-a7",
+      "title": "Low-Precision Training of Large Language Models: Methods, Challenges, and Opportunities",
+      "description": "arXiv:2505.01043v2 Announce Type: replace-cross \nAbstract: Large language models (LLMs) have achieved impressive performance across various domains. However, the substantial hardware resources required for their training present a significant barrier to efficiency and scalability. To mitigate this c",
+      "url": "https://example.test/cr-058/7-arxiv-org-abs-2505-01043",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-058-a8",
+      "title": "Language Diversity: Evaluating Language Usage and AI Performance on African Languages in Digital Spaces",
+      "description": "arXiv:2512.01557v3 Announce Type: replace \nAbstract: This study examines the digital representation of African languages and the challenges this presents for current language detection tools. We evaluate their performance on Yoruba, Kinyarwanda, and Amharic. While these languages are spoken by milli",
+      "url": "https://example.test/cr-058/8-arxiv-org-abs-2512-01557",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-058-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-058/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-058-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-058/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-058-a1",
+    "cr-058-a3",
+    "cr-058-a5",
+    "cr-058-a6",
+    "cr-058-a7",
+    "cr-058-a9",
+    "cr-058-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-058-a2",
+    "cr-058-a4",
+    "cr-058-a8"
+  ],
+  "selection_rationale": "保留的是与 AI 从业者直接相关的 GitHub AI 工具、OpenAI 相关产品内容、Agent/LLM 研究以及包含具体模型/产品名的 TLDR AI 条目；BBC 非 AI 资讯与 Simon Willison 这条偏基础设施/包管理、无明确 AI 产品事件，不符合精选日报标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

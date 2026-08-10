@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-052-a1",
+      "title": "Brainstorming with ChatGPT",
+      "description": "Learn how to use ChatGPT to brainstorm ideas, organize thinking, and turn rough concepts into structured, actionable plans.",
+      "url": "https://example.test/cr-052/1-openai-com-academy-brainstorming",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-052-a2",
+      "title": "Nativ: Run AI models locally on your Mac",
+      "description": "<p><strong><a href=\"https://blaizzy.github.io/nativ/\">Nativ: Run AI models locally on your Mac</a></strong></p>\nPrince Canuma is the developer behind the excellent <a href=\"https://github.com/Blaizzy/mlx-vlm\">MLX-VLM</a> Python library for running vision-LLMs using MLX on a Mac.</p>\n<p>I'm really ex",
+      "url": "https://example.test/cr-052/2-simonwillison-net-2026-jul-21-nativ",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-052-a3",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-052/3-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-052-a4",
+      "title": "Google DeepMind Unveils Agentic AI Framework 'Gemini Agents'",
+      "description": "A new suite of tools allows developers to build complex agent systems with memory, tool use, and multi-step reasoning.",
+      "url": "https://example.test/cr-052/4-blog-google-technology-ai-gemini-agents-2025",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-052-a5",
+      "title": "One-Frame Calibration with Siamese Network in Facial Action Unit Recognition",
+      "description": "arXiv:2409.00240v2 Announce Type: replace-cross \nAbstract: Automatic facial action unit (AU) recognition is used widely in facial expression analysis. Most existing AU recognition systems aim for cross-participant non-calibrated generalization (NCG) to unseen faces without further calibration. Howev",
+      "url": "https://example.test/cr-052/5-arxiv-org-abs-2409-00240",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-052-a6",
+      "title": "LLM Self-Correction with DeCRIM: Decompose, Critique, and Refine for Enhanced Following of Instructions with Multiple Constraints",
+      "description": "arXiv:2410.06458v2 Announce Type: replace \nAbstract: Instruction following is a key capability for LLMs. However, recent studies have shown that LLMs often struggle with instructions containing multiple constraints (e.g. a request to create a social media post \"in a funny tone\" with \"no hashtag\"). D",
+      "url": "https://example.test/cr-052/6-arxiv-org-abs-2410-06458",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-052-a7",
+      "title": "[JavaScript] WhiskeySockets/Baileys (10,456 stars)",
+      "description": "Socket-based TS/JavaScript API for WhatsApp Web",
+      "url": "https://example.test/cr-052/7-github-com-whiskeysockets-baileys",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-052-a8",
+      "title": "With great power comes great responsibility",
+      "description": "Swing into action, your epic Spider-Man rewatch starts here",
+      "url": "https://example.test/cr-052/8-www-bbc-co-uk-iplayer-group-m002pm3w",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-052-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-052/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-052-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-052/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-052-a2",
+    "cr-052-a3",
+    "cr-052-a4",
+    "cr-052-a6",
+    "cr-052-a9",
+    "cr-052-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-052-a1",
+    "cr-052-a5",
+    "cr-052-a7",
+    "cr-052-a8"
+  ],
+  "selection_rationale": "保留了明确涉及 AI 产品、模型或 agent 相关进展的条目，包括 Simon Willison 对本地运行 AI 模型工具的评论、TLDR AI 中带具体 AI 产品名的标题、以及包含 LLM 主题的 arXiv 论文和 DeepMind 的 agentic 框架发布。拒绝了 OpenAI Academy 的基础教程、非 AI 的 GitHub Trending、以及 BBC 非 AI 内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

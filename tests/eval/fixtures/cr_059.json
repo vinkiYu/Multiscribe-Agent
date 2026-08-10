@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-059-a1",
+      "title": "Black Panther star Chadwick Boseman's family in legal dispute with his widow",
+      "description": "The late actor's siblings claim she has mishandled distribution of the funds and \"cannot be trusted\".",
+      "url": "https://example.test/cr-059/1-www-bbc-co-uk-news-articles-c8xn4p7xqy9o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-059-a2",
+      "title": "Analyzing data with ChatGPT",
+      "description": "Learn how to analyze data with ChatGPT by exploring datasets, generating insights, creating visualizations, and turning findings into actionable decisions.",
+      "url": "https://example.test/cr-059/2-openai-com-academy-data-analysis",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-059-a3",
+      "title": "The first known runaway AI agent - or a very bad marketing stunt?",
+      "description": "<p><strong><a href=\"https://martinalderson.com/posts/huggingface-openai-exploit/\">The first known runaway AI agent - or a very bad marketing stunt?</a></strong></p>\nMartin Alderson's commentary on the <a href=\"https://simonwillison.net/2026/Jul/22/openai-cyberattack/\">OpenAI accidental cyberattack a",
+      "url": "https://example.test/cr-059/3-simonwillison-net-2026-jul-23-the-first-known-ru",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-059-a4",
+      "title": "Cursor Router 🔀, OpenAI Presence 🤖, AMD + Anthropic deal 🤝🏻",
+      "description": "",
+      "url": "https://example.test/cr-059/4-tldr-tech-ai-2026-07-23",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-059-a5",
+      "title": "EleutherAI Releases GPT-NeoX-2.7B as Open-Weight Model",
+      "description": "The non-profit research group publishes a 2.7B parameter model trained on curated datasets, advancing reproducible LLM research.",
+      "url": "https://example.test/cr-059/5-www-eleuther-ai-blog-gpt-neox-2-7b-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-059-a6",
+      "title": "AI LEGO: Scaffolding Cross-Functional Collaboration in Industrial Responsible AI Practices during Early Design Stages",
+      "description": "arXiv:2505.10300v2 Announce Type: replace-cross \nAbstract: Responsible AI (RAI) efforts increasingly emphasize the importance of addressing potential harms early in the AI development lifecycle through social-technical lenses. However, in cross-functional industry teams, this work is often stalled b",
+      "url": "https://example.test/cr-059/6-arxiv-org-abs-2505-10300",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-059-a7",
+      "title": "How Context Shapes Truth: Geometric Transformations of Statement-level Truth Representations in LLMs",
+      "description": "arXiv:2601.06599v4 Announce Type: replace \nAbstract: Large Language Models (LLMs) often encode whether a statement is true as a vector in their residual stream activations. These vectors, also known as truth vectors, have been studied in prior work, however how they change when context is introduced",
+      "url": "https://example.test/cr-059/7-arxiv-org-abs-2601-06599",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-059-a8",
+      "title": "[Jupyter Notebook] microsoft/AI-For-Beginners (54,193 stars)",
+      "description": "12 Weeks, 24 Lessons, AI for All!",
+      "url": "https://example.test/cr-059/8-github-com-microsoft-ai-for-beginners",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-059-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-059/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-059-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-059/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-059-a3",
+    "cr-059-a4",
+    "cr-059-a5",
+    "cr-059-a6",
+    "cr-059-a7",
+    "cr-059-a9",
+    "cr-059-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-059-a1",
+    "cr-059-a2",
+    "cr-059-a8"
+  ],
+  "selection_rationale": "已保留包含具体 AI 产品、模型、agent 或 arXiv LLM/RAG 相关研究的条目，这些都符合面向 AI 从业者的精选日报标准；OpenAI 教程、非 AI BBC、以及缺少明确 AI 产品/事件信息的候选未纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

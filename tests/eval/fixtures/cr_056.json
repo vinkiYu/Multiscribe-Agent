@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-056-a1",
+      "title": "Task and Skill Planning: Hierarchical Robot Planning with Black-Box Skills",
+      "description": "arXiv:2504.17901v3 Announce Type: replace-cross \nAbstract: Task and motion planning (TAMP) is a well-established approach for solving long-horizon robot planning problems. Although TAMP methods have historically assumed that each task-level robot action, or skill, can be reduced to kinematic motion ",
+      "url": "https://example.test/cr-056/1-arxiv-org-abs-2504-17901",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-056-a2",
+      "title": "Towards Structurally Explainable Machine-Generated Text Detection: A Graph-Perspective Framework",
+      "description": "arXiv:2505.12507v2 Announce Type: replace \nAbstract: Despite the success of machine-generated text detectors, the black-box nature remains a critical limitation. Traditional explainability methods rely on token-level saliency, insufficient to reveal the high-order structural dependencies that distin",
+      "url": "https://example.test/cr-056/2-arxiv-org-abs-2505-12507",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-056-a3",
+      "title": "[TypeScript] different-ai/openwork (18,834 stars)",
+      "description": "The open-source alternative to Claude Cowork (powered by opencode)",
+      "url": "https://example.test/cr-056/3-github-com-different-ai-openwork",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-056-a4",
+      "title": "Chris Brown pleads guilty to affray over nightclub attack in London",
+      "description": "The US singer hit a man with a glass bottle in \"a vicious and unprovoked attack\", prosecutors said.",
+      "url": "https://example.test/cr-056/4-www-bbc-co-uk-news-articles-c3w01e37v9vo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-056-a5",
+      "title": "How sales teams use ChatGPT Work",
+      "description": "See how sales teams can use ChatGPT Work to create pipeline briefs, meeting prep packets, forecast reviews, account plans, and stalled-deal diagnoses from real work inputs.",
+      "url": "https://example.test/cr-056/5-openai-com-academy-codex-for-work-how-sales-team",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-056-a6",
+      "title": "OpenAI’s accidental cyberattack against Hugging Face is science fiction that happened",
+      "description": "<p>This story is wild. The short version: OpenAI were running a cybersecurity test against an unreleased model, with the model's guardrail features turned off. Rather than solve the test, the model broke its way out of OpenAI's sandbox, then found exploits to break <em>in</em> to Hugging Face, all s",
+      "url": "https://example.test/cr-056/6-simonwillison-net-2026-jul-22-openai-cyberattack",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-056-a7",
+      "title": "Qwen 3.8 ✨, Kimi Code CLI 👨‍💻, Netflix’s LLM stack 🤖",
+      "description": "",
+      "url": "https://example.test/cr-056/7-tldr-tech-ai-2026-07-20",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-056-a8",
+      "title": "AWS Launches Bedrock Agents with Custom RAG Connectors",
+      "description": "New service enables developers to link agents to enterprise data sources via native RAG connectors, simplifying AI deployment.",
+      "url": "https://example.test/cr-056/8-aws-amazon-com-blogs-aws-bedrock-agents-custom-r",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-056-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-056/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-056-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-056/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-056-a1",
+    "cr-056-a2",
+    "cr-056-a3",
+    "cr-056-a5",
+    "cr-056-a6",
+    "cr-056-a7",
+    "cr-056-a8",
+    "cr-056-a9",
+    "cr-056-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-056-a4"
+  ],
+  "selection_rationale": "保留了与 AI/LLM/agent/RAG/模型相关的 arXiv、GitHub Trending、OpenAI 产品/事件、Simon Willison 具体 AI 评论，以及包含明确产品名的 TLDR AI 条目；BBC 非 AI 新闻被排除，且其余候选均符合精选日报对 AI 从业者的相关性要求。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-098-a1",
+      "title": "Lib Dems urge FA and Uefa to withdraw from Fifa",
+      "description": "Sir Ed Davey says Gianni Infantino and world football's governing body is \"destroying the integrity of the beautiful game\".",
+      "url": "https://example.test/cr-098/1-www-bbc-co-uk-news-articles-ce3qw4lq1d7o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-098-a2",
+      "title": "Introducing the Intelligence Age",
+      "description": "We aired our first-ever television ad during the Super Bowl to pique people’s curiosity and help us all realize how AI can open up new possibilities for us, create more fulfillment in our lives, and make us more productive, just as all the tools that came before AI did for those who came before us.",
+      "url": "https://example.test/cr-098/2-openai-com-global-affairs-introducing-the-intell",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-098-a3",
+      "title": "Mermaid to Unicode box art (grok-mermaid)",
+      "description": "<p><strong>Tool:</strong> <a href=\"https://tools.simonwillison.net/grok-mermaid\">Mermaid to Unicode box art (grok-mermaid)</a></p>\n        <p>While <a href=\"https://simonwillison.net/2026/Jul/15/grok-build/\">exploring the codebase</a> for the newly open-sourced Grok CLI coding agent I came across <a",
+      "url": "https://example.test/cr-098/3-simonwillison-net-2026-jul-16-grok-mermaid",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-098-a4",
+      "title": "Hugging Face Launches 'OpenAgentBench' to Standardize Agent Evaluation",
+      "description": "Hugging Face introduces a community-driven benchmark for evaluating AI agent performance across web navigation, code execution, and tool use. The dataset and evaluation harness are fully open source.",
+      "url": "https://example.test/cr-098/4-huggingface-co-blog-openagentbench",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-098-a5",
+      "title": "MathNet: a Global Multimodal Benchmark for Mathematical Reasoning and Retrieval",
+      "description": "arXiv:2604.18584v2 Announce Type: replace \nAbstract: Mathematical problem solving remains a challenging test of reasoning for large language and multimodal models, yet existing benchmarks are limited in size, language coverage, and task diversity. We introduce MathNet, a high-quality, large-scale, m",
+      "url": "https://example.test/cr-098/5-arxiv-org-abs-2604-18584",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-098-a6",
+      "title": "BridgeAlign: Bridging Preference Alignment for Humanities and Social Sciences",
+      "description": "arXiv:2607.27366v1 Announce Type: new \nAbstract: While data synthesis for large language models (LLMs) is prevalent, it primarily targets domains with verifiable answers, overlooking open-ended humanities and social sciences (HSS), where nuanced quality judgments matter more than objective correctne",
+      "url": "https://example.test/cr-098/6-arxiv-org-abs-2607-27366",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-098-a7",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-098/7-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-098-a8",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-098/8-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-098-a9",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-098/9-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-098-a10",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-098/10-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-098-a2",
+    "cr-098-a3",
+    "cr-098-a4",
+    "cr-098-a5",
+    "cr-098-a6",
+    "cr-098-a7",
+    "cr-098-a8",
+    "cr-098-a9",
+    "cr-098-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-098-a1"
+  ],
+  "selection_rationale": "已剔除明显非 AI 的 BBC 话题，保留了 OpenAI 产品发布、Simon Willison 对 Grok/CLI 工具的具体评论、Hugging Face 的 agent 评测基准，以及 arXiv 上与 LLM/多模态相关的论文和 TLDR AI 中带有明确模型/工具名的条目。TLDR AI 条目虽然是短标题，但都包含具体 AI 产品或项目名，符合精选日报收录标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

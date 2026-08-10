@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-091-a1",
+      "title": "Argentina like to leave mark on opponents - Laporte",
+      "description": "Spain defender Aymeric Laporte claims World Cup final opponents Argentina are a team that \"likes to leave a mark on their opponents\".",
+      "url": "https://example.test/cr-091/1-www-bbc-co-uk-sport-football-articles-cj63e8l0kj",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-091-a2",
+      "title": "Introducing AI stories: daily benefits shine a light on bigger opportunities",
+      "description": "Sam Altman has written that we are entering the Intelligence Age, a time when AI will help people become dramatically more capable. The biggest problems of today—across science, medicine, education, national defense—will no longer seem intractable, but will in fact be solvable. New horizons of possi",
+      "url": "https://example.test/cr-091/2-openai-com-global-affairs-ai-stories-daily-benef",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-091-a3",
+      "title": "AI Mania Is Eviscerating Global Decision-Making",
+      "description": "<p><strong><a href=\"https://ludic.mataroa.blog/blog/ai-mania-is-eviscerating-global-decision-making/\">AI Mania Is Eviscerating Global Decision-Making</a></strong></p>\nHere's an entertaining perspective from Nik Suresh on the AI mania that is overwhelming the large companies that he consults with. It",
+      "url": "https://example.test/cr-091/3-simonwillison-net-2026-jul-19-ai-mania",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-091-a4",
+      "title": "OpenAI Releases GPT-5 with Native Agent Capabilities",
+      "description": "OpenAI launches GPT-5, featuring built-in tool use, multi-step planning, and autonomous task execution. Early benchmarks show significant improvements in agentic tasks and RAG accuracy.",
+      "url": "https://example.test/cr-091/4-techcrunch-com-2025-07-09-openai-gpt5-agent-rele",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-091-a5",
+      "title": "GroupRAG: Cognitively Inspired Group-Aware Retrieval and Reasoning via Knowledge-Driven Problem Structuring",
+      "description": "arXiv:2603.26807v2 Announce Type: replace-cross \nAbstract: The performance of language models is commonly limited by insufficient knowledge and constrained reasoning. Prior approaches such as Retrieval-Augmented Generation (RAG) and Chain-of-Thought (CoT) address these issues by incorporating extern",
+      "url": "https://example.test/cr-091/5-arxiv-org-abs-2603-26807",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-091-a6",
+      "title": "APEX-Accounting",
+      "description": "arXiv:2607.27189v2 Announce Type: replace \nAbstract: We introduce APEX-Accounting, a benchmark built by Mercor in partnership with Ramp, to assess whether frontier models can do the real work of accountants. Tasks include reconciling accounts, accruing expenses, posting transactions, and producing r",
+      "url": "https://example.test/cr-091/6-arxiv-org-abs-2607-27189",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-091-a7",
+      "title": "[Assembly] chrislgarry/Apollo-11 (71,317 stars)",
+      "description": "Original Apollo 11 Guidance Computer (AGC) source code for the command and lunar modules.",
+      "url": "https://example.test/cr-091/7-github-com-chrislgarry-apollo-11",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-091-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-091/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-091-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-091/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-091-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-091/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-091-a3",
+    "cr-091-a4",
+    "cr-091-a5",
+    "cr-091-a6",
+    "cr-091-a8",
+    "cr-091-a9",
+    "cr-091-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-091-a1",
+    "cr-091-a2",
+    "cr-091-a7"
+  ],
+  "selection_rationale": "保留了与 AI 从业者直接相关的资讯：包括 OpenAI/GPT-5、arXiv 上含 RAG/模型与基准的论文，以及 TLDR AI 中明确出现 Claude、Cursor、xAI、DeepSeek 等具体 AI 产品/公司。拒绝了明显的非 AI BBC 体育新闻和非 AI GitHub Trending 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

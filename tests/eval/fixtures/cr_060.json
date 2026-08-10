@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-060-a1",
+      "title": "ChatGPT for finance teams",
+      "description": "Learn how finance teams use ChatGPT to streamline reporting, analyze data, improve forecasts, and communicate insights more clearly.",
+      "url": "https://example.test/cr-060/1-openai-com-academy-finance",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-060-a2",
+      "title": "Introducing Claude Opus 5",
+      "description": "<p><strong><a href=\"https://www.anthropic.com/news/claude-opus-5\">Introducing Claude Opus 5</a></strong></p>\nI've been offline <a href=\"https://en.wikipedia.org/wiki/Elkhorn_Slough\">kayaking with sea otters</a> for much of today so I haven't had a chance to put Anthropic's new model Claude Opus 5 th",
+      "url": "https://example.test/cr-060/2-simonwillison-net-2026-jul-24-introducing-claude",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-060-a3",
+      "title": "ChatGPT Health 🩺, Fugu-Ultra 1.1 🐡, Runway Media Router 🎬",
+      "description": "",
+      "url": "https://example.test/cr-060/3-tldr-tech-ai-2026-07-24",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-060-a4",
+      "title": "OpenAI Launches GPT-5 with Advanced Agent Capabilities",
+      "description": "OpenAI's latest model introduces autonomous task execution, multi-step planning, and improved RAG integration for enterprise applications.",
+      "url": "https://example.test/cr-060/4-www-theverge-com-2025-04-01-openai-gpt5-agent-la",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-060-a5",
+      "title": "Equivariant Eikonal Neural Networks: Grid-Free, Scalable Travel-Time Prediction on Homogeneous Spaces",
+      "description": "arXiv:2505.16035v3 Announce Type: replace-cross \nAbstract: We introduce Equivariant Neural Eikonal Solvers, a novel framework that integrates Equivariant Neural Fields (ENFs) with Neural Eikonal Solvers. Our approach employs a single neural field where a unified shared backbone is conditioned on sig",
+      "url": "https://example.test/cr-060/5-arxiv-org-abs-2505-16035",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-060-a6",
+      "title": "AfriEconQA: A Benchmark for Quantitative and Temporal Reasoning over World Bank Economic Reports",
+      "description": "arXiv:2601.15297v3 Announce Type: replace \nAbstract: Reliable question answering over long institutional documents requires more than topical retrieval: a system must localize the exact passage that supports a claim and preserve precise numerical and temporal detail when the same indicator recurs ac",
+      "url": "https://example.test/cr-060/6-arxiv-org-abs-2601-15297",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-060-a7",
+      "title": "[C] microsoft/PowerToys (137,174 stars)",
+      "description": "Microsoft PowerToys is a collection of utilities that supercharge productivity and customization on Windows",
+      "url": "https://example.test/cr-060/7-github-com-microsoft-powertoys",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-060-a8",
+      "title": "Tens of thousands evacuated from French tourist spot and near Madrid as wildfires spread",
+      "description": "The fire has raged in the region for several days with officials now ordering the evacuation of the entire Cap Ferret peninsula.",
+      "url": "https://example.test/cr-060/8-www-bbc-co-uk-news-articles-cdx82rl5g0do",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-060-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-060/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-060-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-060/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-060-a2",
+    "cr-060-a4",
+    "cr-060-a5",
+    "cr-060-a6",
+    "cr-060-a9",
+    "cr-060-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-060-a1",
+    "cr-060-a3",
+    "cr-060-a7",
+    "cr-060-a8"
+  ],
+  "selection_rationale": "保留了与 AI 模型、agent、RAG 或具体 AI 产品/事件直接相关的条目，包括 Simon Willison 对 Claude Opus 5 的评论、OpenAI/GPT-5 相关发布、arXiv 的 AI/CL 论文，以及 TLDR AI 中明确提到 Claude Code、Cursor、xAI、Prime Intellect、Sakana 等产品或公司。拒绝了 OpenAI 教程、非 AI 的 BBC 和 GitHub Trending 以及纯泛化/无具体 AI 信息的内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

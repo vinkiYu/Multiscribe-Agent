@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-078-a1",
+      "title": "CrewAI Releases Multi-Agent Orchestrator with Real-Time Web Search",
+      "description": "CrewAI's latest update enables agents to collaboratively perform web search and RAG, using a consensus mechanism to verify facts before acting. Open-source edition available.",
+      "url": "https://example.test/cr-078/1-www-crewai-com-blog-multi-agent-web-search-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-078-a2",
+      "title": "DialectLLM: A Dialect-Aware Dialog[ue] Generation Framework Beyond Standard American English",
+      "description": "arXiv:2601.22888v4 Announce Type: replace-cross \nAbstract: More than 80% of the 1.6B English speakers do not use Standard American English (SAE), yet LLMs often fail to correctly identify non-SAE dialects and generate stereotyped responses for their speakers. We introduce DialectLLM, the first large",
+      "url": "https://example.test/cr-078/2-arxiv-org-abs-2601-22888",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-078-a3",
+      "title": "MEDIAREF: A Public Knowledge Store for Media Background Checks",
+      "description": "arXiv:2607.02383v3 Announce Type: replace \nAbstract: LLM-based retrieval-augmented generation (RAG) is increasingly used for automated fact-checking (AFC) and related tasks. By grounding LLM outputs in retrieved evidence, RAG-based systems provide transparent justifications while allowing external i",
+      "url": "https://example.test/cr-078/3-arxiv-org-abs-2607-02383",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-078-a4",
+      "title": "[JavaScript] citrolabs/ego-lite (4,908 stars)",
+      "description": "The fastest browser for AI agents to run web automation, built for sharing your logged-in browser state with your AI agents, like Codex or Claude Code, without disturbing you. Zero cost, zero config.",
+      "url": "https://example.test/cr-078/4-github-com-citrolabs-ego-lite",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-078-a5",
+      "title": "Andy Burnham Pauses Prison Early Release Plan",
+      "description": "The Prime Minister orders an ‘urgent review’ into plan to release some prisoners early.",
+      "url": "https://example.test/cr-078/5-www-bbc-co-uk-sounds-play-p0nzs7j9",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-078-a6",
+      "title": "Working with files in ChatGPT",
+      "description": "Learn how to upload and work with files in ChatGPT to analyze data, summarize documents, and generate content from PDFs, spreadsheets, and more.",
+      "url": "https://example.test/cr-078/6-openai-com-academy-working-with-files",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-078-a7",
+      "title": "llm 0.32rc2",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/llm/releases/tag/0.32rc2\">llm 0.32rc2</a></p>\n        <p>Hot on the heels of <a href=\"https://simonwillison.net/2026/Jul/30/llm-rc1/\">RC1</a>, this fixes a dependency issue and also adds two neat new features:</p>\n<blockquote>\n<ul>\n<li>",
+      "url": "https://example.test/cr-078/7-simonwillison-net-2026-jul-30-llm-rc2",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-078-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-078/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-078-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-078/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-078-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-078/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-078-a1",
+    "cr-078-a2",
+    "cr-078-a3",
+    "cr-078-a4",
+    "cr-078-a7",
+    "cr-078-a9",
+    "cr-078-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-078-a5",
+    "cr-078-a6",
+    "cr-078-a8"
+  ],
+  "selection_rationale": "已选包含明确的 AI 产品/模型/工具更新、arXiv 中含 LLM/RAG 相关研究，以及 GitHub Trending 和 Simon Willison 对具体 AI 工具的评论，符合面向 AI 从业者精选日报标准；已拒与 AI 无关的 BBC 资讯，以及 OpenAI Academy 的通用教程类内容。TLDR AI 中带有具体产品名或 AI 事件的条目也保留，纯表情无实质产品名的情况未出现。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

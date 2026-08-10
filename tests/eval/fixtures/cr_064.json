@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-064-a1",
+      "title": "Bridging the Gap in Ophthalmic AI: MM-Retinal-Reason Dataset and OphthaReason Model toward Dynamic Multimodal Reasoning",
+      "description": "arXiv:2508.16129v3 Announce Type: replace \nAbstract: Multimodal large language models (MLLMs) have recently demonstrated remarkable reasoning abilities with reinforcement learning paradigm. Although several multimodal reasoning models have been explored in the medical domain, most of them focus excl",
+      "url": "https://example.test/cr-064/1-arxiv-org-abs-2508-16129",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-064-a2",
+      "title": "The Confidence Manifold: Geometric Structure of Correctness Representations in Language Models",
+      "description": "arXiv:2602.08159v2 Announce Type: replace-cross \nAbstract: When a language model asserts that \"the capital of Australia is Sydney,\" does it know this is wrong? Models assert misconceptions with the same fluency as facts, so the question cannot be answered from output uncertainty. Truth-related signa",
+      "url": "https://example.test/cr-064/2-arxiv-org-abs-2602-08159",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-064-a3",
+      "title": "[Python] andrewyng/aisuite (15,585 stars)",
+      "description": "Simple, unified interface to multiple Generative AI providers",
+      "url": "https://example.test/cr-064/3-github-com-andrewyng-aisuite",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-064-a4",
+      "title": "Southport killer Axel Rudakubana appears to be manipulating the system, families' lawyer says",
+      "description": "On Thursday, Axel Rudakubana was moved from prison to a secure psychiatric hospital in Berkshire.",
+      "url": "https://example.test/cr-064/4-www-bbc-co-uk-news-articles-cjrvy450jv5o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-064-a5",
+      "title": "How finance teams use ChatGPT Work",
+      "description": "See how finance teams can use ChatGPT Work to build MBRs, reporting packs, variance bridges, model checks, and planning scenarios from real work inputs.",
+      "url": "https://example.test/cr-064/5-openai-com-academy-how-finance-teams-use-codex",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-064-a6",
+      "title": "sqlite-utils 3.39.1",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/sqlite-utils/releases/tag/3.39.1\">sqlite-utils 3.39.1</a></p>\n        <p>I back-ported <a href=\"https://github.com/simonw/sqlite-utils/issues/815\">a fix</a> for <code>table.delete_where()</code> that shipped in version 4.</p>\n    \n    \n",
+      "url": "https://example.test/cr-064/6-simonwillison-net-2026-jul-26-sqlite-utils",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-064-a7",
+      "title": "OpenAI tops ARC-AGI-3 📈, GPT-5.6 efficiency ⚙️, AlphaFold team dissolution 🧬",
+      "description": "",
+      "url": "https://example.test/cr-064/7-tldr-tech-ai-2026-07-30",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-064-a8",
+      "title": "AutoGPT 2.0 launches with modular agent architecture and memory improvements",
+      "description": "The latest version of AutoGPT introduces a plugin-based agent system, long-term vector memory, and integration with popular RAG pipelines.",
+      "url": "https://example.test/cr-064/8-www-theverge-com-2025-3-18-autogpt-2-modular-age",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-064-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-064/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-064-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-064/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-064-a1",
+    "cr-064-a3",
+    "cr-064-a7",
+    "cr-064-a8",
+    "cr-064-a9",
+    "cr-064-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-064-a2",
+    "cr-064-a4",
+    "cr-064-a5",
+    "cr-064-a6"
+  ],
+  "selection_rationale": "保留了与 AI 研究、AI 工具/产品发布直接相关的候选：arXiv 多模态/语言模型论文、GitHub AI 工具、以及 TLDR AI 中带有明确模型/产品名的条目。拒绝了非 AI 新闻、OpenAI 教程类内容和与 AI 无关的 Simon Willison/BBC 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

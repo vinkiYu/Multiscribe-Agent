@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-092-a1",
+      "title": "Argentina’s AI opportunity",
+      "description": "OpenAI and Sur Energy are exploring Argentina’s first Stargate project—an AI and clean energy collaboration that could make Argentina a Latin American leader in artificial intelligence, sustainable infrastructure, and digital innovation.",
+      "url": "https://example.test/cr-092/1-openai-com-global-affairs-argentinas-ai-opportun",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-092-a2",
+      "title": "Claude Code uses Bun written in Rust now",
+      "description": "<p>In <a href=\"https://bun.com/blog/bun-in-rust\">Rewriting Bun in Rust</a> Jarred Sumner made the following claim:</p>\n<blockquote>\n<p>Claude Code v2.1.181 (released June 17th) and later use the Rust port of Bun. Startup got 10% faster on Linux but otherwise, barely anyone noticed. Boring is good.</",
+      "url": "https://example.test/cr-092/2-simonwillison-net-2026-jul-19-claude-code-in-bun",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-092-a3",
+      "title": "Google DeepMind Introduces 'MedRAX' - Medical RAG System",
+      "description": "A new retrieval-augmented generation system for clinical decision support, achieving state-of-the-art accuracy on MedQA and PubMedQA benchmarks by combining sparse and dense retrieval with LLM reasoni",
+      "url": "https://example.test/cr-092/3-arxiv-org-abs-2507-00123",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-092-a4",
+      "title": "REAP: Automatic Curation of Coding Agent Benchmarks from Interactive Production Usage",
+      "description": "arXiv:2604.01527v4 Announce Type: replace-cross \nAbstract: Production deployment of AI coding agents requires fast, reproducible evaluation signals. Existing industrial practices trade off speed and fidelity: online A/B testing takes weeks and risks user experience, shadow deployment yields signals ",
+      "url": "https://example.test/cr-092/4-arxiv-org-abs-2604-01527",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-092-a5",
+      "title": "Prompt Chaining in Practice: A Case Study in Automated Scholarly Report Generation",
+      "description": "arXiv:2607.27210v1 Announce Type: new \nAbstract: The exponential growth of scholarly publications requires automated tools for effective information synthesis. However, simple, single-shot prompting methods often lack the reliability and quality required for complex synthesis tasks. This paper intro",
+      "url": "https://example.test/cr-092/5-arxiv-org-abs-2607-27210",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-092-a6",
+      "title": "[TypeScript] diegosouzapw/OmniRoute (28,339 stars)",
+      "description": "Never stop coding. Free MIT AI gateway: one endpoint, 290+ providers (90+ free), 500+ models — Kimi, Claude, GPT, OpenAI, Gemini, GLM, DeepSeek, MiniMax. Works with Claude Code, Codex, Cursor, OpenCode, Cline & Copilot. Quota-aware auto-fallback, RTK+Caveman compression saves 15-95% tokens, MCP/A2A, Desktop/PWA. Built by 500+ contributors",
+      "url": "https://example.test/cr-092/6-github-com-diegosouzapw-omniroute",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-092-a7",
+      "title": "Second half of summer to bring chances for rain but heatwave threat persists",
+      "description": "Forecasts suggest the weather could turn more changeable during late July and August but the risk of heatwaves remains.",
+      "url": "https://example.test/cr-092/7-www-bbc-co-uk-weather-articles-c07rex9p7x2o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-092-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-092/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-092-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-092/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-092-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-092/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-092-a1",
+    "cr-092-a2",
+    "cr-092-a3",
+    "cr-092-a4",
+    "cr-092-a6",
+    "cr-092-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-092-a5",
+    "cr-092-a7",
+    "cr-092-a8",
+    "cr-092-a9"
+  ],
+  "selection_rationale": "保留与 AI 产品、LLM/agent、RAG 或 arXiv 研究直接相关的候选，包括 OpenAI 的区域项目、Simon Willison 对 Claude Code 的具体评论、RAG 研究、编码 agent 评测论文、AI GitHub Trending 工具，以及含明确模型/产品名的 TLDR AI 条目。拒绝非 AI 新闻、纯天气 BBC，以及仅有表情且缺少具体 AI 产品信息的 TLDR AI 条目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

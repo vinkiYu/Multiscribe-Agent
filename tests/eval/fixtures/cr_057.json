@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-057-a1",
+      "title": "CRMWeaver: Building Powerful Business Agent via Agentic RL and Shared Memories",
+      "description": "arXiv:2510.25333v2 Announce Type: replace \nAbstract: Recent years have witnessed the rapid development of LLM-based agents, which shed light on using language agents to solve complex real-world problems. A prominent application lies in business agents, which interact with databases and internal know",
+      "url": "https://example.test/cr-057/1-arxiv-org-abs-2510-25333",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-057-a2",
+      "title": "[C#] dotnet/aspnetcore (38,300 stars)",
+      "description": "ASP.NET Core is a cross-platform .NET framework for building modern cloud-based web applications on Windows, Mac, or Linux.",
+      "url": "https://example.test/cr-057/2-github-com-dotnet-aspnetcore",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-057-a3",
+      "title": "They became best friends - then discovered they were brother and sister",
+      "description": "Andrea Urmston knew she had a brother who had been adopted by another family, only to discover he was already her closest friend.",
+      "url": "https://example.test/cr-057/3-www-bbc-co-uk-news-articles-c4g397rl4nzo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-057-a4",
+      "title": "Using custom GPTs",
+      "description": "Learn how to build and use custom GPTs to automate workflows, maintain consistent outputs, and create purpose-built AI assistants.",
+      "url": "https://example.test/cr-057/4-openai-com-academy-custom-gpts",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-057-a5",
+      "title": "Quoting Thomas Ptacek",
+      "description": "<blockquote cite=\"https://twitter.com/tqbf/status/2080045032162173329\"><p>I genuinely believe that if you took an open weights model from 2025 and built a pentest harness for it, it could do this kind of sandbox escape and scan/hack in most networks. This is only surprising because you assume OpenAI",
+      "url": "https://example.test/cr-057/5-simonwillison-net-2026-jul-22-thomas-ptacek",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-057-a6",
+      "title": "Ramp Router ⚡, Kimi Work 💼 , AMD Helios 🧱",
+      "description": "",
+      "url": "https://example.test/cr-057/6-tldr-tech-ai-2026-07-21",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-057-a7",
+      "title": "Meta Open Sources Llama 4 with 1T Parameters",
+      "description": "Meta releases Llama 4 under a permissive license, featuring state-of-the-art performance in reasoning and multilingual tasks, boosting open source AI.",
+      "url": "https://example.test/cr-057/7-techcrunch-com-2025-04-01-meta-llama-4-open-sour",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-057-a8",
+      "title": "When Should AI Follow? Task Structure and Joint Adaptation by Human and AI Agents",
+      "description": "arXiv:2504.20903v4 Announce Type: replace-cross \nAbstract: How should organizations divide and sequence decision tasks between human and artificial agents? We develop a computational model of joint sequential adaptation in which two agents differ in a single, precisely specified way: the memory regi",
+      "url": "https://example.test/cr-057/8-arxiv-org-abs-2504-20903",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-057-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-057/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-057-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-057/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-057-a1",
+    "cr-057-a5",
+    "cr-057-a6",
+    "cr-057-a7",
+    "cr-057-a9",
+    "cr-057-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-057-a2",
+    "cr-057-a3",
+    "cr-057-a4",
+    "cr-057-a8"
+  ],
+  "selection_rationale": "已保留包含 LLM/agent、AI 产品发布或明确 AI 工具/模型名的候选；例如 arXiv 论文、Simon Willison 对 open weights model 的具体评论，以及 TLDR AI 中出现的 Claude、Cursor、Kimi Work、Llama 4、xAI 等都符合精选日报标准。已排除非 AI 的 BBC、通用 OpenAI 教程和不含 AI 关键词的 GitHub 项目。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

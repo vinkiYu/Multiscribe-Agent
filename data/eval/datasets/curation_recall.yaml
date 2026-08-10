@@ -1,8 +1,8 @@
 name: curation-recall
 description: 带人工标注的每日 AI 资讯候选池，用于策展 Precision/Recall 回归。
-schema_version: 1
-labeled_at: "2026-08-09"
-labeled_by: zcode:P57-F1
+schema_version: 2
+labeled_at: "2026-08-10"
+labeled_by: zcode:P57-F4
 samples:
   - id: cr-001
     input_path: tests/eval/fixtures/cr_001.json
@@ -154,3 +154,153 @@ samples:
   - id: cr-050
     input_path: tests/eval/fixtures/cr_050.json
     notes: 真实英文新闻, 选中 3/10 - 低选中率
+  - id: cr-051
+    input_path: tests/eval/fixtures/cr_051.json
+    notes: AI 公司产品发布主导 (Anthropic/DeepSeek/OpenAI)
+  - id: cr-052
+    input_path: tests/eval/fixtures/cr_052.json
+    notes: BBC + OpenAI Academy 强干扰
+  - id: cr-053
+    input_path: tests/eval/fixtures/cr_053.json
+    notes: AI 公司产品发布主导 (Anthropic/DeepSeek/OpenAI)
+  - id: cr-054
+    input_path: tests/eval/fixtures/cr_054.json
+    notes: TLDR AI 多个, 模型/agent 类条目多
+  - id: cr-055
+    input_path: tests/eval/fixtures/cr_055.json
+    notes: TLDR AI 多个, 模型/agent 类条目多
+  - id: cr-056
+    input_path: tests/eval/fixtures/cr_056.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-057
+    input_path: tests/eval/fixtures/cr_057.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率
+  - id: cr-058
+    input_path: tests/eval/fixtures/cr_058.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-059
+    input_path: tests/eval/fixtures/cr_059.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-060
+    input_path: tests/eval/fixtures/cr_060.json
+    notes: AI 公司产品发布主导 (Anthropic/DeepSeek/OpenAI)
+  - id: cr-061
+    input_path: tests/eval/fixtures/cr_061.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-062
+    input_path: tests/eval/fixtures/cr_062.json
+    notes: BBC + OpenAI Academy 强干扰
+  - id: cr-063
+    input_path: tests/eval/fixtures/cr_063.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率
+  - id: cr-064
+    input_path: tests/eval/fixtures/cr_064.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-065
+    input_path: tests/eval/fixtures/cr_065.json
+    notes: 低选中率场景, 多干扰项
+  - id: cr-066
+    input_path: tests/eval/fixtures/cr_066.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-067
+    input_path: tests/eval/fixtures/cr_067.json
+    notes: arXiv 主导, 含 LLM/agent 研究
+  - id: cr-068
+    input_path: tests/eval/fixtures/cr_068.json
+    notes: AI 公司产品发布主导 (Anthropic/DeepSeek/OpenAI)
+  - id: cr-069
+    input_path: tests/eval/fixtures/cr_069.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-070
+    input_path: tests/eval/fixtures/cr_070.json
+    notes: 低选中率场景, 多干扰项
+  - id: cr-071
+    input_path: tests/eval/fixtures/cr_071.json
+    notes: 低选中率场景, 多干扰项
+  - id: cr-072
+    input_path: tests/eval/fixtures/cr_072.json
+    notes: TLDR AI 多个, 模型/agent 类条目多
+  - id: cr-073
+    input_path: tests/eval/fixtures/cr_073.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-074
+    input_path: tests/eval/fixtures/cr_074.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-075
+    input_path: tests/eval/fixtures/cr_075.json
+    notes: 新增 4 RSS (TLDR AI 主导), 高选中率 TLDR/AI 实质
+  - id: cr-076
+    input_path: tests/eval/fixtures/cr_076.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-077
+    input_path: tests/eval/fixtures/cr_077.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-078
+    input_path: tests/eval/fixtures/cr_078.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-079
+    input_path: tests/eval/fixtures/cr_079.json
+    notes: arXiv 主导, 含 LLM/agent 研究
+  - id: cr-080
+    input_path: tests/eval/fixtures/cr_080.json
+    notes: 新增 4 RSS (TLDR AI 主导), 高选中率 TLDR/AI 实质
+  - id: cr-081
+    input_path: tests/eval/fixtures/cr_081.json
+    notes: arXiv 主导, 含 LLM/agent 研究
+  - id: cr-082
+    input_path: tests/eval/fixtures/cr_082.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率
+  - id: cr-083
+    input_path: tests/eval/fixtures/cr_083.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-084
+    input_path: tests/eval/fixtures/cr_084.json
+    notes: 低选中率场景, 多干扰项
+  - id: cr-085
+    input_path: tests/eval/fixtures/cr_085.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-086
+    input_path: tests/eval/fixtures/cr_086.json
+    notes: arXiv 主导, 含 LLM/agent 研究
+  - id: cr-087
+    input_path: tests/eval/fixtures/cr_087.json
+    notes: 新增 4 RSS (TLDR AI 主导), 高选中率 TLDR/AI 实质
+  - id: cr-088
+    input_path: tests/eval/fixtures/cr_088.json
+    notes: TLDR + Simon Willison 评论
+  - id: cr-089
+    input_path: tests/eval/fixtures/cr_089.json
+    notes: 新增 4 RSS (TLDR AI 主导), 高选中率 TLDR/AI 实质
+  - id: cr-090
+    input_path: tests/eval/fixtures/cr_090.json
+    notes: TLDR AI 多个, 模型/agent 类条目多
+  - id: cr-091
+    input_path: tests/eval/fixtures/cr_091.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-092
+    input_path: tests/eval/fixtures/cr_092.json
+    notes: GitHub Trending AI 工具主导
+  - id: cr-093
+    input_path: tests/eval/fixtures/cr_093.json
+    notes: 新增 4 RSS (TLDR AI 主导), 高选中率 TLDR/AI 实质
+  - id: cr-094
+    input_path: tests/eval/fixtures/cr_094.json
+    notes: 高 TLDR AI 占比, 候选池偏短描述
+  - id: cr-095
+    input_path: tests/eval/fixtures/cr_095.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率
+  - id: cr-096
+    input_path: tests/eval/fixtures/cr_096.json
+    notes: TLDR AI 多个, 模型/agent 类条目多
+  - id: cr-097
+    input_path: tests/eval/fixtures/cr_097.json
+    notes: 低选中率场景, 多干扰项
+  - id: cr-098
+    input_path: tests/eval/fixtures/cr_098.json
+    notes: arXiv 主导, 含 LLM/agent 研究
+  - id: cr-099
+    input_path: tests/eval/fixtures/cr_099.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率
+  - id: cr-100
+    input_path: tests/eval/fixtures/cr_100.json
+    notes: 混合 TLDR + arXiv CS 边界, 中选中率

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-087-a1",
+      "title": "CrewAI Raises $20M to Build Multi-Agent Enterprise Orchestrator",
+      "description": "CrewAI's platform allows enterprises to design, deploy, and monitor teams of specialized AI agents. The new funding will accelerate development of their RAG-augmented agent workflows.",
+      "url": "https://example.test/cr-087/1-venturebeat-com-2025-07-09-crewai-funding-agent-",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-087-a2",
+      "title": "Gated Adaptation for Continual Learning in Human Activity Recognition",
+      "description": "arXiv:2603.10046v2 Announce Type: replace-cross \nAbstract: Wearable sensors in Internet of Things (IoT) ecosystems increasingly support applications such as remote health monitoring, elderly care, and smart home automation, all of which rely on robust human activity recognition (HAR). Continual lear",
+      "url": "https://example.test/cr-087/2-arxiv-org-abs-2603-10046",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-087-a3",
+      "title": "HANDBOOK.md: A Benchmark for Long-Context Agentic Instruction Following",
+      "description": "arXiv:2607.25398v2 Announce Type: replace-cross \nAbstract: Language-model agents are increasingly deployed under standing instructions: a system prompt, a policy file, or a skills document is placed in context, and the agent is trusted to let it govern every action that follows. Existing benchmarks ",
+      "url": "https://example.test/cr-087/3-arxiv-org-abs-2607-25398",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-087-a4",
+      "title": "[Python] RyanCodrai/turbovec (14,372 stars)",
+      "description": "A vector index built on TurboQuant, written in Rust with Python bindings",
+      "url": "https://example.test/cr-087/4-github-com-ryancodrai-turbovec",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-087-a5",
+      "title": "Heat health alerts in effect for parts of UK as rain returns for some this weekend",
+      "description": "Highs of 30C are expected in the south on Friday before wet weather arrives for the weekend - although it is unlikely to be enough, as Ben Rich explains.",
+      "url": "https://example.test/cr-087/5-www-bbc-co-uk-weather-articles-c75gze7427vo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-087-a6",
+      "title": "Stargate Infrastructure",
+      "description": "OpenAI, and our strategic partners, are thrilled about our shared vision for the Infrastructure of AGI. We are energized by the challenges we face and are excited by the prospect of partnering with firms across the industrial base to deliver against our ambitious mission. Specifically, we want to co",
+      "url": "https://example.test/cr-087/6-openai-com-form-stargate-infrastructure",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-087-a7",
+      "title": "Spot birds not golf",
+      "description": "<p>Suggestion for hyperscalers feeling pressure over data center water use:</p>\n<p>Buy up a few exclusive country clubs, convert the golf courses into public parks, pay for guides and binoculars to get the previous members into birdwatching - help them embrace a more sustainable hobby!</p>\n<p>Google",
+      "url": "https://example.test/cr-087/7-simonwillison-net-2026-jul-17-spot-birds-not-gol",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-087-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-087/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-087-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-087/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-087-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-087/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-087-a1",
+    "cr-087-a3",
+    "cr-087-a8",
+    "cr-087-a9",
+    "cr-087-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-087-a2",
+    "cr-087-a4",
+    "cr-087-a5",
+    "cr-087-a6",
+    "cr-087-a7"
+  ],
+  "selection_rationale": "已选包含明确 AI 产品/模型/agent 相关信息的候选：CrewAI 融资与多智能体编排、arXiv 的 agentic benchmark，以及 TLDR AI 中提到的 Claude、Cursor、xAI、DeepSeek 等具体 AI 产品或公司动态。其余如非 AI 新闻、无具体 AI 内容的评论、以及与 AI 无关的 GitHub Trending 均予以拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

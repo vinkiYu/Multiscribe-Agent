@@ -22,7 +22,7 @@ from multiscribe_agent.eval.dataset import load_dataset
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.mcp.server import run_sse_server, run_stdio_server
 
-DEFAULT_RSS_URL = "https://huggingface.co/blog/feed.xml"
+DEFAULT_RSS_URL = "https://huggingface.co/daily-papers/rss.xml"
 
 
 @click.group()
@@ -136,12 +136,27 @@ async def _run_digest(
 
 
 def _resolve_adapter_ids(adapter_ids: Sequence[str]) -> list[str]:
-    """Normalize the MVP settings alias to the RSS plugin's registered metadata ID."""
+    """Normalize adapter aliases to their registered ``metadata.id`` strings.
+
+    Accepts ``rss`` / ``rss-adapter`` (alias for the generic RSS plugin) plus the
+    four Phase 4 dedicated adapters. Any other id raises ``ValueError`` so we
+    catch typos early rather than silently dropping an unknown source.
+    """
+    SUPPORTED_ALIASES = {"rss", "rss-adapter"}
+    SUPPORTED_NEWS_IDS = {
+        "hf_daily_papers",
+        "tldr_ai",
+        "hacker_news",
+        "last_week_in_ai",
+    }
     normalized: list[str] = []
     for adapter_id in adapter_ids:
         candidate = adapter_id.strip()
-        if candidate in {"rss", "rss-adapter"}:
+        if candidate in SUPPORTED_ALIASES:
             normalized.append("rss")
+            continue
+        if candidate in SUPPORTED_NEWS_IDS:
+            normalized.append(candidate)
             continue
         raise ValueError(f"unsupported digest adapter: {candidate}")
     if not normalized:

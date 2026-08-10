@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-095-a1",
+      "title": "LangChain Releases Agent SDK v2 with Multi-Agent Orchestration",
+      "description": "LangChain's new SDK simplifies building and deploying complex multi-agent systems. Includes built-in RAG pipelines, human-in-the-loop support, and observability tooling.",
+      "url": "https://example.test/cr-095/1-langchain-ai-blog-agent-sdk-v2",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-095-a2",
+      "title": "How memory can affect collective and cooperative behaviors in an LLM-Based Social Particle Swarm",
+      "description": "arXiv:2604.12250v2 Announce Type: replace \nAbstract: This study examines how memory shapes the collective and cooperative dynamics of Large Language Model (LLM) agents in a multi-agent system. To this end, we extend the Social Particle Swarm (SPS) model, in which agents move in a two-dimensional spa",
+      "url": "https://example.test/cr-095/2-arxiv-org-abs-2604-12250",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-095-a3",
+      "title": "Sympathetic Framing: Evaluating AI Alignment across Sociodemographic Groups",
+      "description": "arXiv:2607.27232v1 Announce Type: new \nAbstract: Large Language Models (LLMs) are increasingly shaping how we consume information and form our worldview. This raises concerns beyond bias in AI: do LLMs grasp the emotional nuances conveyed via textual framing? In this work, we empirically evaluate ho",
+      "url": "https://example.test/cr-095/3-arxiv-org-abs-2607-27232",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-095-a4",
+      "title": "[Rust] ruvnet/RuView (85,727 stars)",
+      "description": "π RuView turns commodity WiFi signals into real-time spatial intelligence, vital sign monitoring, and presence detection — all without a single pixel of video.",
+      "url": "https://example.test/cr-095/4-github-com-ruvnet-ruview",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-095-a5",
+      "title": "The 'ultimate all-round sportsman' - Garfield Sobers could do it all",
+      "description": "Sir Garfield Sobers, who has died aged 89, was rightly chosen as one of the leading five cricketers of the 20th century - and will be remembered as arguably the best all-rounder in the history of the game.",
+      "url": "https://example.test/cr-095/5-www-bbc-co-uk-sport-cricket-articles-c2xx42dle4g",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-095-a6",
+      "title": "The EU Code of Practice and future of AI in Europe",
+      "description": "OpenAI joins the EU Code of Practice, advancing responsible AI while partnering with European governments to drive innovation, infrastructure, and economic growth.",
+      "url": "https://example.test/cr-095/6-openai-com-global-affairs-eu-code-of-practice",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-095-a7",
+      "title": "Quoting Sam Altman",
+      "description": "<blockquote cite=\"https://twitter.com/techemails/status/2078854346683678927\"><p>We have been having extensive discussions around open source strategy. We will discuss it more at our next board meeting, but one thing we’d like to do soon is to create a language model with the approximate capability o",
+      "url": "https://example.test/cr-095/7-simonwillison-net-2026-jul-20-sam-altman",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-095-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-095/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-095-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-095/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-095-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-095/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-095-a1",
+    "cr-095-a2",
+    "cr-095-a6",
+    "cr-095-a7",
+    "cr-095-a8",
+    "cr-095-a9",
+    "cr-095-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-095-a3",
+    "cr-095-a4",
+    "cr-095-a5"
+  ],
+  "selection_rationale": "保留包含明确 AI 产品/模型/代理相关信息的条目，如 LangChain Agent SDK、arXiv 的 LLM/multi-agent 研究、OpenAI 相关公告、Simon Willison 对 Sam Altman/模型策略的评论，以及 TLDR AI 中提到的 Claude、Cursor、xAI、DeepSeek 等具体产品或公司。BBC 非 AI、GitHub 非 AI 项目与无具体产品名的干扰项已排除。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

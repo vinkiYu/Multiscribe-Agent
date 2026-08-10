@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-077-a1",
+      "title": "llm 0.32rc1",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/llm/releases/tag/0.32rc1\">llm 0.32rc1</a></p>\n        <p>This RC for LLM 0.32 finishes the work that <a href=\"https://simonwillison.net/2026/Apr/29/llm/\">started in LLM 0.32a0</a> - it adds a <a href=\"https://llm.datasette.io/en/latest/",
+      "url": "https://example.test/cr-077/1-simonwillison-net-2026-jul-30-llm-rc1",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-077-a2",
+      "title": "Mistral AI Releases 'Mistral Large 3' with Agentic Tool Calling and RAG",
+      "description": "Mistral Large 3 (230B) now includes native function calling and a built-in retriever, achieving top scores on the AgentEval and RAGAL benchmarks. Available under Mistral's open-weight license.",
+      "url": "https://example.test/cr-077/2-mistral-ai-news-mistral-large-3-agent-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-077-a3",
+      "title": "A Methodology for Designing Knowledge-Driven Missions for Robots",
+      "description": "arXiv:2601.20797v1 Announce Type: cross \nAbstract: This paper presents a comprehensive methodology for implementing knowledge graphs in ROS 2 systems, aiming to enhance the efficiency and intelligence of autonomous robotic missions. The methodology encompasses several key steps: defining initial and",
+      "url": "https://example.test/cr-077/3-arxiv-org-abs-2601-20797",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-077-a4",
+      "title": "Measuring Human Value Expression in Social Media Texts: Calibrated LLM Annotation and Encoder Transfer",
+      "description": "arXiv:2606.11018v3 Announce Type: replace \nAbstract: Measuring subjective constructs in naturally occurring social media text requires annotation procedures that are theoretically grounded, empirically validated, and transferable to an encoder model for scalable prediction. Using posts annotated acc",
+      "url": "https://example.test/cr-077/4-arxiv-org-abs-2606-11018",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-077-a5",
+      "title": "[Rust] block/buzz (13,613 stars)",
+      "description": "A hive mind communication platform",
+      "url": "https://example.test/cr-077/5-github-com-block-buzz",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-077-a6",
+      "title": "Watch: Another day, more Trump tariffs - but are they working?",
+      "description": "The BBC's Samira Hussain explains how President Trump's tariffs affect US economy, who pays the price, and whether they're working.",
+      "url": "https://example.test/cr-077/6-www-bbc-co-uk-news-videos-c5yw2xgnv2jo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-077-a7",
+      "title": "AI fundamentals",
+      "description": "Learn what AI is, how it works, and how tools like ChatGPT use large language models. A clear, beginner-friendly guide to understanding artificial intelligence.",
+      "url": "https://example.test/cr-077/7-openai-com-academy-what-is-ai",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-077-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-077/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-077-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-077/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-077-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-077/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-077-a1",
+    "cr-077-a2",
+    "cr-077-a4",
+    "cr-077-a8",
+    "cr-077-a9",
+    "cr-077-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-077-a3",
+    "cr-077-a5",
+    "cr-077-a6",
+    "cr-077-a7"
+  ],
+  "selection_rationale": "保留与 AI 产品、模型或具体 LLM/agent 工具直接相关的条目，包括 Simon Willison 的 llm 发布、Mistral Large 3、含 LLM 注释/表征的 arXiv 论文，以及 TLDR AI 中明确点名 Claude/Cursor/xAI/DeepSeek 等项目。拒绝非 AI 的 BBC、GitHub non-AI 项目，以及仅为 OpenAI Academy 基础教程的内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

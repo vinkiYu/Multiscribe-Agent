@@ -74,15 +74,26 @@ def main() -> None:
 
 
 def _load_rows(db_path: Path) -> list[SourceRow]:
-    """Read eligible rows without mutating the runtime database."""
+    """Read eligible rows without mutating the runtime database.
+
+    Some short-form RSS feeds (notably TLDR AI) only publish ``<title>`` and
+    skip ``<description>``. We still want those rows in the candidate pool, so
+    accept a shorter description when the source is one of the newsletter
+    feeds. Other sources still require ``description >= 30`` characters because
+    a missing description usually means an ingestion regression.
+    """
     with sqlite3.connect(f"file:{db_path.resolve()}?mode=ro", uri=True) as connection:
         connection.row_factory = sqlite3.Row
         records = connection.execute(
             """
             SELECT id, title, description, url, source, category
             FROM source_data
-            WHERE description IS NOT NULL AND length(description) >= 30
-              AND source NOT IN ('__EXCLUDED_PLACEHOLDER__')
+            WHERE source NOT IN ('__EXCLUDED_PLACEHOLDER__')
+              AND (
+                (description IS NOT NULL AND length(description) >= 30)
+                OR source IN ('TLDR AI', 'Hugging Face Daily Papers',
+                              'Hacker News', 'Last Week in AI')
+              )
             ORDER BY fetched_at DESC, id ASC
             """
         ).fetchall()

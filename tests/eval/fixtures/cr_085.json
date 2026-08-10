@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-085-a1",
+      "title": "Quoting Kimi K3",
+      "description": "<blockquote cite=\"https://news.ycombinator.com/item?id=48935342#48936515\"><p>Is there something I can actually help you with today?</p></blockquote>\n<p class=\"cite\">&mdash; <a href=\"https://news.ycombinator.com/item?id=48935342#48936515\">Kimi K3</a>, after refusing to leak its system prompt</p>\n\n   ",
+      "url": "https://example.test/cr-085/1-simonwillison-net-2026-jul-17-kimi-k3",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-085-a2",
+      "title": "Meta Launches Llama 4: Open Source Multimodal Foundation Model",
+      "description": "Meta released Llama 4, a fully open-source multimodal LLM with 400B parameters, supporting text, image, and code. Includes built-in RAG and agent framework, available on Hugging Face.",
+      "url": "https://example.test/cr-085/2-ai-meta-com-blog-llama-4-open-source-multimodal",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-085-a3",
+      "title": "MICA: Multi-granularity Intertemporal Credit Assignment for Long-Horizon Emotional Support Dialogue",
+      "description": "arXiv:2603.06194v3 Announce Type: replace-cross \nAbstract: Reinforcement learning (RL) for large language models (LLMs) has shown strong performance in single-turn tasks, but extending it to multi-turn interaction remains challenging due to sparse rewards and poor per-turn credit assignment. In emot",
+      "url": "https://example.test/cr-085/3-arxiv-org-abs-2603-06194",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-085-a4",
+      "title": "Reading Without a Reader: Large Language Models Collapse Reading and Writing into a Single Entangled Code",
+      "description": "arXiv:2607.24797v2 Announce Type: replace-cross \nAbstract: In the literate human brain, reading and writing doubly dissociate: a ventral decoding route (pure alexia) and a fronto-parietal encoding route (pure agraphia), sharing a partial orthographic core. A decoder-only large language model (LLM) d",
+      "url": "https://example.test/cr-085/4-arxiv-org-abs-2607-24797",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-085-a5",
+      "title": "[Python] ComposioHQ/awesome-claude-skills (70,801 stars)",
+      "description": "A curated list of awesome Claude Skills, resources, and tools for customizing Claude AI workflows",
+      "url": "https://example.test/cr-085/5-github-com-composiohq-awesome-claude-skills",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-085-a6",
+      "title": "Van Bommel appointed Belgium head coach",
+      "description": "Belgium appoint former Netherlands captain Mark van Bommel as their new head coach on a contract running through Euro 2028.",
+      "url": "https://example.test/cr-085/6-www-bbc-co-uk-sport-football-articles-czjle30y29",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-085-a7",
+      "title": "New in ChatGPT for Business: April 2025",
+      "description": "Watch hands-on demos of the lastest in ChatGPT for Business: o3, image generation, enhanced memory, and internal knowledge.",
+      "url": "https://example.test/cr-085/7-openai-com-business-new-in-chatgpt-for-business-",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-085-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-085/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-085-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-085/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-085-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-085/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-085-a1",
+    "cr-085-a2",
+    "cr-085-a3",
+    "cr-085-a5",
+    "cr-085-a7",
+    "cr-085-a8",
+    "cr-085-a9",
+    "cr-085-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-085-a4",
+    "cr-085-a6"
+  ],
+  "selection_rationale": "保留了明确涉及 LLM/多模态模型、Claude/agent 工具、以及含具体产品名的 TLDR AI/产品发布和 Simon Willison 评论；BBC 非 AI 新闻被排除。TLDR AI 条目虽部分是标题式汇总，但都含具体 AI 产品或公司名，符合精选日报标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

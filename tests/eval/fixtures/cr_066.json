@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-066-a1",
+      "title": "[Python] microsoft/agent-governance-toolkit (5,014 stars)",
+      "description": "AI Agent Governance Toolkit — Policy enforcement, zero-trust identity, execution sandboxing, and reliability engineering for autonomous AI agents. Covers 10/10 OWASP Agentic Top 10.",
+      "url": "https://example.test/cr-066/1-github-com-microsoft-agent-governance-toolkit",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-066-a2",
+      "title": "Hero swimmer helped two children during West Mersea beach tragedy",
+      "description": "Witnesses say the unnamed rescuer dived into the water three times to save the children.",
+      "url": "https://example.test/cr-066/2-www-bbc-co-uk-news-articles-cly89wrmdxyo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-066-a3",
+      "title": "Creating images with ChatGPT",
+      "description": "Learn how to create and refine images with ChatGPT using clear prompts, iterate on designs, and generate high-quality visuals in minutes.",
+      "url": "https://example.test/cr-066/3-openai-com-academy-image-generation",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-066-a4",
+      "title": "moonshotai/Kimi-K3",
+      "description": "<p><strong><a href=\"https://huggingface.co/moonshotai/Kimi-K3\">moonshotai/Kimi-K3</a></strong></p>\nAs promised <a href=\"https://simonwillison.net/2026/Jul/16/kimi-k3/\">earlier this month</a>, Moonshot have released the weights for their excellent 2.8 trillion parameter Kimi K3. They're a hefty 1.56T",
+      "url": "https://example.test/cr-066/4-simonwillison-net-2026-jul-27-kimi-k3",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-066-a5",
+      "title": "DeepSeek V4 Flash ⚡, OpenAI’s math breakthrough 🔢, Qwen 3.8-Max 🤖",
+      "description": "",
+      "url": "https://example.test/cr-066/5-tldr-tech-ai-2026-08-03",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-066-a6",
+      "title": "OpenAI unveils GPT-5 with enhanced reasoning and agent capabilities",
+      "description": "OpenAI announces GPT-5, featuring improved chain-of-thought reasoning, native tool use, and a new agent framework for autonomous task execution.",
+      "url": "https://example.test/cr-066/6-techcrunch-com-2025-03-18-openai-gpt-5-reasoning",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-066-a7",
+      "title": "GBPP: Grasp-Aware Base Placement Prediction for Robots via Two-Stage Learning",
+      "description": "arXiv:2509.11594v3 Announce Type: replace-cross \nAbstract: GBPP is a fast learning based scorer that selects a robot base pose for grasping from a single RGB-D snapshot. The method uses a two stage curriculum: (1) a simple distance-visibility rule auto-labels a large dataset at low cost; and (2) a s",
+      "url": "https://example.test/cr-066/7-arxiv-org-abs-2509-11594",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-066-a8",
+      "title": "LLM2Vec-Gen: Generative Embeddings from Large Language Models",
+      "description": "arXiv:2603.10913v3 Announce Type: replace \nAbstract: Fine-tuning LLM-based text embedders via contrastive learning maps inputs and outputs into a new representational space, discarding the LLM's output semantics. We propose LLM2Vec-Gen, a self-supervised alternative that instead produces embeddings ",
+      "url": "https://example.test/cr-066/8-arxiv-org-abs-2603-10913",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-066-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-066/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-066-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-066/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-066-a1",
+    "cr-066-a4",
+    "cr-066-a5",
+    "cr-066-a6",
+    "cr-066-a7",
+    "cr-066-a8",
+    "cr-066-a9",
+    "cr-066-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-066-a2",
+    "cr-066-a3"
+  ],
+  "selection_rationale": "已保留所有与 AI 工具、模型发布或 arXiv LLM/agent 相关的候选：GitHub AI Agent 工具、Simon Willison 提到的 Kimi-K3、OpenAI/GPT-5、以及两篇 arXiv 论文都符合精选日报标准。TLDR AI 条目虽然标题里有 emoji，但同时明确包含 Claude、Cursor、xAI、Prime Intellect 等具体 AI 产品/项目名，不属于纯表情干扰。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-093-a1",
+      "title": "Who’s Afraid of Chinese Models?",
+      "description": "<p><strong><a href=\"https://stratechery.com/2026/whos-afraid-of-chinese-models/\">Who’s Afraid of Chinese Models?</a></strong></p>\nInteresting proposal from Ben Thompson that both addresses the hypocrisy of labs outlawing distillation against their models despite training on unlicensed data, and coul",
+      "url": "https://example.test/cr-093/1-simonwillison-net-2026-jul-20-afraid-of-chinese-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-093-a2",
+      "title": "Stability AI Open-Sources 'StableLM-2-12B' with Apache 2.0 License",
+      "description": "The 12 billion parameter model rivals Llama-3.1-8B in benchmarks, available for commercial use. Includes pre-trained weights and a fine-tuned chat variant.",
+      "url": "https://example.test/cr-093/2-stability-ai-blog-stablelm-2-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-093-a3",
+      "title": "Shot-based quantum encoding: a data-loading paradigm for quantum neural networks",
+      "description": "arXiv:2604.06135v2 Announce Type: replace-cross \nAbstract: Efficient data loading remains a bottleneck for near-term quantum machine learning. Existing schemes (angle, amplitude, and basis encoding) either underuse the exponential Hilbert-space capacity or require circuit depths that exceed the cohe",
+      "url": "https://example.test/cr-093/3-arxiv-org-abs-2604-06135",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-093-a4",
+      "title": "Digital Harf: A Clinically Integrated Multimodal AI System for Pervasive Arabic Speech and Language Therapy",
+      "description": "arXiv:2607.27212v1 Announce Type: cross \nAbstract: Children with Autism Spectrum Disorder in Arabic-speaking countries face compounded barriers to effective speech and language therapy: a shortage of qualified specialists, limited service reach beyond urban centers, and a near-total absence of cultu",
+      "url": "https://example.test/cr-093/4-arxiv-org-abs-2607-27212",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-093-a5",
+      "title": "[TypeScript] koala73/worldmonitor (72,944 stars)",
+      "description": "Real-time global intelligence dashboard. AI-powered news aggregation, geopolitical monitoring, and infrastructure tracking in a unified situational awareness interface",
+      "url": "https://example.test/cr-093/5-github-com-koala73-worldmonitor",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-093-a6",
+      "title": "Mother of Henry Nowak killer jailed for removing knife from murder scene",
+      "description": "Kiran Kaur is jailed after attempting to hide the knife used to kill student Henry Nowak.",
+      "url": "https://example.test/cr-093/6-www-bbc-co-uk-news-articles-c1w1nnzgg2no",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-093-a7",
+      "title": "Disrupting malicious uses of AI: June 2025",
+      "description": "Our latest report featuring case studies of how we’re detecting and preventing malicious uses of AI.",
+      "url": "https://example.test/cr-093/7-openai-com-global-affairs-disrupting-malicious-u",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-093-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-093/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-093-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-093/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-093-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-093/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-093-a1",
+    "cr-093-a2",
+    "cr-093-a3",
+    "cr-093-a4",
+    "cr-093-a7",
+    "cr-093-a8",
+    "cr-093-a9",
+    "cr-093-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-093-a5",
+    "cr-093-a6"
+  ],
+  "selection_rationale": "已选与 AI 从业者直接相关的模型、arXiv 论文、OpenAI 事件以及包含具体 AI 产品/工具名的 TLDR AI 条目；拒绝了纯新闻、BBC 非 AI 和无具体 AI 产品信息的干扰项。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

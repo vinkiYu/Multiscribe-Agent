@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-100-a1",
+      "title": "OpenAI’s new economic analysis",
+      "description": "Analysis provides insights into ChatGPT’s impact on the economy. OpenAI also launches new research collaboration to study AI’s broader effects on the labor market and productivity.",
+      "url": "https://example.test/cr-100/1-openai-com-global-affairs-new-economic-analysis",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-100-a2",
+      "title": "Cohere Unveils Command R+ v2: Enterprise-Grade RAG with Real-Time Fact-Checking",
+      "description": "Cohere's updated model incorporates hallucination detection layers and citation verification directly into the retrieval process, targeting legal and healthcare compliance use cases.",
+      "url": "https://example.test/cr-100/2-cohere-com-blog-command-r-plus-v2-enterprise-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-100-a3",
+      "title": "The Alignment Target Problem: Divergent Moral Judgments of Humans, AI Systems, and Their Designers",
+      "description": "arXiv:2604.24155v4 Announce Type: replace-cross \nAbstract: The project of aligning machine behavior with human values raises a basic problem: whose moral expectations should guide AI decision-making? Much alignment research assumes that the appropriate benchmark is how humans themselves would act in",
+      "url": "https://example.test/cr-100/3-arxiv-org-abs-2604-24155",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-100-a4",
+      "title": "HSS-Synth: Humanities and Social Sciences Data Synthesis for LLMs",
+      "description": "arXiv:2607.27379v1 Announce Type: new \nAbstract: High-quality, diverse data are vital for large language models (LLMs) but remain scarce and costly. Data synthesis is a viable alternative and succeeds on closed tasks, yet the humanities and social sciences (HSS) are overlooked, and their open-ended ",
+      "url": "https://example.test/cr-100/4-arxiv-org-abs-2607-27379",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-100-a5",
+      "title": "The Papers: 'The Burn supremacy' and 'Spice up your wife'",
+      "description": "Britian's new prime minister Andy Burnham is the main focus of Saturday's papers.",
+      "url": "https://example.test/cr-100/5-www-bbc-co-uk-news-articles-cwyq978dxwqo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-100-a6",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-100/6-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-100-a7",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-100/7-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-100-a8",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-100/8-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-100-a9",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-100/9-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-100-a10",
+      "title": "Kimi K3 🌕, Gemini 3.5 delayed ⏳, crushing ARC-AGI 3 🤖",
+      "description": "",
+      "url": "https://example.test/cr-100/10-tldr-tech-ai-2026-07-17",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-100-a2",
+    "cr-100-a3",
+    "cr-100-a4",
+    "cr-100-a6",
+    "cr-100-a7",
+    "cr-100-a8",
+    "cr-100-a9",
+    "cr-100-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-100-a1",
+    "cr-100-a5"
+  ],
+  "selection_rationale": "保留了明确属于 AI 产品/模型发布、arXiv 中含 LLM 相关论文，以及 TLDR AI 标题中出现具体模型/工具名的条目；OpenAI 新闻也与 ChatGPT 经济影响相关，适合 AI 从业者日报。BBC 非 AI 条目未选，其余条目均不符合精选标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

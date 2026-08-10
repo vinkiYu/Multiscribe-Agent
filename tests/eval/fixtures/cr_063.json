@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-063-a1",
+      "title": "Anthropic introduces Claude 4 with tool-use API and multi-step agent workflows",
+      "description": "Claude 4 models now support a native tool-use API, allowing developers to build complex agents that can reason and act over multiple steps.",
+      "url": "https://example.test/cr-063/1-www-anthropic-com-news-claude-4-tool-use-agents",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-063-a2",
+      "title": "Balancing Privacy and Efficiency: Music Information Retrieval via Additive Homomorphic Encryption",
+      "description": "arXiv:2508.07044v2 Announce Type: replace-cross \nAbstract: Modern music retrieval runs on vector embeddings, and once these embeddings are shared for search or matching they can be copied, probed, or used to train generative models. Fully homomorphic encryption can compute on them but is impractical",
+      "url": "https://example.test/cr-063/2-arxiv-org-abs-2508-07044",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-063-a3",
+      "title": "MentorCollab: Selective Large-to-Small Inference-Time Guidance for Efficient Reasoning",
+      "description": "arXiv:2602.05307v2 Announce Type: replace \nAbstract: Large reasoning models (LRMs) achieve strong performance by producing long chains of thought, but their inference costs are high and often generate redundant reasoning. Small language models (SLMs) are far more efficient, yet struggle on multi-ste",
+      "url": "https://example.test/cr-063/3-arxiv-org-abs-2602-05307",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-063-a4",
+      "title": "[TypeScript] pascalorg/editor (20,177 stars)",
+      "description": "Create and share 3D architectural projects.",
+      "url": "https://example.test/cr-063/4-github-com-pascalorg-editor",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-063-a5",
+      "title": "Ten killed in Russian attack near Kyiv",
+      "description": "A rescue operation is under way following a deadly Russian missile strike just outside of the Ukrainian capital.",
+      "url": "https://example.test/cr-063/5-www-bbc-co-uk-news-articles-cj637zd1k1ko",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-063-a6",
+      "title": "Healthcare",
+      "description": "Explore how clinicians use ChatGPT to support diagnosis, documentation, and patient care with secure, HIPAA-compliant AI tools.",
+      "url": "https://example.test/cr-063/6-openai-com-academy-healthcare",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-063-a7",
+      "title": "An Inside Look at the Relay Market Powering Token Resellers and Fraud",
+      "description": "<p><strong><a href=\"https://vectoral.com/blog/token-relay-market\">An Inside Look at the Relay Market Powering Token Resellers and Fraud</a></strong></p>\nFascinating investigation by Matt Lenhard into the market that has grown up around reselling LLM tokens at a discount by pooling API keys from vari",
+      "url": "https://example.test/cr-063/7-simonwillison-net-2026-jul-26-relay-market",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-063-a8",
+      "title": "AI slowdown pact ⏸️, Personal superintelligence access 🌍, Grok Build Mode 🛠️",
+      "description": "",
+      "url": "https://example.test/cr-063/8-tldr-tech-ai-2026-07-29",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-063-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-063/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-063-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-063/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-063-a1",
+    "cr-063-a3",
+    "cr-063-a7",
+    "cr-063-a9",
+    "cr-063-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-063-a2",
+    "cr-063-a4",
+    "cr-063-a5",
+    "cr-063-a6",
+    "cr-063-a8"
+  ],
+  "selection_rationale": "选取了与 AI 从业者直接相关的模型/agent/RAG/产品动态：Claude 4 工具调用与多步 agent、arXiv 上的推理效率研究、Simon Willison 对 LLM token 转售/欺诈市场的具体评论，以及 TLDR AI 中明确点名 Claude Code、Cursor、xAI 等产品/工具的条目。其余为非 AI 新闻、OpenAI 教程类内容、非 AI GitHub 项目或只有表情符号且无具体产品名的标题，按规则拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

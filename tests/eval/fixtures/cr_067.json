@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-067-a1",
+      "title": "'Extremely significant' bomb in car intercepted on way to NI, Irish police say",
+      "description": "Two people are arrested after a vehicle was stopped in County Monaghan in an operation targeting dissident republican activity.",
+      "url": "https://example.test/cr-067/1-www-bbc-co-uk-news-articles-cpq82dg0y3qo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-067-a2",
+      "title": "ChatGPT for managers",
+      "description": "Learn how managers use ChatGPT to prepare for conversations, write clear feedback, stay organized, and improve team effectiveness.",
+      "url": "https://example.test/cr-067/2-openai-com-academy-managers",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-067-a3",
+      "title": "Quoting Akshat Bubna",
+      "description": "<blockquote cite=\"https://www.reuters.com/business/openais-rogue-agent-compromised-an-account-second-tech-firm-sources-say-2026-07-28/\"><p>We’re aware a Modal customer published an unauthenticated endpoint that allowed ​anyone on the internet to use ​their ⁠sandboxes for code execution. This was use",
+      "url": "https://example.test/cr-067/3-simonwillison-net-2026-jul-28-akshat-bubna",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-067-a4",
+      "title": "ChronicleBio 🧬, Mind Lab continual learning 📈, GPT-Live architecture 🎙️",
+      "description": "",
+      "url": "https://example.test/cr-067/4-tldr-tech-ai-2026-08-04",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-067-a5",
+      "title": "Google DeepMind open-sources Gemini 3 small model for edge devices",
+      "description": "Gemini 3 Small is released under an Apache 2.0 license, optimized for on-device AI with strong RAG and agent performance.",
+      "url": "https://example.test/cr-067/5-venturebeat-com-ai-google-deepmind-gemini-3-smal",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-067-a6",
+      "title": "Train Large, Deploy Compact: Structured Compression for Compact Low-Rank Adaptation",
+      "description": "arXiv:2510.00192v3 Announce Type: replace-cross \nAbstract: Low-rank adaptation (LoRA) has become a widely used paradigm for parameter-efficient fine-tuning of large language models, yet its representational capacity often lags behind full fine-tuning. Within the context of LoRA, a key open question ",
+      "url": "https://example.test/cr-067/6-arxiv-org-abs-2510-00192",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-067-a7",
+      "title": "Personalized RewardBench: Evaluating Reward Models with Human Aligned Personalization",
+      "description": "arXiv:2604.07343v2 Announce Type: replace \nAbstract: Pluralistic alignment has emerged as a critical frontier in the development of Large Language Models (LLMs), with reward models (RMs) serving as a central mechanism for capturing diverse human values. While benchmarks for general response quality ",
+      "url": "https://example.test/cr-067/7-arxiv-org-abs-2604-07343",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-067-a8",
+      "title": "[TypeScript] moeru-ai/airi (44,536 stars)",
+      "description": "💖🧸 Self hosted, you-owned Grok Companion, a container of souls of waifu, cyber livings to bring them into our worlds, wishing to achieve Neuro-sama's altitude. Capable of realtime voice chat, Minecraft, Factorio playing. Web / macOS / Windows supported.",
+      "url": "https://example.test/cr-067/8-github-com-moeru-ai-airi",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-067-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-067/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-067-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-067/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-067-a3",
+    "cr-067-a4",
+    "cr-067-a5",
+    "cr-067-a6",
+    "cr-067-a7",
+    "cr-067-a8",
+    "cr-067-a9",
+    "cr-067-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-067-a1",
+    "cr-067-a2"
+  ],
+  "selection_rationale": "已选包含明显的 AI 相关内容：OpenAI/Simon Willison 对 AI 产品与事件的评论、TLDR AI 中出现具体模型/工具名、arXiv 的 LLM/LoRA/reward model 论文，以及 GitHub Trending 中带有 AI/LLM 语境的项目。已拒非 AI 新闻和 OpenAI Academy 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

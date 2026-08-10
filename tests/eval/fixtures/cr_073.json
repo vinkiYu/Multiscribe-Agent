@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-073-a1",
+      "title": "VISTA: A Controllable Platform for Generating and Auditing Egocentric Assistance Scenarios",
+      "description": "arXiv:2605.10579v2 Announce Type: replace \nAbstract: Evaluating whether AI agents can proactively assist humans in daily activities, ranging from routine household tasks to urgent safety-critical situations, requires diverse visual data. However, collecting such scenarios in the real world is often ",
+      "url": "https://example.test/cr-073/1-arxiv-org-abs-2605-10579",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-073-a2",
+      "title": "[Rust] Pumpkin-MC/Pumpkin (10,083 stars)",
+      "description": "Empowering everyone to host fast and efficient Minecraft servers.",
+      "url": "https://example.test/cr-073/2-github-com-pumpkin-mc-pumpkin",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-073-a3",
+      "title": "Four Palestinians and two Israelis killed in West Bank shooting",
+      "description": "Palestinians say villagers came under attack by settlers, while the Israeli military says a Palestinian stole a weapon and opened fire on hikers.",
+      "url": "https://example.test/cr-073/3-www-bbc-co-uk-news-articles-cx2rxmye4k3o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-073-a4",
+      "title": "Responsible and safe use of AI",
+      "description": "Learn how to use AI responsibly with best practices for safety, accuracy, and transparency when using tools like ChatGPT.",
+      "url": "https://example.test/cr-073/4-openai-com-academy-responsible-and-safe-use",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-073-a5",
+      "title": "Quoting Matthew Green",
+      "description": "<blockquote cite=\"https://blog.cryptographyengineering.com/2026/07/29/some-notes-about-anthropics-new-results/\"><p>Right now we’re in the midst of a historic transition from traditional public-key algorithms based on EC-based cryptography and RSA, moving over to new <em>post-quantum</em> algorithms ",
+      "url": "https://example.test/cr-073/5-simonwillison-net-2026-jul-29-matthew-green",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-073-a6",
+      "title": "Mistral AI releases open-source CodeMistral-7B with 128K context window",
+      "description": "CodeMistral-7B is a state-of-the-art code generation model released under a permissive license, supporting agentic code editing.",
+      "url": "https://example.test/cr-073/6-mistral-ai-news-codemistral-7b-open-source",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-073-a7",
+      "title": "$\\texttt{AMEND++}$: Benchmarking Eligibility Criteria Amendments in Clinical Trials",
+      "description": "arXiv:2601.06300v2 Announce Type: replace-cross \nAbstract: Clinical trial amendments frequently introduce delays, increased costs, and administrative burden, with eligibility criteria being the most commonly amended component. We introduce \\textit{eligibility criteria amendment prediction}, a novel ",
+      "url": "https://example.test/cr-073/7-arxiv-org-abs-2601-06300",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-073-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-073/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-073-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-073/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-073-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-073/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-073-a1",
+    "cr-073-a6",
+    "cr-073-a8",
+    "cr-073-a9",
+    "cr-073-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-073-a2",
+    "cr-073-a3",
+    "cr-073-a4",
+    "cr-073-a5",
+    "cr-073-a7"
+  ],
+  "selection_rationale": "保留了与 AI 直接相关的 arXiv 论文、Mistral 新模型发布，以及 TLDR AI 中包含明确产品/模型名的条目；其余为非 AI 新闻、非 AI GitHub、OpenAI 教程或与具体 AI 产品无关的评论，按规则拒绝。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

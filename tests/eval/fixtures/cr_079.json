@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-079-a1",
+      "title": "Google DeepMind Open Sources 'Gemma 2' with RAG-Optimized Checkpoints",
+      "description": "Google released Gemma 2, a family of small open-source LLMs (2B-27B) fine-tuned for retrieval-augmented generation, including special LoRA adapters for agentic tool use.",
+      "url": "https://example.test/cr-079/1-ai-googleblog-com-2025-04-gemma-2-rag-optimized-",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-079-a2",
+      "title": "Structurally Separated Uncertainty in Supervised Latent Variable Models",
+      "description": "arXiv:2602.11219v2 Announce Type: replace-cross \nAbstract: Predictive uncertainty is commonly decomposed into epistemic and aleatoric components, but standard decompositions often produce strongly correlated estimates because both quantities are derived from the same predictive distribution. We stud",
+      "url": "https://example.test/cr-079/2-arxiv-org-abs-2602-11219",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-079-a3",
+      "title": "Exposure is not manifestation: measurement target and output resolution jointly determine which behavioural-faithfulness evaluator wins",
+      "description": "arXiv:2607.09306v3 Announce Type: replace \nAbstract: Behavioural auditing asks whether a language model behaves as it claims, but detection scores are reported without separating two targets: whether a reply was produced under a behaviour-inducing condition (exposure) and whether the behaviour surfa",
+      "url": "https://example.test/cr-079/3-arxiv-org-abs-2607-09306",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-079-a4",
+      "title": "[JavaScript] nodejs/node (118,515 stars)",
+      "description": "Node.js JavaScript runtime ✨🐢🚀✨",
+      "url": "https://example.test/cr-079/4-github-com-nodejs-node",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-079-a5",
+      "title": "The Global Story: Is the Iran war back on?",
+      "description": "The White House has asked Congress for billions more dollars in funding for the Iran war",
+      "url": "https://example.test/cr-079/5-www-bbc-co-uk-sounds-play-w3ct8ml2",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-079-a6",
+      "title": "Workspace agents",
+      "description": "Learn how to build, use, and scale workspace agents in ChatGPT to automate repeatable workflows, connect tools, and streamline team operations.",
+      "url": "https://example.test/cr-079/6-openai-com-academy-workspace-agents",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-079-a7",
+      "title": "Advancing the price-performance frontier with GPT‑5.6",
+      "description": "<p><strong><a href=\"https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/\">Advancing the price-performance frontier with GPT‑5.6</a></strong></p>\nHuge price drop from OpenAI today: GPT-5.6 Terra got a 20% reduction, and GPT-5.6 Luna got a massive 80% drop.</p>\n<p>OpenAI cre",
+      "url": "https://example.test/cr-079/7-simonwillison-net-2026-jul-30-luna-price-drop",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-079-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-079/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-079-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-079/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-079-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-079/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-079-a1",
+    "cr-079-a3",
+    "cr-079-a7",
+    "cr-079-a8",
+    "cr-079-a9",
+    "cr-079-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-079-a2",
+    "cr-079-a4",
+    "cr-079-a5",
+    "cr-079-a6"
+  ],
+  "selection_rationale": "保留了明确涉及 LLM/RAG/agent 的 arXiv 与 AI 产品/公司发布，以及 Simon Willison 对 OpenAI GPT-5.6 的具体评论；TLDR AI 标题中也都包含具体 AI 产品或公司名，符合精选日报标准。剔除与 AI 无关的 GitHub/BBC/OpenAI 教程类内容，并未选纯模型理论且不含 LLM/agent/RAG 关键词的候选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

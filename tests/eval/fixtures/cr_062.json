@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-062-a1",
+      "title": "Anthropic on open weights 🔓, Kimi releases K3 weights 🤖, MAI Cyber model 🔐",
+      "description": "",
+      "url": "https://example.test/cr-062/1-tldr-tech-ai-2026-07-28",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-062-a2",
+      "title": "Cohere Releases Command R+ with Real-Time Web RAG",
+      "description": "Updated model integrates live web search into its retrieval pipeline, enabling up-to-date answers without static knowledge base rebuilds.",
+      "url": "https://example.test/cr-062/2-cohere-com-blog-command-r-plus-web-rag",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-062-a3",
+      "title": "FPEdit: Robust LLM Fingerprinting through Localized Parameter Editing",
+      "description": "arXiv:2508.02092v3 Announce Type: replace-cross \nAbstract: Large language models represent significant investments in computation, data, and engineering expertise, making them extraordinarily valuable intellectual assets. Nevertheless, these AI assets remain vulnerable to unauthorized redistribution",
+      "url": "https://example.test/cr-062/3-arxiv-org-abs-2508-02092",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-062-a4",
+      "title": "Scaling medical imaging report generation with multimodal reinforcement learning",
+      "description": "arXiv:2601.17151v2 Announce Type: replace-cross \nAbstract: Frontier models have demonstrated remarkable capabilities in understanding and reasoning with natural-language text, but they still exhibit major competency gaps in multimodal understanding and reasoning especially in high-value verticals su",
+      "url": "https://example.test/cr-062/4-arxiv-org-abs-2601-17151",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-062-a5",
+      "title": "[Python] paperswithbacktest/awesome-systematic-trading (11,150 stars)",
+      "description": "A curated list of awesome libraries, packages, strategies, books, blogs, tutorials for systematic trading.",
+      "url": "https://example.test/cr-062/5-github-com-paperswithbacktest-awesome-systematic",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-062-a6",
+      "title": "Heatwave anxiety made me feel helpless - here’s how to manage it",
+      "description": "Extreme heat can take a toll on mental health - and young people and women are among the groups most at risk, according to one study.",
+      "url": "https://example.test/cr-062/6-www-bbc-co-uk-news-articles-cgk4xrznxn5o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-062-a7",
+      "title": "Getting started with ChatGPT",
+      "description": "Learn how to use ChatGPT, start your first conversation, and discover simple ways to write, brainstorm, and solve problems with AI.",
+      "url": "https://example.test/cr-062/7-openai-com-academy-getting-started",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-062-a8",
+      "title": "Ruff v0.16.0",
+      "description": "<p><strong><a href=\"https://astral.sh/blog/ruff-v0.16.0\">Ruff v0.16.0</a></strong></p>\nAstral shipped a significant new version of their Ruff Python linting tool a few days ago on July 23rd. I noticed today because my various CI jobs all started failing thanks to new default Ruff checks and my unpin",
+      "url": "https://example.test/cr-062/8-simonwillison-net-2026-jul-25-ruff",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-062-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-062/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-062-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-062/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-062-a1",
+    "cr-062-a2",
+    "cr-062-a3",
+    "cr-062-a4",
+    "cr-062-a9",
+    "cr-062-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-062-a5",
+    "cr-062-a6",
+    "cr-062-a7",
+    "cr-062-a8"
+  ],
+  "selection_rationale": "这些候选都明确涉及 AI 相关模型、RAG、LLM 或 agent 产品/动态，符合面向 AI 从业者日报的选题标准；其余候选分别属于非 AI 内容、OpenAI 教程、普通工具更新或缺少具体 AI 产品信息，因此不选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

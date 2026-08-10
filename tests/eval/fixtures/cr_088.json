@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-088-a1",
+      "title": "State-Dependent Safety Failures in Multi-Turn Language Model Interaction",
+      "description": "arXiv:2603.15684v2 Announce Type: replace-cross \nAbstract: Safety alignment in large language models is typically evaluated under isolated queries, yet real-world use is inherently multi-turn. Although multi-turn jailbreaks are empirically effective, the structure of conversational safety failure re",
+      "url": "https://example.test/cr-088/1-arxiv-org-abs-2603-15684",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-088-a2",
+      "title": "BM25 Wins at Scale: A Scaling Study of Retrieval-Augmented Generation Paradigms",
+      "description": "arXiv:2607.26497v2 Announce Type: replace \nAbstract: Retrieval-augmented generation (RAG) spans lexical and dense retrieval, graph-based indexing, and agentic search, but these paradigms are usually evaluated on different benchmarks at one corpus size, leaving their accuracy-cost scaling unclear. To",
+      "url": "https://example.test/cr-088/2-arxiv-org-abs-2607-26497",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-088-a3",
+      "title": "[Shell] mattpocock/skills (188,905 stars)",
+      "description": "Skills for Real Engineers. Straight from my .agents directory.",
+      "url": "https://example.test/cr-088/3-github-com-mattpocock-skills",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-088-a4",
+      "title": "Indian activist on hunger strike for 20 days forcibly taken to hospital",
+      "description": "Cockroach Janta Party founder Abhijeet Dipke has now begun an indefinite fast in Sonam Wangchuk's place.",
+      "url": "https://example.test/cr-088/4-www-bbc-co-uk-news-articles-cjej3dxxg2do",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-088-a5",
+      "title": "1,000 Scientist AI Jam Session",
+      "description": "OpenAI and nine national labs bring together leading scientists for first-of-its kind event.",
+      "url": "https://example.test/cr-088/5-openai-com-global-affairs-1000-scientist-ai-jam-",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-088-a6",
+      "title": "Claude make Fable 5 permanent",
+      "description": "<p><strong><a href=\"https://twitter.com/claudeai/status/2078302415804379218\">Claude make Fable 5 permanent</a></strong></p>\nAn update from the <code>@claudeai</code> account on Twitter:</p>\n<blockquote>\n<p>Beginning July 20, Claude Fable 5 will be included in all Max and Team Premium plans, at 50% o",
+      "url": "https://example.test/cr-088/6-simonwillison-net-2026-jul-18-claude-make-fable-",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-088-a7",
+      "title": "PyTorch 3.0 Adds Native Support for LLM Inference Optimization",
+      "description": "PyTorch 3.0 includes quantized KV-cache, FlashAttention-3 integration, and a new torch.compile backend optimized for large language models. All features are open source and production-ready.",
+      "url": "https://example.test/cr-088/7-pytorch-org-blog-pytorch3-release",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-088-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-088/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-088-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-088/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-088-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-088/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-088-a1",
+    "cr-088-a2",
+    "cr-088-a6",
+    "cr-088-a7",
+    "cr-088-a8",
+    "cr-088-a9",
+    "cr-088-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-088-a3",
+    "cr-088-a4",
+    "cr-088-a5"
+  ],
+  "selection_rationale": "保留了明确属于 AI 资讯范围的 arXiv 论文、AI 产品/模型发布、以及含具体 AI 产品名的 Simon Willison 和 TLDR AI 条目；剔除了明显非 AI 的 BBC 和无关 GitHub Trending。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

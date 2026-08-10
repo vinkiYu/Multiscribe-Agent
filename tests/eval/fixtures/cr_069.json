@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-069-a1",
+      "title": "Discovering cryptographic weaknesses with Claude",
+      "description": "<p><strong><a href=\"https://www.anthropic.com/research/discovering-cryptographic-weaknesses\">Discovering cryptographic weaknesses with Claude</a></strong></p>\nThe best part of this article (here's <a href=\"https://github.com/anthropics/cryptography-research-demo\">the repo</a>) about how Anthropic re",
+      "url": "https://example.test/cr-069/1-simonwillison-net-2026-jul-28-discovering-crypto",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-069-a2",
+      "title": "Google DeepMind reshuffle 🧠, Meta Muse Code 💻, Anthropic chip team 🧩",
+      "description": "",
+      "url": "https://example.test/cr-069/2-tldr-tech-ai-2026-08-06",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-069-a3",
+      "title": "DeepSeek releases DeepSeek-R1 base model with reasoning traces open source",
+      "description": "DeepSeek-R1 is an open‑source reasoning model that includes chain-of-thought traces, enabling transparent agent decision-making.",
+      "url": "https://example.test/cr-069/3-www-deepseek-com-blog-dsr1-open-source-reasoning",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-069-a4",
+      "title": "ARC-Encoder: learning compressed text representations for large language models",
+      "description": "arXiv:2510.20535v2 Announce Type: replace-cross \nAbstract: Recent techniques such as retrieval-augmented generation or chain-of-thought reasoning have led to longer contexts and increased inference costs. Context compression techniques can reduce these costs, but the most effective approaches requir",
+      "url": "https://example.test/cr-069/4-arxiv-org-abs-2510-20535",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-069-a5",
+      "title": "S-GRPO: Unified Post-Training for Large Vision-Language Models",
+      "description": "arXiv:2604.16557v2 Announce Type: replace-cross \nAbstract: Current post-training methodologies for adapting Large Vision-Language Models (LVLMs) generally fall into two paradigms: Supervised Fine-Tuning (SFT) and Reinforcement Learning (RL). Despite their prevalence, both approaches suffer from inef",
+      "url": "https://example.test/cr-069/5-arxiv-org-abs-2604-16557",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-069-a6",
+      "title": "[Python] virgiliojr94/book-to-skill (10,845 stars)",
+      "description": "Turn any technical book PDF into a Claude Code skill — ready to study, reference, and use while you work.",
+      "url": "https://example.test/cr-069/6-github-com-virgiliojr94-book-to-skill",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-069-a7",
+      "title": "US hits dozens of countries with new wave of tariffs",
+      "description": "Imposed citing forced labour concerns, the levies replace a temporary global duty brought in after the US Supreme Court struck down tariffs in February.",
+      "url": "https://example.test/cr-069/7-www-bbc-co-uk-news-articles-cvgj61j6l08o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-069-a8",
+      "title": "ChatGPT for operations teams",
+      "description": "Learn how operations teams use ChatGPT to streamline workflows, improve coordination, standardize processes, and drive faster execution.",
+      "url": "https://example.test/cr-069/8-openai-com-academy-operations",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-069-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-069/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-069-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-069/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-069-a1",
+    "cr-069-a2",
+    "cr-069-a3",
+    "cr-069-a4",
+    "cr-069-a5",
+    "cr-069-a6",
+    "cr-069-a9",
+    "cr-069-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-069-a7",
+    "cr-069-a8"
+  ],
+  "selection_rationale": "已选包含具体 AI 产品、模型、arXiv 论文或 GitHub AI 工具的条目，符合面向 AI 从业者的精选日报标准；已排除明显非 AI 的 BBC 新闻，以及 OpenAI 教程类内容。TLDR AI 条目虽为标题式聚合，但都含明确 AI 产品/公司名，因此保留。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

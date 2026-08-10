@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-071-a1",
+      "title": "LlamaIndex releases LlamaCloud – managed RAG service for enterprises",
+      "description": "LlamaCloud offers a fully managed retrieval-augmented generation (RAG) stack with hybrid search, re-ranking, and real-time data connectors.",
+      "url": "https://example.test/cr-071/1-www-llamaindex-ai-blog-llamacloud-rag-service-20",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-071-a2",
+      "title": "Balancing Centralized Learning and Distributed Self-Organization: A Hybrid Model for Embodied Morphogenesis",
+      "description": "arXiv:2511.10101v2 Announce Type: replace \nAbstract: Background: both embodied intelligence and developmental morphogenesis depend on a division of labour between centralized guidance and distributed material dynamics, but the amount of top-down control needed to steer self-organization remains uncl",
+      "url": "https://example.test/cr-071/2-arxiv-org-abs-2511-10101",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-071-a3",
+      "title": "HumorRank: A Tournament-Based Leaderboard for Evaluating Humor Generation in Large Language Models",
+      "description": "arXiv:2604.19786v3 Announce Type: replace \nAbstract: Evaluating humor in large language models (LLMs) is an open challenge because existing approaches yield isolated, incomparable metrics rather than unified model rankings, making it difficult to track progress across systems. We introduce HumorRank",
+      "url": "https://example.test/cr-071/3-arxiv-org-abs-2604-19786",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-071-a4",
+      "title": "[TypeScript] CoreBunch/Instatic (5,816 stars)",
+      "description": "The open-source alternative to Webflow, Framer and WordPress. Agentic self-hosted visual CMS outputting clean static pages. Users, roles, plugins, content, database, it's all there.",
+      "url": "https://example.test/cr-071/4-github-com-corebunch-instatic",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-071-a5",
+      "title": "Four men dead after car crashes into lamp-post",
+      "description": "The car left the road and crashed on Liverpool Road in Huyton just before 02:00 BST.",
+      "url": "https://example.test/cr-071/5-www-bbc-co-uk-news-articles-cwymj9jmnm0o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-071-a6",
+      "title": "Using projects in ChatGPT",
+      "description": "Learn how to use projects in ChatGPT to organize chats, files, and instructions, manage ongoing work, and collaborate more effectively.",
+      "url": "https://example.test/cr-071/6-openai-com-academy-projects",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-071-a7",
+      "title": "AI Worming through Word",
+      "description": "<p><strong><a href=\"https://enklypesalt.com/posts/context-collapse-part3-ai-worming-through-word/\">AI Worming through Word</a></strong></p>\nNeat new prompt injection variant by Håkon Måløy, who found a way to upgrade prompt injection attacks against Microsoft Word to full self-replicating worms:</p>",
+      "url": "https://example.test/cr-071/7-simonwillison-net-2026-jul-29-ai-worming-through",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-071-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-071/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-071-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-071/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-071-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-071/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-071-a1",
+    "cr-071-a2",
+    "cr-071-a3",
+    "cr-071-a4",
+    "cr-071-a7",
+    "cr-071-a8",
+    "cr-071-a9",
+    "cr-071-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-071-a5",
+    "cr-071-a6"
+  ],
+  "selection_rationale": "已选包含明确的 AI 产品/服务发布、arXiv 论文（含 LLM 相关）、GitHub Trending AI 工具、Simon Willison 对具体 AI 安全事件的评论，以及 TLDR AI 中带有具体模型/工具/公司名称的条目；已排除与 AI 无关的 BBC 新闻和 OpenAI 教程类内容。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

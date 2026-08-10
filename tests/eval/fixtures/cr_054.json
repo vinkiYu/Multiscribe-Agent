@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-054-a1",
+      "title": "Thinking Machines Inkling 🧠, GPT-Red 🔒, Perplexity sandboxes 🛡️",
+      "description": "",
+      "url": "https://example.test/cr-054/1-tldr-tech-ai-2026-07-16",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-054-a2",
+      "title": "Research Shows Small LLMs Outperform Large Models in Agent Loops",
+      "description": "New study finds that carefully fine-tuned 7B-parameter LLMs match GPT-4 in multi-step agent tasks when using structured prompts and RAG.",
+      "url": "https://example.test/cr-054/2-arxiv-org-abs-2025-04001",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-054-a3",
+      "title": "The Reliability of LLMs for Medical Diagnosis: An Examination of Consistency, Manipulation, and Contextual Awareness",
+      "description": "arXiv:2503.10647v2 Announce Type: replace-cross \nAbstract: This study evaluated the diagnostic reliability of two Large Language Models (LLMs), Google Gemini 2.0 Flash and OpenAI ChatGPT-4o, across three dimensions: consistency under rephrased inputs, susceptibility to irrelevant prompt content, and",
+      "url": "https://example.test/cr-054/3-arxiv-org-abs-2503-10647",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-054-a4",
+      "title": "Hallucinations and Truth: A Comprehensive Accuracy Evaluation of RAG, LoRA and DoRA",
+      "description": "arXiv:2502.10497v2 Announce Type: replace \nAbstract: Recent advancements in Generative AI have significantly improved the efficiency and adaptability of natural language processing (NLP) systems, particularly through Retrieval-Augmented Generation (RAG), Low-Rank Adaptation (LoRA), and Weight-Decomp",
+      "url": "https://example.test/cr-054/4-arxiv-org-abs-2502-10497",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-054-a5",
+      "title": "[Rust] agavra/tuicr (1,893 stars)",
+      "description": "a code review TUI with vim keybindings",
+      "url": "https://example.test/cr-054/5-github-com-agavra-tuicr",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-054-a6",
+      "title": "US and Iran trade more strikes in Gulf as fears of escalation mount",
+      "description": "It comes as Iran condemned the US plan to use frozen Iranian assets to pay for war damages.",
+      "url": "https://example.test/cr-054/6-www-bbc-co-uk-news-articles-c05ql5llj4do",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-054-a7",
+      "title": "How business operations teams use ChatGPT Work",
+      "description": "See how business operations teams can use ChatGPT Work to create initiative briefs, strategy updates, leadership decision packets, progress updates, and more from real work inputs",
+      "url": "https://example.test/cr-054/7-openai-com-academy-codex-for-work-how-business-o",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-054-a8",
+      "title": "Orchestrions",
+      "description": "<p>San Francisco tip: it only costs around $15 ($10 in quarters plus a $5 bill for the self-playing violin) to activate every single Orchestrion in <a href=\"https://en.wikipedia.org/wiki/Musée_Mécanique\">Musée Mécanique</a>.</p>\n<p>And because most people are bad at allocating their funds you may we",
+      "url": "https://example.test/cr-054/8-simonwillison-net-2026-jul-22-all-the-orchestrio",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-054-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-054/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-054-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-054/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-054-a2",
+    "cr-054-a3",
+    "cr-054-a4",
+    "cr-054-a9",
+    "cr-054-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-054-a1",
+    "cr-054-a5",
+    "cr-054-a6",
+    "cr-054-a7",
+    "cr-054-a8"
+  ],
+  "selection_rationale": "保留了包含 LLM、agent、RAG、模型评测等明确 AI 研究/产品信号的条目，且来源覆盖 arXiv、AI 搜索与 TLDR AI，符合精选日报标准。其余候选要么是非 AI 内容、要么是 OpenAI 教程类、要么是无具体 AI 产品信息的干扰项，因此不选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

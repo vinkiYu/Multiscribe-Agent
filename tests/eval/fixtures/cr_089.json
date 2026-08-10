@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-089-a1",
+      "title": "Constitutional Midtraining: Content Presence Drives Alignment Gains",
+      "description": "arXiv:2607.26654v2 Announce Type: replace \nAbstract: Post-training alignment is often shallow, eroding under fine-tuning. It remains untested as to whether constitutional midtraining interventions can produce durable alignment when cleanly isolated from post-training. We build a 394M-token constitut",
+      "url": "https://example.test/cr-089/1-arxiv-org-abs-2607-26654",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-089-a2",
+      "title": "[Shell] obra/superpowers (261,338 stars)",
+      "description": "An agentic skills framework & software development methodology that works.",
+      "url": "https://example.test/cr-089/2-github-com-obra-superpowers",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-089-a3",
+      "title": "Many Ukrainian soldiers outraged over removal of defence minister, troops tell BBC",
+      "description": "Protests erupted in Ukraine on Thursday after Mykhailo Fedorov's removal - and now soldiers are also criticising the move.",
+      "url": "https://example.test/cr-089/3-www-bbc-co-uk-news-articles-cvg8w4dpjkwo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-089-a4",
+      "title": "Accelerating AI adoption in Europe",
+      "description": "OpenAI and Allied for Startups release the Hacktivate AI report with 20 actionable policy ideas to accelerate AI adoption in Europe, boost competitiveness, and empower innovators.",
+      "url": "https://example.test/cr-089/4-openai-com-global-affairs-accelerating-ai-uptake",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-089-a5",
+      "title": "nascheme/quixote",
+      "description": "<p><strong><a href=\"https://github.com/nascheme/quixote\">nascheme/quixote</a></strong></p>\nA certain vintage of Python web nerd might be delighted to learn that the most recent commit to the Quixote web framework was <a href=\"(https://github.com/nascheme/quixote/commit/7f775cf9d1e7e80fcbb2706b4a1d97",
+      "url": "https://example.test/cr-089/5-simonwillison-net-2026-jul-18-quixote",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-089-a6",
+      "title": "Mistral AI Unveils Fine-Tuning Framework for RAG at Scale",
+      "description": "Mistral's new fine-tuning recipe adapts their open-source models for retrieval-augmented generation tasks, reducing hallucination rates by 40% on knowledge-intensive datasets.",
+      "url": "https://example.test/cr-089/6-mistral-ai-news-finetune-rag-2025",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-089-a7",
+      "title": "Adaptively Robust LLM Monitoring via Activation Watermarking",
+      "description": "arXiv:2603.23171v3 Announce Type: replace-cross \nAbstract: Providers monitor deployed large language models (LLMs) to detect misuse that they cannot prevent. LLM monitoring is deterministic and often openly available, so $\\emph{adaptive}$ attackers with a local copy can search offline for prompts th",
+      "url": "https://example.test/cr-089/7-arxiv-org-abs-2603-23171",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-089-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-089/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-089-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-089/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-089-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-089/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-089-a1",
+    "cr-089-a4",
+    "cr-089-a6",
+    "cr-089-a7",
+    "cr-089-a8",
+    "cr-089-a9",
+    "cr-089-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-089-a2",
+    "cr-089-a3",
+    "cr-089-a5"
+  ],
+  "selection_rationale": "保留了明确属于 AI 研究或产品动态的条目：arXiv 论文涉及 alignment/LLM，OpenAI 新闻与 Mistral 的 RAG 框架是典型 AI 产品/发布，TLDR AI 中也包含具体模型、工具和公司动态。拒绝了非 AI 的 BBC 与非 AI GitHub/Simon Willison 条目，因其不符合日报面向 AI 从业者的筛选标准。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

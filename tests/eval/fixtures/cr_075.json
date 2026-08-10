@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-075-a1",
+      "title": "We split money equally even when one of us earned a lot more",
+      "description": "Hannah and Max continued to pool finances after Max was made redundant but took \"drastic measures\" to cut spending.",
+      "url": "https://example.test/cr-075/1-www-bbc-co-uk-news-articles-cz05rdn1n80o",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-075-a2",
+      "title": "Research with ChatGPT",
+      "description": "Learn how to research with ChatGPT using search and deep research to find up-to-date information, analyze sources, and generate structured insights.",
+      "url": "https://example.test/cr-075/2-openai-com-academy-search-and-deep-research",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-075-a3",
+      "title": "Quoting Bruce Schneier",
+      "description": "<blockquote cite=\"https://www.schneier.com/blog/archives/2026/07/should-you-use-ai-for-a-task-heres-a-simple-way-to-decide.html\"><p>The writing assignments I give my students are gym tasks, not work tasks. I ask them to write policy memos not because the world needs more policy memos. I assign them ",
+      "url": "https://example.test/cr-075/3-simonwillison-net-2026-jul-30-bruce-schneier",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-075-a4",
+      "title": "OpenAI Releases GPT-5 with Enhanced Agentic Capabilities",
+      "description": "OpenAI unveiled GPT-5, featuring native agentic loops, improved tool use, and a new 'Agent Mode' for autonomous task execution. The model also shows significant gains in RAG accuracy.",
+      "url": "https://example.test/cr-075/4-techcrunch-com-2025-04-13-openai-gpt-5-agentic-c",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-075-a5",
+      "title": "AdaMARP: An Adaptive Multi-Agent Interaction Framework for General Immersive Role-Playing",
+      "description": "arXiv:2601.11007v2 Announce Type: replace \nAbstract: LLM role-playing aims to portray arbitrary characters in interactive narratives, yet existing systems often suffer from limited immersion and adaptability. They typically under-model dynamic environmental information and assume largely static scen",
+      "url": "https://example.test/cr-075/5-arxiv-org-abs-2601-11007",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-075-a6",
+      "title": "MinerU-Popo: Universal Post-Processing Model for Structured Document Parsing",
+      "description": "arXiv:2605.24973v2 Announce Type: replace-cross \nAbstract: VLM-based OCR models have become the de facto choice for document parsing, as they can accurately extract page-level elements (e.g., paragraphs within individual pages) together with their bounding boxes and textual content. However, downstr",
+      "url": "https://example.test/cr-075/6-arxiv-org-abs-2605-24973",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-075-a7",
+      "title": "[C++] amnezia-vpn/amnezia-client (13,419 stars)",
+      "description": "Amnezia VPN Client (Desktop+Mobile)",
+      "url": "https://example.test/cr-075/7-github-com-amnezia-vpn-amnezia-client",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-075-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-075/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-075-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-075/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-075-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-075/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-075-a3",
+    "cr-075-a4",
+    "cr-075-a5",
+    "cr-075-a6",
+    "cr-075-a8",
+    "cr-075-a9",
+    "cr-075-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-075-a1",
+    "cr-075-a2",
+    "cr-075-a7"
+  ],
+  "selection_rationale": "已排除明显非 AI 的 BBC 条目，以及 OpenAI Academy 式教程内容；保留了含具体 AI 产品/模型/研究的 Simon Willison、arXiv、AI 公司发布与 TLDR AI 条目。GitHub 候选不含 AI 关键词，故未选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

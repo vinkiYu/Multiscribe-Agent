@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-076-a1",
+      "title": "Using skills",
+      "description": "Learn how to create and use ChatGPT skills to build reusable workflows, automate recurring tasks, and ensure consistent, high-quality outputs.",
+      "url": "https://example.test/cr-076/1-openai-com-academy-skills",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-076-a2",
+      "title": "llm-chat-completions-server 0.1a0",
+      "description": "<p><strong>Release:</strong> <a href=\"https://github.com/simonw/llm-chat-completions-server/releases/tag/0.1a0\">llm-chat-completions-server 0.1a0</a></p>\n        <p>A key goal of the new content-addressable logs <a href=\"https://simonwillison.net/2026/Jul/30/llm-rc1/\">in LLM 0.32rc1</a> was being ab",
+      "url": "https://example.test/cr-076/2-simonwillison-net-2026-jul-30-llm-chat-completio",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-076-a3",
+      "title": "CodeGemma: Google's Open-Source Code Agent with RAG for Repos",
+      "description": "CodeGemma is a new open-source model fine-tuned for coding agents, featuring a built-in RAG module that indexes entire GitHub repositories for context-aware completion and debugging.",
+      "url": "https://example.test/cr-076/3-ai-googleblog-com-2025-04-codegemma-code-agent-o",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-076-a4",
+      "title": "TANDEM: Temporal-Aware Neural Detection for Multimodal Hate Speech",
+      "description": "arXiv:2601.11178v3 Announce Type: replace \nAbstract: Social media platforms are increasingly dominated by long-form multimodal content, where harmful narratives are constructed through a complex interplay of audio, visual, and textual cues. While automated systems can flag hate speech with high accu",
+      "url": "https://example.test/cr-076/4-arxiv-org-abs-2601-11178",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-076-a5",
+      "title": "The MiniMax-M2 Series: Mini Activations Unleashing Max Real-World Intelligence",
+      "description": "arXiv:2605.26494v2 Announce Type: replace-cross \nAbstract: We introduce the MiniMax-M2 series, a family of Mixture-of-Experts language models built around the principle that mini activations can unleash maximum real-world intelligence. The flagship M2 contains 229.9B total parameters with only 9.8B ",
+      "url": "https://example.test/cr-076/5-arxiv-org-abs-2605-26494",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-076-a6",
+      "title": "[Jupyter Notebook] anthropics/claude-cookbooks (50,328 stars)",
+      "description": "A collection of notebooks/recipes showcasing some fun and effective ways of using Claude.",
+      "url": "https://example.test/cr-076/6-github-com-anthropics-claude-cookbooks",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-076-a7",
+      "title": "Chris Mason: What Burnham's first week in power tells us about his agenda",
+      "description": "The fledgling Burnham administration has been seeking to find its feet and make a decent first impression at the same time, the BBC's political editor Chris Mason explains.",
+      "url": "https://example.test/cr-076/7-www-bbc-co-uk-news-articles-cz97ngjpg3lo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-076-a8",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-076/8-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-076-a9",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-076/9-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-076-a10",
+      "title": "DeepSeek IPO plans 📈, Kalshi compute markets ⚡,  Bonsai phone model 📱",
+      "description": "",
+      "url": "https://example.test/cr-076/10-tldr-tech-ai-2026-07-15",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-076-a2",
+    "cr-076-a3",
+    "cr-076-a4",
+    "cr-076-a5",
+    "cr-076-a6"
+  ],
+  "expected_rejected_ids": [
+    "cr-076-a1",
+    "cr-076-a7",
+    "cr-076-a8",
+    "cr-076-a9",
+    "cr-076-a10"
+  ],
+  "selection_rationale": "保留了与 AI 从业者高度相关的条目：包含具体 LLM/agent/RAG 模型或工具的 arXiv 论文、Claude 相关 GitHub 工具，以及 Simon Willison 对 LLM 相关发布的评论。其余候选要么是 OpenAI Academy 式教程、非 AI 新闻，或 TLDR AI 仅标题化罗列且缺少足够具体的新产品信息，因此不选。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}

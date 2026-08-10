@@ -1,0 +1,92 @@
+{
+  "candidates": [
+    {
+      "id": "cr-065-a1",
+      "title": "GradMAP: Faster Layer Pruning with Gradient Metric and Projection Compensation",
+      "description": "arXiv:2602.14649v2 Announce Type: replace \nAbstract: Large Language Models (LLMs) exhibit strong reasoning abilities, but their high computational costs limit their practical deployment. Recent studies reveal significant redundancy in LLMs layers, making layer pruning an active research topic. Layer",
+      "url": "https://example.test/cr-065/1-arxiv-org-abs-2602-14649",
+      "source": "cs.CL updates on arXiv.org"
+    },
+    {
+      "id": "cr-065-a2",
+      "title": "[Python] bradautomates/claude-video (11,709 stars)",
+      "description": "Give Claude the ability to watch any video. /watch downloads, extracts frames, transcribes, hands it all to Claude.",
+      "url": "https://example.test/cr-065/2-github-com-bradautomates-claude-video",
+      "source": "github_trending"
+    },
+    {
+      "id": "cr-065-a3",
+      "title": "Fifty women tell BBC they were pressured into having sex with strangers",
+      "description": "Women said their partners had pushed or coerced them into taking part in swinging.",
+      "url": "https://example.test/cr-065/3-www-bbc-co-uk-news-articles-cly5vvw77pzo",
+      "source": "BBC News"
+    },
+    {
+      "id": "cr-065-a4",
+      "title": "How to use ChatGPT Work for everyday tasks",
+      "description": "Explore practical ChatGPT Work use cases to automate tasks, create deliverables, and turn real inputs into outputs across tools, files, and workflows.",
+      "url": "https://example.test/cr-065/4-openai-com-academy-how-to-use-chatgpt-work-for-e",
+      "source": "OpenAI News"
+    },
+    {
+      "id": "cr-065-a5",
+      "title": "An opinionated guide to which AI to use to do stuff",
+      "description": "<p><strong><a href=\"https://www.oneusefulthing.org/p/an-opinionated-guide-to-which-ai-b22\">An opinionated guide to which AI to use to do stuff</a></strong></p>\nIt's interesting watching the evolution of Ethan Mollick's guide over time. </p>\n<p><a href=\"https://www.oneusefulthing.org/p/using-ai-right",
+      "url": "https://example.test/cr-065/5-simonwillison-net-2026-jul-27-an-opinionated-gui",
+      "source": "Simon Willison's Weblog"
+    },
+    {
+      "id": "cr-065-a6",
+      "title": "Inkling-Small 🧠, GPT-5.6 price cuts 💸, Gemini Robotics 2 🤖",
+      "description": "",
+      "url": "https://example.test/cr-065/6-tldr-tech-ai-2026-07-31",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-065-a7",
+      "title": "Hugging Face launches Agents Hub for sharing and deploying AI agents",
+      "description": "Hugging Face's new Agents Hub allows developers to discover, fork, and deploy pre-built AI agents with RAG and tool-use built in.",
+      "url": "https://example.test/cr-065/7-huggingface-co-blog-agents-hub",
+      "source": "ai_search:perplexity"
+    },
+    {
+      "id": "cr-065-a8",
+      "title": "HealthSLM-Bench: Benchmarking Small Language Models for Mobile and Wearable Healthcare Monitoring",
+      "description": "arXiv:2509.07260v5 Announce Type: replace \nAbstract: Mobile and wearable healthcare monitoring play a vital role in facilitating timely interventions, managing chronic health conditions, and ultimately improving individuals' quality of life. Previous studies on large language models (LLMs) have high",
+      "url": "https://example.test/cr-065/8-arxiv-org-abs-2509-07260",
+      "source": "cs.AI updates on arXiv.org"
+    },
+    {
+      "id": "cr-065-a9",
+      "title": "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳",
+      "description": "",
+      "url": "https://example.test/cr-065/9-tldr-tech-ai-2026-07-13",
+      "source": "TLDR AI"
+    },
+    {
+      "id": "cr-065-a10",
+      "title": "xAI uploads codebases 👨‍💻, Prime Intellect verifiers 🧠, Sakana smart bricks 🧱",
+      "description": "",
+      "url": "https://example.test/cr-065/10-tldr-tech-ai-2026-07-14",
+      "source": "TLDR AI"
+    }
+  ],
+  "expected_selected_ids": [
+    "cr-065-a1",
+    "cr-065-a2",
+    "cr-065-a5",
+    "cr-065-a6",
+    "cr-065-a7",
+    "cr-065-a8",
+    "cr-065-a9",
+    "cr-065-a10"
+  ],
+  "expected_rejected_ids": [
+    "cr-065-a3",
+    "cr-065-a4"
+  ],
+  "selection_rationale": "保留了包含 LLM/agent/RAG/model 等明确 AI 主题的 arXiv、GitHub Trending、Simon Willison 评论以及 TLDR AI 中带具体模型/产品名的条目；OpenAI 教程、BBC 非 AI 和无具体 AI 产品的纯表情标题不纳入。",
+  "schema_version": 2,
+  "labeled_by": "zcode:P57-F4",
+  "labeled_at": "2026-08-10"
+}
