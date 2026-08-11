@@ -62,3 +62,12 @@ database.sqlite
 FRONTEND_PRODUCT_UX_REVIEW.md
 PRODUCT.md
 logo.png
+
+# === 前端迁移遗留 (frontend 已搬到外层 prototype/) ===
+# frontend 整目录的压缩备份，37MB，不入 git
+frontend.zip
+# 前端构建辅助脚本（本地用）
+scripts/frontend_needs_build.ps1
+
+# === IDE / 编辑器 ===
+.idea/
