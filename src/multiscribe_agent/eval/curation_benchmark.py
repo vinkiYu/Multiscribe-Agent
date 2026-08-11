@@ -55,6 +55,9 @@ async def run_curation(provider: AIProvider, sample: CurationSample, target_coun
         items=json.dumps(items, ensure_ascii=False, sort_keys=True),
         feedback="无",
         target_count=target_count,
+        preferred_tags="（无）",
+        blocked_topics="（无）",
+        kb_snippets="（无）",
     )
     response = await provider.generate(
         [AIMessage(role="user", content=prompt)],

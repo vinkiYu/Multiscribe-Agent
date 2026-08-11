@@ -25,19 +25,29 @@ if not exist ".env" (
     echo [WARN] .env is missing. Copy .env.example to .env and add your API keys/webhooks.
 )
 
-rem The backend serves frontend/dist when the production bundle exists.
+rem Decide whether the frontend bundle is missing or stale. We delegate the
+rem cross-platform file-mtime comparison to a separate PowerShell script so
+rem the .bat stays free of fragile quote escaping.
 set "NEEDS_FRONTEND_BUILD="
 if not exist "frontend\dist\index.html" set "NEEDS_FRONTEND_BUILD=1"
-if not exist "frontend\dist\assets" set "NEEDS_FRONTEND_BUILD=1"
+if not exist "frontend\dist\assets"  set "NEEDS_FRONTEND_BUILD=1"
+if not defined NEEDS_FRONTEND_BUILD (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\frontend_needs_build.ps1" ^
+        -ProjectRoot "%PROJECT_ROOT%" ^
+        -DistPath "frontend\dist\index.html" ^
+        -SourceDir "frontend\src" >nul 2>&1
+    if errorlevel 1 set "NEEDS_FRONTEND_BUILD=1"
+)
+
 if defined NEEDS_FRONTEND_BUILD (
     where npm >nul 2>&1
     if errorlevel 1 (
-        echo [ERROR] frontend\dist is missing and npm is not available.
+        echo [ERROR] frontend\dist is missing or stale and npm is not available.
         echo Install Node.js, then run npm install and npm run build in frontend\.
         pause
         exit /b 1
     )
-    echo [INFO] Frontend build not found. Building it now...
+    echo [INFO] Frontend bundle is missing or stale. Rebuilding now...
     if not exist "frontend\node_modules" (
         pushd frontend
         call npm install
@@ -61,7 +71,7 @@ if defined NEEDS_FRONTEND_BUILD (
 )
 
 rem Open the browser only after the health endpoint responds.
-start "" /b powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$deadline=(Get-Date).AddSeconds(30); do { try { $response=Invoke-WebRequest -UseBasicParsing -Uri '%URL%/healthz' -TimeoutSec 1; if ($response.StatusCode -eq 200) { Start-Process '%URL%'; exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $deadline); Start-Process '%URL%'"
+start "" /b powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "$openUrl='%URL%/?v=' + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(); $deadline=(Get-Date).AddSeconds(30); do { try { $response=Invoke-WebRequest -UseBasicParsing -Uri '%URL%/healthz' -TimeoutSec 1; if ($response.StatusCode -eq 200) { Start-Process $openUrl; exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $deadline); Start-Process $openUrl"
 
 echo [INFO] Starting Multiscribe-Agent at %URL%
 echo [INFO] Close this window to stop the service.

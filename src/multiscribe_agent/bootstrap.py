@@ -72,11 +72,15 @@ from multiscribe_agent.observability.tracer import setup_tracer
 from multiscribe_agent.plugins.builtin.adapters.ai_search import AISearchAdapter
 from multiscribe_agent.plugins.builtin.tools.execute_command import ExecuteCommandTool
 from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTool
+from multiscribe_agent.plugins.builtin.tools.search_source_data import SearchSourceDataTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.renderers.feishu_card import render_digest_card
 from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
 from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
+from multiscribe_agent.services.blocked_sources import BlockedSourceFilter
+from multiscribe_agent.services.candidate_filter import CandidateFilter
+from multiscribe_agent.services.chat_service import ChatService
 from multiscribe_agent.services.ingestion import IngestionService
 from multiscribe_agent.services.interop import InteropService
 from multiscribe_agent.services.interop_rate_limit import SlidingWindowLimiter
@@ -97,17 +101,36 @@ from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
+DEFAULT_CHAT_AGENT_ID = "default-chat-agent"
 DEFAULT_OVERVIEW_AGENT_PROMPT = (
     "You are a Chinese daily news digest writer. Given curated items, write a concise, "
     "natural-language overview in Chinese (no more than 180 characters) that summarizes the "
     "highlights. Do not output JSON, markdown, or English headings. Keep necessary product "
     "names and technical terms in their original form."
 )
+DEFAULT_CHAT_AGENT_PROMPT = (
+    "\u4f60\u662f Multiscribe \u7684\u4e2d\u6587\u5bf9\u8bdd\u52a9\u624b\uff0c"
+    "\u4e13\u6ce8\u4e8e\u548c\u7528\u6237\u56f4\u7ed5\u6bcf\u65e5\u8d44\u8baf\u3001\u9605\u8bfb\u504f\u597d\u3001"
+    "\u77e5\u8bc6\u5e93\u5185\u5bb9\u8fdb\u884c\u5bf9\u8bdd\u3002\u56de\u7b54\u65f6\u4f7f\u7528\u7b80\u4f53\u4e2d\u6587\uff0c"
+    "\u8bed\u8a00\u81ea\u7136\u3001\u53e3\u8bed\u5316\uff0c\u5fc5\u8981\u65f6\u4fdd\u7559\u82f1\u6587\u4e13\u6709\u540d\u8bcd"
+    "\uff08\u5982 LLM\u3001RAG\u3001Agent\u3001AgentExecutor \u7b49\uff09\u3002"
+    "\u4e0d\u8981\u8f93\u51fa JSON\u3001Markdown \u6807\u9898\u3001\u5217\u8868\u7ed3\u6784\u6216"
+    "\u4ee3\u7801\u5757\uff1b\u5982\u679c\u4f60\u60f3\u5206\u6761\u8bf4\u660e\uff0c"
+    "\u4f7f\u7528\u81ea\u7136\u6bb5\u843d\u4e0e\u53e5\u53f7\u3001\u95ee\u53f7\u7b49\u6807\u70b9\u5206\u9694\u3002"
+    "\u4e0d\u8981\u7f16\u9020\u6765\u6e90\u94fe\u63a5\u3001\u6587\u7ae0\u6807\u9898\u6216\u6570\u636e\uff1b"
+    "\u5982\u679c\u4f60\u4e0d\u77e5\u9053\u7b54\u6848\u6216\u7cfb\u7edf\u4e0a\u4e0b\u6587\u4e2d"
+    "\u6ca1\u6709\u63d0\u4f9b\u5bf9\u5e94\u4fe1\u606f\uff0c\u8bf7\u5982\u5b9e\u544a\u77e5\u7528\u6237\u4fe1\u606f\u4e0d\u8db3\u3002"
+    "\u53ef\u4ee5\u53c2\u8003\u7cfb\u7edf\u6ce8\u5165\u7684\u957f\u671f\u8bb0\u5fc6\u4e0e\u77e5\u8bc6\u5e93\u7247\u6bb5"
+    "\u4f5c\u4e3a\u56de\u7b54\u4f9d\u636e\uff0c\u4f46\u4e0d\u8981\u590d\u8ff0\u8fd9\u4e9b\u7247\u6bb5\u7684"
+    "\u5185\u90e8 ID \u6216\u8c03\u8bd5\u5b57\u6bb5\u3002"
+    "\u5982\u679c\u7528\u6237\u5e0c\u671b\u66f4\u7cbe\u786e\u7684\u56de\u7b54\uff0c"
+    "\u53ef\u4ee5\u8bf7\u7528\u6237\u8865\u5145\u80cc\u666f\u4fe1\u606f\u6216\u7ee7\u7eed\u8ffd\u95ee\u3002"
+)
 DEFAULT_DAILY_AI_NEWS_TASK_ID = "daily-ai-news"
 _LEGACY_DAILY_AI_NEWS_TOP_N = frozenset({5, 10})
 _DEFAULT_DAILY_AI_NEWS_TOP_N = 12
 _LEGACY_DAILY_AI_NEWS_RSS_URLS = [
-    "https://huggingface.co/blog/feed.xml",
+    "https://huggingface.co/daily-papers/rss.xml",
     "https://openai.com/news/rss.xml",
     "https://www.deeplearning.ai/the-batch/rss/",
 ]
@@ -165,6 +188,19 @@ class _MutableLoopAssessment:
     feedback: str
     score: float
     usage: TokenUsage | None = None
+
+
+class _ChatAgentRunner:
+    """Adapt AgentExecutor.run_result to ChatService's ChatAgentRunner protocol."""
+
+    def __init__(self, executor: AgentExecutor) -> None:
+        """Hold a reference to the bootstrap-built executor."""
+        self._executor = executor
+
+    async def run(self, agent_def: AgentDefinition, user_input: str) -> str:
+        """Run one chat turn through the shared executor and return its text content."""
+        result = await self._executor.run_result(agent_def, user_input)
+        return result.content
 
 
 class _StoredAgentStepExecutor:
@@ -283,6 +319,7 @@ class ServiceContext:
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
         self.memory_service: MemoryService | None = None
+        self.chat_service: object | None = None
         self.skill_service: SkillService | None = None
         self.interop_service: InteropService | None = None
         self.interop_limiter: SlidingWindowLimiter | None = None
@@ -352,6 +389,9 @@ class ServiceContext:
         tools = ToolRegistry.get_instance()
         tools.register_tool(ExecuteCommandTool(Path.cwd()))
         tools.register_tool(ReadArtifactTool())
+        tools.register_tool(
+            SearchSourceDataTool(source_data, self.memory_service, CandidateFilter(20))
+        )
         self.tools = tools
         default_provider = self._provider_for_default()
         runtime_adapters = (
@@ -440,6 +480,17 @@ class ServiceContext:
         self.source_data = source_data
         await self._bootstrap_default_curation_agent(entities)
         await self._bootstrap_default_overview_agent(entities)
+        await self._bootstrap_default_chat_agent(entities)
+        chat_raw = await entities.get("agents", DEFAULT_CHAT_AGENT_ID)
+        if (
+            chat_raw is not None
+            and self.chat_service is not None
+            and self.agent_executor is not None
+        ):
+            chat_def = AgentDefinition.model_validate(chat_raw)
+            chat_service = self.chat_service
+            if isinstance(chat_service, ChatService):
+                chat_service.bind_agent(_ChatAgentRunner(self.agent_executor), chat_def)
         await self._bootstrap_daily_ai_news_schedule(entities)
         await self.scheduler.start()
         self._initialized = True
@@ -516,7 +567,20 @@ class ServiceContext:
         )
         if self.click_events is None:
             raise RuntimeError("click-event repository initialization failed")
-        self.preference_feedback = PreferenceFeedbackService(self.click_events, preferences)
+        default_provider = self._provider_for_default()
+        self.preference_feedback = PreferenceFeedbackService(
+            self.click_events,
+            preferences,
+            extractor=PreferenceExtractor(self.db, self.publish_history, default_provider),
+        )
+        from multiscribe_agent.memory.chat_sessions import ChatSessionRepository
+        from multiscribe_agent.services.chat_service import ChatService
+
+        self.chat_service = ChatService(
+            ChatSessionRepository(self.db),
+            preferences,
+            PreferenceExtractor(self.db, self.publish_history, default_provider),
+        )
 
     def _provider_for_default(self) -> AIProvider | None:
         """Create the default curator provider only when a usable credential exists."""
@@ -593,6 +657,8 @@ class ServiceContext:
             preference_feedback=self.preference_feedback,
             iteration_store=self.iteration_store,
             curation_evaluations=self.curation_evaluations,
+            alert_engine=self.alerts,
+            blocked_source_filter=BlockedSourceFilter(self.settings.default_digest_blocked_sources),
         )
         run_date = run_id.split(":", 1)[1] if run_id is not None and ":" in run_id else None
         return await pipeline.run(run_date=run_date, workflow_run_id=run_id)
@@ -664,6 +730,33 @@ class ServiceContext:
             or existing.system_prompt != definition.system_prompt
         ):
             await entities.save("agents", OVERVIEW_AGENT_ID, definition.model_dump(mode="json"))
+
+    async def _bootstrap_default_chat_agent(self, entities: EntityJsonRepository) -> None:
+        """Persist the chat assistant declaration once; update it if settings have drifted."""
+        raw = await entities.get("agents", DEFAULT_CHAT_AGENT_ID)
+        definition = AgentDefinition(
+            id=DEFAULT_CHAT_AGENT_ID,
+            name="Default Chat Agent",
+            description="Conversational assistant used by the chat API surface.",
+            system_prompt=DEFAULT_CHAT_AGENT_PROMPT,
+            provider_id=self.settings.default_curation_provider_id,
+            model=self.settings.default_curation_model,
+            temperature=self.settings.default_curation_temperature,
+            tool_ids=["search_source_data"],
+        )
+        if raw is None:
+            await entities.save("agents", DEFAULT_CHAT_AGENT_ID, definition.model_dump(mode="json"))
+            return
+
+        existing = AgentDefinition.model_validate(raw)
+        if (
+            existing.model != definition.model
+            or existing.temperature != definition.temperature
+            or existing.provider_id != definition.provider_id
+            or existing.system_prompt != definition.system_prompt
+            or "search_source_data" not in existing.tool_ids
+        ):
+            await entities.save("agents", DEFAULT_CHAT_AGENT_ID, definition.model_dump(mode="json"))
 
     async def _bootstrap_daily_ai_news_schedule(self, entities: EntityJsonRepository) -> None:
         """Create or update the default multi-source AI-news schedule."""

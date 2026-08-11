@@ -159,6 +159,35 @@ class FakeMemoryService:
         return self._entries
 
 
+class FakeKnowledgeService:
+    """Tiny KB double that returns deterministic snippets without embedding calls."""
+
+    def __init__(
+        self, snippets_by_query: dict[str, list[str]] | None = None, fail: bool = False
+    ) -> None:
+        self._snippets = snippets_by_query or {}
+        self._fail = fail
+        self.queries: list[str] = []
+
+    async def search(self, query: str, *, top_k: int = 3) -> list[object]:
+        del top_k
+        self.queries.append(query)
+        if self._fail:
+            raise RuntimeError("kb unavailable")
+        from multiscribe_agent.knowledge.retriever import RetrievalHit
+
+        return [
+            RetrievalHit(
+                chunk_id=f"chunk-{index}",
+                document_id=f"doc-{query}",
+                content=text,
+                score=1.0 - index * 0.1,
+                source="kb",
+            )
+            for index, text in enumerate(self._snippets.get(query, []))
+        ]
+
+
 @dataclass(frozen=True)
 class Assessment:
     """Small reflection result compatible with P10's loop protocol."""
@@ -318,6 +347,9 @@ def _pipeline(
     archive_repo: DailyDigestArchive | None = None,
     publish_history: PublishHistory | None = None,
     ingestion_counts: dict[str, int] | None = None,
+    blocked_source_filter: object | None = None,
+    preference_loader: object | None = None,
+    kb_snippet_provider: object | None = None,
 ) -> tuple[DailyDigestPipeline, FakeCurator, FakeIngestionService]:
     """Assemble a fully mocked pipeline with a duplicate URL source record."""
     config = DailyDigestConfig(
@@ -361,6 +393,9 @@ def _pipeline(
             memory_service=memory_service,
             pushed_content_repo=pushed_content_repo,
             archive_repo=archive_repo,
+            blocked_source_filter=blocked_source_filter,
+            preference_loader=preference_loader,
+            kb_snippet_provider=kb_snippet_provider,
         ),
         curator,
         ingestion,
@@ -505,6 +540,9 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         items=json.dumps(projected, ensure_ascii=False, separators=(",", ":")),
         feedback="无",
         target_count=12,
+        preferred_tags="（无）",
+        blocked_topics="（无）",
+        kb_snippets="（无）",
     )
     old_prompt = CURATE_PROMPT.format(
         items=json.dumps(
@@ -514,6 +552,9 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         ),
         feedback="无",
         target_count=12,
+        preferred_tags="（无）",
+        blocked_topics="（无）",
+        kb_snippets="（无）",
     )
 
     # Core minimal fields stay; full description and metadata must not leak.
@@ -1471,3 +1512,108 @@ async def test_score_reason_saved_to_digest_item() -> None:
     item = next(item for item in result["curated"] if item["url"].endswith("/one"))
     assert item["score_reason"] == "high relevance"
     assert GoodPublisher.received[0].items[0].score_reason == "high relevance"
+
+
+@pytest.mark.asyncio
+async def test_curate_prompt_carries_user_preferences_and_kb_snippets() -> None:
+    """CURATE_PROMPT surfaces preferred_tags, blocked_topics, and KB snippets."""
+    from multiscribe_agent.services.blocked_sources import BlockedSourceFilter
+
+    curator = MemoryAwareFakeCurator([_curation_json(), _curation_json(), "overview"])
+    memory = FakeMemoryService(
+        UserPreferences(
+            preferred_tags=["agent", "rag"],
+            block_sources=[],
+            push_time="09:00",
+            importance_threshold=0,
+            blocked_topics=["融资公告"],
+        ),
+        [],
+    )
+    kb = FakeKnowledgeService(
+        snippets_by_query={
+            "One": ["RAG 实战笔记：检索增强生成的工程要点"],
+            "Three": ["Agent 框架对比与选型建议"],
+        }
+    )
+
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        curator=curator,
+        memory_service=memory,
+        blocked_source_filter=BlockedSourceFilter([]),
+        kb_snippet_provider=lambda items: [
+            "RAG 实战笔记：检索增强生成的工程要点",
+            "Agent 框架对比与选型建议",
+        ][: len(items) + 1],
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    prompt = curator.inputs[0]
+    assert "关注主题：agent、rag" in prompt
+    assert "不看主题：融资公告" in prompt
+    assert "RAG 实战笔记：检索增强生成的工程要点" in prompt
+    assert result["result_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_blocked_sources_filter_strips_candidates_before_curation() -> None:
+    """Items from blocked sources are dropped during ingest and reported in stats."""
+    from multiscribe_agent.services.blocked_sources import BlockedSourceFilter
+
+    curator = MemoryAwareFakeCurator([_curation_json(), _curation_json(), "overview"])
+    pipeline, curator_dbl, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        curator=curator,
+        adapter_ids=["rss", "github_trending"],
+        blocked_source_filter=BlockedSourceFilter(["github_trending"]),
+    )
+    # Inject a github_trending row into the candidates list for this run.
+    repository = pipeline._source_data_repo
+    assert isinstance(repository, FakeSourceDataRepository)
+    repository._entries.append(
+        _source("gh", "https://github.com/example/project", "Trending project").model_copy(
+            update={"source": "github_trending", "adapter_name": "github_trending"}
+        )
+    )
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["blocked_sources_count"] == 1
+    assert "Trending project" not in curator_dbl.inputs[0]
+
+
+@pytest.mark.asyncio
+async def test_blocked_sources_count_is_zero_when_blocklist_empty() -> None:
+    """Without any blocked sources the run stats report zero drops at ingest time."""
+    curator = MemoryAwareFakeCurator([_curation_json(), _curation_json(), "overview"])
+    pipeline, _, _ = _pipeline([_curation_json(), _curation_json(), "overview"], curator=curator)
+
+    result = await pipeline.run(run_date="2026-07-17")
+
+    assert result["blocked_sources_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_kb_snippet_provider_replaces_kb_retrieval() -> None:
+    """A supplied kb_snippet_provider short-circuits the KB lookup during curation."""
+    curator = MemoryAwareFakeCurator([_curation_json(), _curation_json(), "overview"])
+    memory = FakeMemoryService(UserPreferences([], [], "09:00", 0), [])
+    captured: dict[str, object] = {}
+
+    def provider(items: list[object]) -> list[str]:
+        captured["items"] = items
+        return ["Pre-computed KB note"]
+
+    pipeline, _, _ = _pipeline(
+        [_curation_json(), _curation_json(), "overview"],
+        curator=curator,
+        memory_service=memory,
+        kb_snippet_provider=provider,
+    )
+
+    await pipeline.run(run_date="2026-07-17")
+
+    assert captured["items"]  # provider was called with the candidate list
+    assert "Pre-computed KB note" in curator.inputs[0]

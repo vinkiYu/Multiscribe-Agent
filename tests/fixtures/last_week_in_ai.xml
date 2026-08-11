@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Last Week in AI</title>
+    <link>https://www.lastweekin.ai/</link>
+    <description>Weekly summary of AI news and research.</description>
+    <item>
+      <guid>lwia-2026-07-13-001</guid>
+      <title>Anthropic expands Claude Code with background agents</title>
+      <link>https://www.lastweekin.ai/p/anthropic-claude-code-background-agents</link>
+      <description>Anthropic added long-running background agents to Claude Code with new sandboxing controls.</description>
+      <pubDate>Sun, 13 Jul 2026 09:30:00 +0000</pubDate>
+      <author>lwia-editor</author>
+      <category>AI</category>
+    </item>
+  </channel>
+</rss>

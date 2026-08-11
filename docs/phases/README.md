@@ -213,3 +213,14 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | P53-C | 数据源 FTS 搜索（GET /api/source-data/search 路由 + pages/source-search.tsx + sourceDataApi + sidebar 数据搜索入口）| ✅ **已通过**（2026-07-30）| ✅ 19fe474 | 10 条验收；FTS5/jieba 全文搜索上线；<mark> 高亮 + 空查询 400 + 非法 FTS 表达式返回空；前端页搜索栏+结果列表+空态；app.py 注册路由；621→624 passed；ruff/mypy clean；零回归 |
 | P53-D | 性能优化（save_batch 去掉双 COUNT(*) + get_recent_candidates 单查询 + SQL audit 批量写）| ✅ **已通过**（2026-07-30）| ✅ d6fec7c | 6 条验收；MAX(id) 差值替代 COUNT(*) + 单 UNION 查询 + 聚合审计 INSERT；624 passed；ruff/mypy clean；零回归 |
 | P53-E | 文档补给（API Reference + Configuration Reference + Deployment Guide + Troubleshooting Guide）| ✅ **已通过**（2026-07-30）| ✅ 8bd7e61 | 5 条验收；API Reference 503行 + Config 251行 + Deployment 178行 + Troubleshooting 207行；624 passed；ruff/mypy clean |
+
+## 阶段六B+（用户自主链路 - P58 收尾 + 聊天筛选主线，规划中）
+
+> 来源：2026-08-11 用户自主链路分析。P58 已落地策展偏好注入/采集过滤/KB召回/对话抽取/持久化/API/前端，**唯一残留**：chat→AgentExecutor 引擎未接线（bootstrap.py:530 构造 ChatService 时 agent_runner/agent_def 用默认 None，聊天永远回占位语）。本批次先收尾此断点，再开 P60 聊天筛选主线。
+
+| 包 | 名称 | 状态 | 通过日期 | 备注 |
+| :--- | :--- | :--- | :--- | :--- |
+| P58 | 用户偏好深化 + 对话 + Postgres（合并验收） | 🟢 已通过 | 2026-08-11 | 与 P59 合并验收；工作区落地：策展 prompt 注入 preferred_tags/blocked_topics + 采集阶段 block_sources 过滤(blocked_sources.py) + KB 召回进策展(kb_snippets) + extract_from_conversation/merge_into + chat 持久化层(chat_sessions.py 双方言) + chat API/前端 + 4 新 RSS 适配器(hacker_news/hf_daily_papers/last_week_in_ai/tldr_ai) + 前端重构。**注意：大量改动未独立提交，与 P59 混在工作区** |
+| [P59](./P59-聊天Agent引擎接线收尾.md) | 聊天 Agent 引擎接线收尾 | 🟢 已通过 | 2026-08-11 | **核心接线 100% 落地**(规划独立核实)：bind_agent + default-chat-agent 幂等创建 + _ChatAgentRunner + init() 三重守卫接线；6 用例实跑 18 passed 全绿；ProviderError 兜底顺手解决。REVIEW 经一轮修订(§6.1 git status 误导+§3.5 baseline 功劳归属)后六标准全绿。chat.py 2行 isinstance 守卫越界白名单，裁定为可接受类型narrowing。聊天从哑的(占位语)变活的(真调LLM) |
+| [P60](./P60-共享候选筛选器抽取.md) | 共享候选筛选器抽取（聊天筛选主线 第1包）| 🟢 已通过 | 2026-08-11 | **纯重构零行为变化**(规划独立核实)：抽 DigestMemoryContextBuilder._filter_and_rank/_tag_matches + daily_digest._sort_fallback_candidates 为共享 CandidateFilter service(filter_and_rank/fallback_rank/_tag_matches)；builder 改用注入 filter(向后兼容)；pipeline+step_executor 持 filter；两处 fallback 改调。**6 单元测试锁定行为契约**(block_sources/blocked_topics/preferred_tags/candidate_limit/fallback/空偏好)+既有5 daily_digest用例零回归(实跑11 passed)；ruff白名单全绿；mypy仅chat.py黑名单2错误(P60净减11)。P61接入点已就绪 |
+| [P61](./P61-聊天筛选工具.md) | 聊天筛选工具（SearchSourceDataTool + chat agent 挂载，第2包）| 🟢 已通过 | 2026-08-11 | **用户自主链路核心闭环完成**(规划独立核实)：新增 SearchSourceDataTool(BaseTool) handler 六步逻辑(参校验→FTS多取3倍→SourceData转UnifiedData→读偏好带降级→CandidateFilter过滤排序→塑形{id,title,summary,url,source}截150字)；返回含blocked计数；构造函数注入3依赖；**漂移检测隐藏陷阱已修**(:758 加 not in existing.tool_ids 让老记录升级自动补工具)；两条降级路径(memory None+FTS异常)被测试覆盖；5用例实跑全绿+合并P59/P60链路24 passed零回归；ruff白名单全绿；mypy净增0错误。闭环P58→P59→P60→P61「AI帮用户从数据源筛选资讯」完整兑现 |

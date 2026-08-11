@@ -76,7 +76,7 @@ WECOM_WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your-key
 uv run python -m multiscribe_agent digest
 ```
 
-The default source is the Hugging Face Blog RSS feed. It curates Top-12 items and pushes to configured Feishu and WeCom bots.
+The default source is the Hugging Face Daily Papers RSS feed. It curates Top-12 items and pushes to the publishers enabled in `.env` (Feishu and WeCom by default).
 
 ---
 

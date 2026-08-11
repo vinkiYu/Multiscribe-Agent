@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>TLDR AI</title>
+    <link>https://tldr.tech/ai</link>
+    <description>AI industry newsletter summary.</description>
+    <item>
+      <guid>tldr-2026-07-16-001</guid>
+      <title>OpenAI ships agent evaluation harness</title>
+      <link>https://tldr.tech/ai/2026-07-16/001</link>
+      <description>OpenAI released an evaluation harness for agentic workflows, including trace replay tooling.</description>
+      <pubDate>Wed, 16 Jul 2026 13:00:00 +0000</pubDate>
+      <author>tldr-editors</author>
+      <category>AI</category>
+    </item>
+  </channel>
+</rss>

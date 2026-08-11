@@ -1,9 +1,10 @@
-"""Preference extraction from existing publish-history outcomes."""
+"""Preference extraction from publish history and free-form conversation."""
 
 from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -14,12 +15,24 @@ from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.domain.models import AIMessage, MemoryEntry
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.llm.provider import AIProvider
+from multiscribe_agent.memory.preference_store import UserPreferences
 
 log = structlog.get_logger(__name__)
 
+MAX_CONVERSATION_DELTA_TAGS = 20
+_CONVERSATION_PROMPT = (
+    "分析以下用户与 AI 的对话，提取稳定的内容偏好。"
+    "返回严格 JSON 对象，包含以下可选字段："
+    "preferred_tags（关注主题，字符串数组）"
+    "block_sources（不想看的来源，字符串数组）"
+    "blocked_topics（不想看的主题，字符串数组）"
+    "每项最多 5 个，缺失则省略字段。"
+    "\n对话：\n{messages}"
+)
+
 
 class PreferenceExtractor:
-    """Infer durable interest signals from previously published content."""
+    """Infer durable interest signals from history and conversations."""
 
     def __init__(
         self,
@@ -63,6 +76,51 @@ class PreferenceExtractor:
             )
         return entries
 
+    async def extract_from_conversation(self, messages: Sequence[AIMessage]) -> dict[str, object]:
+        """Return a preference delta parsed from a user/assistant conversation."""
+        if self._llm_provider is None:
+            log.info("memory_conversation_extraction_skipped_no_provider")
+            return {}
+        if not messages:
+            return {}
+        rendered = "\n".join(f"{msg.role}: {msg.content}" for msg in messages)
+        try:
+            response = await self._llm_provider.generate(
+                [AIMessage(role="user", content=_CONVERSATION_PROMPT.format(messages=rendered))]
+            )
+        except (ProviderError, RuntimeError, ValueError) as exc:
+            log.warning(
+                "memory_conversation_extraction_failed",
+                error_type=type(exc).__name__,
+            )
+            return {}
+        return _parse_conversation_delta(response.content)
+
+    def merge_into(
+        self,
+        preferences: UserPreferences,
+        delta: dict[str, object],
+        *,
+        max_tags: int = MAX_CONVERSATION_DELTA_TAGS,
+    ) -> UserPreferences:
+        """Fold one conversation delta into existing preferences without overwriting manual fields."""
+        if not delta:
+            return preferences
+        preferred_tags = _merge_list(
+            preferences.preferred_tags, delta.get("preferred_tags"), max_tags
+        )
+        block_sources = _merge_list(preferences.block_sources, delta.get("block_sources"), max_tags)
+        blocked_topics = _merge_list(
+            preferences.blocked_topics, delta.get("blocked_topics"), max_tags
+        )
+        return UserPreferences(
+            preferred_tags=preferred_tags,
+            block_sources=block_sources,
+            push_time=preferences.push_time,
+            importance_threshold=preferences.importance_threshold,
+            blocked_topics=blocked_topics,
+        )
+
     async def _classify_tags(self, content: str, fallback_tags: list[str]) -> list[str]:
         """Augment deterministic tags with a best-effort, JSON-only LLM classification."""
         fallback = list(dict.fromkeys(fallback_tags))
@@ -88,3 +146,31 @@ class PreferenceExtractor:
         except (json.JSONDecodeError, ProviderError, ValueError) as exc:
             log.warning("memory_tag_classification_failed", error_type=type(exc).__name__)
             return fallback
+
+
+def _parse_conversation_delta(content: str) -> dict[str, object]:
+    """Parse a JSON delta payload from the conversation extraction prompt."""
+    if not content or not content.strip():
+        return {}
+    try:
+        decoded = json.loads(content)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(decoded, dict):
+        return {}
+    return decoded
+
+
+def _merge_list(existing: list[str], candidate: object, max_items: int) -> list[str]:
+    """Append normalized candidate strings to the existing list, deduplicated and bounded."""
+    if not isinstance(candidate, list):
+        return list(existing)
+    cleaned: list[str] = []
+    for item in candidate:
+        if not isinstance(item, str):
+            continue
+        value = item.strip()
+        if value:
+            cleaned.append(value)
+    merged = list(dict.fromkeys([*existing, *cleaned]))
+    return merged[:max_items]

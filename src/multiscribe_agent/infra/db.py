@@ -774,6 +774,26 @@ CREATE TABLE IF NOT EXISTS kb_chunks (
     metadata TEXT NOT NULL DEFAULT '{}'
 );
 
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    message_count INTEGER NOT NULL DEFAULT 0,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated ON chat_sessions(updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, created_at);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS source_data_fts USING fts5(
     title,
     description,
@@ -951,6 +971,8 @@ async def init_database(
         )
 
     if db_driver == "postgres":
+        from multiscribe_agent.infra.postgres.schema_business import ALL_BUSINESS_TABLES
+        from multiscribe_agent.infra.postgres.schema_chat import ALL_CHAT_SCHEMAS
         from multiscribe_agent.infra.postgres.schema_fts import (
             AGENT_MEMORIES_FTS_INDEXES,
             AGENT_MEMORIES_FTS_TABLE,
@@ -978,6 +1000,10 @@ async def init_database(
 
         async with pool.acquire() as connection:
             await connection.execute(PGVECTOR_EXTENSION)
+            # Base business tables must exist before FTS shadow tables that
+            # reference them (source_data_fts / agent_memories_fts / kb_chunks_fts).
+            for statement in ALL_BUSINESS_TABLES:
+                await connection.execute(statement)
             await connection.execute(CHUNK_VECTORS_TABLE)
             await connection.execute(SOURCE_DATA_FTS_TABLE)
             for statement in SOURCE_DATA_FTS_INDEXES:
@@ -989,6 +1015,8 @@ async def init_database(
                 await connection.execute(statement)
             await connection.execute(_ALERT_HISTORY_POSTGRES_TABLE)
             for statement in _ALERT_HISTORY_POSTGRES_INDEXES:
+                await connection.execute(statement)
+            for statement in ALL_CHAT_SCHEMAS:
                 await connection.execute(statement)
 
         await database.migrate_daily_digest()

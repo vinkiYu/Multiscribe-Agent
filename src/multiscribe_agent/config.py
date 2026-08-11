@@ -232,6 +232,10 @@ def _default_adapters() -> list[AdapterConfig]:
         AdapterConfig(id="follow-api", type="FollowApiAdapter"),
         AdapterConfig(id="ai-search", type="AISearchAdapter"),
         AdapterConfig(id="rss-adapter", type="RSSAdapter"),
+        AdapterConfig(id="hf-daily-papers", type="HFDailyPapersAdapter"),
+        AdapterConfig(id="tldr-ai", type="TLDRAIAdapter"),
+        AdapterConfig(id="hacker-news", type="HackerNewsAdapter"),
+        AdapterConfig(id="last-week-in-ai", type="LastWeekInAIAdapter"),
     ]
 
 
@@ -416,6 +420,14 @@ class SystemSettings(BaseSettings):
             "DEFAULT_DIGEST_ADAPTER_IDS", "MULTISCRIBE_DEFAULT_DIGEST_ADAPTER_IDS"
         ),
     )
+    default_digest_blocked_sources: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: [
+            "The GitHub Blog",
+        ],
+        validation_alias=AliasChoices(
+            "DEFAULT_DIGEST_BLOCKED_SOURCES", "MULTISCRIBE_DEFAULT_DIGEST_BLOCKED_SOURCES"
+        ),
+    )
     adapter_health_failure_threshold: int = Field(
         default=3,
         ge=1,
@@ -441,14 +453,13 @@ class SystemSettings(BaseSettings):
     )
     daily_ai_news_rss_urls: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
-            "https://huggingface.co/blog/feed.xml",
+            "https://huggingface.co/daily-papers/rss.xml",
+            "https://tldr.tech/api/rss/ai",
+            "https://news.ycombinator.com/rss",
+            "https://www.lastweekin.ai/feed",
             "https://openai.com/news/rss.xml",
             "https://blog.google/technology/ai/rss/",
-            "https://aws.amazon.com/blogs/machine-learning/feed/",
-            "https://export.arxiv.org/rss/cs.AI",
-            "https://export.arxiv.org/rss/cs.CL",
             "https://simonwillison.net/atom/everything/",
-            "https://github.blog/feed/",
         ],
         validation_alias=AliasChoices(
             "DAILY_AI_NEWS_RSS_URLS", "MULTISCRIBE_DAILY_AI_NEWS_RSS_URLS"

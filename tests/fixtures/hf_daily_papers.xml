@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Hugging Face Daily Papers</title>
+    <link>https://huggingface.co/papers</link>
+    <description>Trending ML papers curated by the HF community.</description>
+    <item>
+      <guid>hf-paper-2407-00001</guid>
+      <title>Scaling Mixture-of-Experts without Quality Loss</title>
+      <link>https://huggingface.co/papers/2407.00001</link>
+      <description>An empirical study of routing strategies that preserve accuracy when adding experts.</description>
+      <pubDate>Wed, 16 Jul 2026 07:15:00 +0000</pubDate>
+      <author>paper-author</author>
+      <category>cs.LG</category>
+    </item>
+  </channel>
+</rss>
