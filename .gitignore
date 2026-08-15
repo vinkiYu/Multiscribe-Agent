@@ -1,4 +1,6 @@
 .env
+.env.local
+*.tsbuildinfo
 data/
 # Keep only checked-in curation baselines under the otherwise runtime-only data tree.
 !data/
