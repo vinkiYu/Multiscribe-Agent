@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncIterator
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
 from multiscribe_agent.api.deps import get_context
 from multiscribe_agent.api.security import get_optional_user, is_admin_user
 from multiscribe_agent.bootstrap import ServiceContext
+from multiscribe_agent.domain.models import ChatMessage, ChatSession
 from multiscribe_agent.services.chat_service import ChatService
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -95,6 +100,39 @@ async def send_message(
     return _message_response(reply)
 
 
+@router.post("/sessions/{session_id}/messages/stream")
+async def stream_message(
+    session_id: str,
+    payload: dict[str, object],
+    context: ServiceContext = Depends(get_context),  # noqa: B008
+    user: dict[str, object] | None = Depends(get_optional_user),  # noqa: B008
+) -> StreamingResponse:
+    """Stream chat events as Server-Sent Events while the assistant turn runs."""
+    await _require_user(context, user)
+    content = str(payload.get("content", "") or "")
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="content must not be empty")
+    service = _service(context)
+
+    async def event_source() -> AsyncIterator[bytes]:
+        async for event in service.stream_message(session_id, content):
+            event_type = str(event.get("type", "message"))
+            yield (
+                f"event: {event_type}\n"
+                f"data: {json.dumps(event, ensure_ascii=False, default=str)}\n\n"
+            ).encode()
+
+    return StreamingResponse(
+        event_source(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 @router.delete("/sessions/{session_id}")
 async def delete_session(
     session_id: str,
@@ -108,7 +146,7 @@ async def delete_session(
     return {"status": "deleted"}
 
 
-def _session_response(session) -> dict[str, object]:
+def _session_response(session: ChatSession) -> dict[str, object]:
     """Serialize a ChatSession without leaking internal metadata."""
     return {
         "id": session.id,
@@ -119,7 +157,7 @@ def _session_response(session) -> dict[str, object]:
     }
 
 
-def _message_response(message) -> dict[str, object]:
+def _message_response(message: ChatMessage) -> dict[str, object]:
     """Serialize a ChatMessage into a JSON-friendly payload."""
     return {
         "id": message.id,

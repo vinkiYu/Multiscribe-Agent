@@ -224,3 +224,24 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | [P59](./P59-聊天Agent引擎接线收尾.md) | 聊天 Agent 引擎接线收尾 | 🟢 已通过 | 2026-08-11 | **核心接线 100% 落地**(规划独立核实)：bind_agent + default-chat-agent 幂等创建 + _ChatAgentRunner + init() 三重守卫接线；6 用例实跑 18 passed 全绿；ProviderError 兜底顺手解决。REVIEW 经一轮修订(§6.1 git status 误导+§3.5 baseline 功劳归属)后六标准全绿。chat.py 2行 isinstance 守卫越界白名单，裁定为可接受类型narrowing。聊天从哑的(占位语)变活的(真调LLM) |
 | [P60](./P60-共享候选筛选器抽取.md) | 共享候选筛选器抽取（聊天筛选主线 第1包）| 🟢 已通过 | 2026-08-11 | **纯重构零行为变化**(规划独立核实)：抽 DigestMemoryContextBuilder._filter_and_rank/_tag_matches + daily_digest._sort_fallback_candidates 为共享 CandidateFilter service(filter_and_rank/fallback_rank/_tag_matches)；builder 改用注入 filter(向后兼容)；pipeline+step_executor 持 filter；两处 fallback 改调。**6 单元测试锁定行为契约**(block_sources/blocked_topics/preferred_tags/candidate_limit/fallback/空偏好)+既有5 daily_digest用例零回归(实跑11 passed)；ruff白名单全绿；mypy仅chat.py黑名单2错误(P60净减11)。P61接入点已就绪 |
 | [P61](./P61-聊天筛选工具.md) | 聊天筛选工具（SearchSourceDataTool + chat agent 挂载，第2包）| 🟢 已通过 | 2026-08-11 | **用户自主链路核心闭环完成**(规划独立核实)：新增 SearchSourceDataTool(BaseTool) handler 六步逻辑(参校验→FTS多取3倍→SourceData转UnifiedData→读偏好带降级→CandidateFilter过滤排序→塑形{id,title,summary,url,source}截150字)；返回含blocked计数；构造函数注入3依赖；**漂移检测隐藏陷阱已修**(:758 加 not in existing.tool_ids 让老记录升级自动补工具)；两条降级路径(memory None+FTS异常)被测试覆盖；5用例实跑全绿+合并P59/P60链路24 passed零回归；ruff白名单全绿；mypy净增0错误。闭环P58→P59→P60→P61「AI帮用户从数据源筛选资讯」完整兑现 |
+
+## 阶段六C（控制台前端打磨 - prototype 对接修复，规划中）
+
+> 来源：2026-08-11 prototype 前端全面审计（13 页面 + api.ts + App.tsx 对照后端 24 路由文件）。不含 Agent 配置 UI（决策者排除）。
+> **关键前提**：api.ts mock fallback 默认开启，断裂端点静默"假成功"，验收须 `VITE_USE_MOCK=false`。
+
+| 包 | 名称 | 状态 | 通过日期 | 备注 |
+| :--- | :--- | :--- | :--- | :--- |
+| [P62](./P62-前端对接与布局修复总览.md) | 前端对接与布局修复总览 | 📋 已规划 | — | **总览计划书**(非执行包)：审计 13 页面汇总 9 核心断裂(F1-F9)+20 体验缺陷(M1-M20)+8 系统性问题(S1-S8)。**决策者全选 A**(2026-08-11)：完整方案不止血→重打包 4 子包(后端先行)。附 api.ts 死方法清单(5红断裂+7黄未用)。关键前提:mock fallback 默认开掩盖 404,验收须 VITE_USE_MOCK=false |
+| [P62.1](./P62.1-后端端点补全.md) | 后端端点补全（前端对接地基）| 🟢 已通过 | 2026-08-11 | **3 类端点 100% 落地**(规划独立核实)：BE1 SourceDataRepository.update_status+POST /batch-status通用端点(_VALID_STATUSES=curated/ignored/published,pending不可设回) + BE2 sources DELETE(复用PUT override持久化) + BE3 alerts acknowledge(调已有repo:98方法,先写后查回+acknowledged防御500)。**11 用例实跑全绿**；ruff白名单7文件全绿；mypy净增0错误(仅chat.py黑名单2)。工作区8条干净(P58已commit,无遗留混杂)。本包是迄今范围最清晰的一包 |
+| [P62.2](./P62.2-前端断裂接通与SSE.md) | Chat 流式 + Sources 删除 + 告警确认（重写版）| 🟢 核心通过(W2/W3-UI deferred) | 2026-08-11 | **重写版**(规划独立核实)：W1 后端 Chat 流式完整落地(stream_message+runner.stream+SSE路由,透传executor content/final_content事件,降级回退同步,3用例实跑19 passed含回归)；W3 sourcesApi.remove client 完整；W4 告警确认按钮完整(乐观更新+pending锁+toast)。mypy 净改善(chat.py P59遗留2errors被W1顺手修,type narrowing)。**deferred**：W2 Chat前端流式消费 + W3 SourcesPage删除UI按钮 → P62.3(理由:npm build不可用,node_modules未装,前端代码未构建验证)。**P62.3 首要任务**:npm install+build 验证 W3/W4 前端代码 + 做 W2。同步send_message向后兼容保留 |
+| [P62.3](./P62.3-Chat链路收尾.md) | Chat 链路收尾（流式前端 + markdown + 搜索 + Sources 删除）| 🟢 已通过(重做版) | 2026-08-13 | **重做版通过**(规划 python 逐行核实)：首版 REVIEW 虚构 4 项 UI 改动被退回(ui.tsx 669行+19标识符全MISS+死代码CSS)；重做后 ui.tsx 734行(+65)+19标识符全OK。W2 ChatPage send 流式(streamingId+四事件:user_persisted替换/content delta累加/assistant_persisted替换/error回滚,:519-562)；W3-UI Sources 删除按钮(removeSource:308+侧栏:323+stopPropagation)；W4b markdown(import:4+ReactMarkdown:663)；W5 会话搜索(state:448+filteredSessions:451+input:615)；W6 EditTaskDialog return=1。build绿(tsc exit0+vite1.62s)；CSS 5 class 全引用无死代码；后端19 passed回归零改动。教训：规划须 cat 目标文件核实代码真实存在,不只看 REVIEW 贴的代码块 |
+| [P62.4](./P62.4-KnowledgeSettingsPublishing增强.md) | Knowledge/Settings/Publishing 增强（前端批次收尾）| 🟢 已通过 | 2026-08-13 | **6 项全做**(规划 python 20/20 核实)：K1 文件选择器(FileReader+.txt/.md+1MB限制+PDF/DOCX标注) K2 moveToMemory(api.ts方法+文档行转入记忆按钮) S2 publishers增删(本地改数组+整体save) S3 API key掩码清空(save前深拷贝+清********+快照更新) S4 dirty检测(JSON.stringify对比+disabled) P1 Publishing日期/publisher筛选(三onChange都setOffset(0)reset分页)。build绿(tsc+vite1.83s)+后端19passed回归+零改动。deferred诚实标注：S1 publishers结构化表单(后端无config schema)+K1 PDF/DOCX(需后端multipart)。执行Agent吸取P62.3教训主动贴python自检+真实行号无虚报。**P62前端批次收官** |
+
+## 阶段六D（Agent 配置 UI - 最初分析的"唯一前端缺口"）
+
+> 后端 Agent CRUD/SSE 完整(list/POST upsert/DELETE/run SSE)，前端仅 agentsApi.list 用于 workflow 对话框下拉。本阶段补齐 Agent 配置页面。
+
+| 包 | 名称 | 状态 | 通过日期 | 备注 |
+| :--- | :--- | :--- | :--- | :--- |
+| [P63](./P63-Agent配置UI.md) | Agent 配置 UI（CRUD + 全字段表单 + 试运行 SSE）| 🟢 已通过 | 2026-08-14 | **Agent 配置 UI 补齐**(规划 python 19/19 核实)：agentsApi 扩展(save/remove/run 手写stream+AgentDefinition全字段接口)；AgentsConfigPage(ui.tsx:642-842, +98行)：list列表+全字段编辑表单(provider→model级联+tool_ids/skill_ids多选+system_prompt textarea+temperature/max_output_tokens)+试运行SSE(content delta累加+final_content替换)+删除；App.tsx 导航接入(NavKey+workbenchItems+渲染分支)；pages/agents.tsx re-export。build绿(tsc+vite2.04s)+后端19passed回归+零改动。**最初分析"唯一前端缺口"补齐→用户自主链路三方完整(工作流+Skill+Agent配置)** |

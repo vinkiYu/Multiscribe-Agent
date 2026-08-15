@@ -81,6 +81,31 @@ async def save_source(
     return _source_response(source)
 
 
+@router.delete("/{source_id}")
+async def delete_source(
+    source_id: str,
+    context: ServiceContext = Depends(get_context),
+) -> dict[str, str]:
+    """Remove one source override and persist the trimmed settings."""
+    if not source_id.strip():
+        raise HTTPException(status_code=400, detail="source_id must not be empty")
+    if context.config_service is None:
+        raise HTTPException(status_code=503, detail="configuration service unavailable")
+    existing = next(
+        (source for source in context.settings.adapters if source.id == source_id), None
+    )
+    if existing is None:
+        raise HTTPException(status_code=404, detail="source not found")
+
+    updated_sources = [item for item in context.settings.adapters if item.id != source_id]
+    context.settings.adapters = updated_sources
+
+    overrides = await context.config_service.load_overrides()
+    overrides["adapters"] = [item.model_dump(mode="json") for item in updated_sources]
+    await context.config_service.save_settings(overrides)
+    return {"status": "deleted"}
+
+
 def _source_response(source: AdapterConfig) -> dict[str, object]:
     """Serialize one source without exposing credential-like configuration values."""
     data = source.model_dump(mode="json")

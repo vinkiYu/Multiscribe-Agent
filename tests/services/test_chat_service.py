@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from multiscribe_agent.core.errors import ProviderError
 from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.memory.chat_sessions import ChatSessionRepository
 from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
@@ -281,5 +282,123 @@ async def test_send_message_defer_preference_extraction_returns_after_bind() -> 
                 break
         prefs = await store.load()
         assert "RAG" in prefs.preferred_tags
+    finally:
+        await db.close()
+
+
+class StreamedAgent:
+    """Yield a scripted stream of AgentEvent objects for one chat turn."""
+
+    def __init__(self, deltas: list[str], fail: bool = False) -> None:
+        """Configure the deltas to yield; fail=True yields a single error event."""
+        self.deltas = deltas
+        self.fail = fail
+        self.calls = 0
+
+    async def run(self, agent_def: object, user_input: str) -> str:
+        """Return the joined deltas so send_message still works on this runner."""
+        self.calls += 1
+        return "".join(self.deltas)
+
+    async def stream(self, agent_def: object, user_input: str):
+        """Yield one content event per delta; final_text derives from the joined deltas."""
+        self.calls += 1
+        if self.fail:
+            yield _StubEvent("error", {"message": "boom"})
+            return
+        joined = ""
+        for delta in self.deltas:
+            joined += delta
+            yield _StubEvent("content", {"content": delta})
+        # final_content is a copy of the running join so the service can
+        # safely dedupe by extending the last content delta.
+        yield _StubEvent("final_content", {"content": joined})
+
+
+@dataclass
+class _StubEvent:
+    """Tiny stand-in for AgentEvent carrying only the fields stream_message reads."""
+
+    type: str
+    data: dict[str, object]
+
+
+async def test_stream_message_yields_events_and_persists_assistant() -> None:
+    """Streaming runs the bound runner's stream and writes both user and assistant rows."""
+    db = await init_db(":memory:")
+    category_repo = MemoryCategoryRepository(db)
+    store = PreferenceStore(category_repo)
+    sessions = ChatSessionRepository(db)
+    # None extractor so the deferred extraction task is a no-op (otherwise
+    # the task runs after the DB closes and explodes).
+    extractor = None  # type: ignore[arg-type]
+    agent_def = type("FakeDef", (), {})()
+    runner = StreamedAgent(["Hello, world"])
+    service = ChatService(sessions, store, extractor, runner, agent_def)  # type: ignore[arg-type]
+    try:
+        session = await service.create_session("stream")
+        events = [event async for event in service.stream_message(session.id, "hi")]
+        assert [event["type"] for event in events[:3]] == [
+            "user_persisted",
+            "content",
+            "assistant_persisted",
+        ]
+        assert events[1]["delta"] == "Hello, world"
+        assert events[-1]["type"] == "assistant_persisted"
+        messages = await service.list_messages(session.id)
+        assert [message.role for message in messages] == ["user", "assistant"]
+        assert messages[1].content == "Hello, world"
+        assert runner.calls == 1
+    finally:
+        await db.close()
+
+
+async def test_stream_message_falls_back_when_runner_has_no_stream() -> None:
+    """A runner without stream() routes through the synchronous path."""
+    db = await init_db(":memory:")
+    category_repo = MemoryCategoryRepository(db)
+    store = PreferenceStore(category_repo)
+    sessions = ChatSessionRepository(db)
+    extractor = None  # type: ignore[arg-type]
+    agent_def = type("FakeDef", (), {})()
+    runner = ScriptedAgent("ack")
+    service = ChatService(sessions, store, extractor, runner, agent_def)  # type: ignore[arg-type]
+    try:
+        session = await service.create_session("fallback")
+        events = [event async for event in service.stream_message(session.id, "hi")]
+        assert [event["type"] for event in events] == [
+            "user_persisted",
+            "assistant_persisted",
+        ]
+        messages = await service.list_messages(session.id)
+        assert messages[-1].content == "ack"
+    finally:
+        await db.close()
+
+
+async def test_stream_message_yields_error_when_runner_stream_raises() -> None:
+    """An exception inside the runner stream is caught and surfaced as an error event."""
+    db = await init_db(":memory:")
+    category_repo = MemoryCategoryRepository(db)
+    store = PreferenceStore(category_repo)
+    sessions = ChatSessionRepository(db)
+    extractor = ScriptedExtractor(None)  # type: ignore[arg-type]
+    agent_def = type("FakeDef", (), {})()
+
+    class _BoomStream:
+        async def run(self, agent_def: object, user_input: str) -> str:
+            return ""
+
+        async def stream(self, agent_def: object, user_input: str):
+            raise ProviderError("boom")
+            yield  # pragma: no cover - makes this a generator
+
+    service = ChatService(sessions, store, extractor, _BoomStream(), agent_def)  # type: ignore[arg-type]
+    try:
+        session = await service.create_session("error")
+        events = [event async for event in service.stream_message(session.id, "hi")]
+        assert events[0]["type"] == "user_persisted"
+        assert events[-1]["type"] == "error"
+        assert "不可用" in str(events[-1]["message"])
     finally:
         await db.close()

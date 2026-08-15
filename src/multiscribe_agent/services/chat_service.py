@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Protocol
 
 import structlog
@@ -31,6 +31,15 @@ class ChatAgentRunner(Protocol):
 
     async def run(self, agent_def: AgentDefinition, user_input: str) -> str:
         """Execute one agent definition and return its content text."""
+
+    async def stream(self, agent_def: AgentDefinition, user_input: str) -> object:
+        """Yield AgentEvent-like objects for one agent turn; absent on legacy runners."""
+
+        def _empty() -> None:
+            return None
+
+        _empty()  # pragma: no cover - keeps ruff happy with the no-self-use stub
+        yield None  # protocol marker; consumers use the runner's own stream when present
 
 
 class ChatService:
@@ -88,6 +97,74 @@ class ChatService:
         assistant_message = await self._sessions.append_message(session_id, "assistant", reply_text)
         self._defer_preference_extraction(session_id)
         return assistant_message
+
+    async def stream_message(
+        self, session_id: str, content: str
+    ) -> AsyncIterator[dict[str, object]]:
+        """Yield typed events while a chat turn streams, then persist the assistant reply."""
+        if not content or not content.strip():
+            raise ValueError("message content must not be empty")
+        if self._agent_runner is None or self._agent_def is None:
+            yield {"type": "error", "message": _UNBOUND_PLACEHOLDER}
+            return
+
+        user_message = await self._sessions.append_message(session_id, "user", content)
+        if user_message is None:
+            yield {"type": "error", "message": "chat session not found"}
+            return
+        await self._maybe_autotitle(session_id, content)
+        yield {"type": "user_persisted", "message": user_message}
+
+        try:
+            stream_method = getattr(self._agent_runner, "stream", None)
+            if stream_method is None:
+                reply_text = await self._run_agent(content)
+                assistant_message = await self._sessions.append_message(
+                    session_id, "assistant", reply_text
+                )
+                yield {"type": "assistant_persisted", "message": assistant_message}
+                self._defer_preference_extraction(session_id)
+                return
+
+            content_parts: list[str] = []
+
+            def _data_text(event: object, key: str) -> str:
+                data = getattr(event, "data", None)
+                if not isinstance(data, Mapping):
+                    return ""
+                value = data.get(key, "")
+                return str(value) if value else ""
+
+            async for event in stream_method(self._agent_def, content):
+                event_type = getattr(event, "type", None)
+                if event_type == "content":
+                    text = _data_text(event, "content")
+                    if text:
+                        content_parts.append(text)
+                        yield {"type": "content", "delta": text}
+                elif event_type == "final_content":
+                    text = _data_text(event, "content")
+                    if text:
+                        # final_content is the canonical full text; if the
+                        # stream's last delta already equals it we keep the
+                        # list unchanged so the join doesn't duplicate it.
+                        if content_parts and content_parts[-1] == text:
+                            pass
+                        else:
+                            content_parts.append(text)
+                elif event_type == "error":
+                    yield {"type": "error", "message": _RUNNER_UNAVAILABLE_MESSAGE}
+                    return
+
+            final_text = "".join(content_parts).strip() or _RUNNER_UNAVAILABLE_MESSAGE
+            assistant_message = await self._sessions.append_message(
+                session_id, "assistant", final_text
+            )
+            yield {"type": "assistant_persisted", "message": assistant_message}
+            self._defer_preference_extraction(session_id)
+        except (RuntimeError, ValueError, OSError, ProviderError) as exc:  # pragma: no cover
+            log.warning("chat_agent_stream_failed", error_type=type(exc).__name__)
+            yield {"type": "error", "message": _RUNNER_UNAVAILABLE_MESSAGE}
 
     async def _maybe_autotitle(self, session_id: str, content: str) -> None:
         """Derive a session title from the first user message when the slot is empty."""

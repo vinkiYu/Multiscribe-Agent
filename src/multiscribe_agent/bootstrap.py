@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import cast
 
 from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
+from multiscribe_agent.agents.events import AgentEvent
 from multiscribe_agent.agents.executor import AgentExecutor
 from multiscribe_agent.agents.pipelines.daily_digest import (
     OVERVIEW_AGENT_ID,
@@ -201,6 +202,13 @@ class _ChatAgentRunner:
         """Run one chat turn through the shared executor and return its text content."""
         result = await self._executor.run_result(agent_def, user_input)
         return result.content
+
+    async def stream(
+        self, agent_def: AgentDefinition, user_input: str
+    ) -> AsyncIterator[AgentEvent]:
+        """Yield AgentEvent objects for one chat turn via the shared executor."""
+        async for event in self._executor.stream(agent_def, user_input):
+            yield event
 
 
 class _StoredAgentStepExecutor:

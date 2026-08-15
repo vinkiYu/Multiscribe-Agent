@@ -239,6 +239,17 @@ class SourceDataRepository(DialectRepositoryMixin):
             return max(value, 0)
         return default
 
+    async def update_status(self, ids: list[str], status: str) -> int:
+        """Bulk-transition the curation status column; return rows changed."""
+        if not ids:
+            return 0
+        placeholders = ",".join("?" for _ in ids)
+        result = await self._execute(
+            f"UPDATE source_data SET status = ? WHERE id IN ({placeholders})",  # noqa: S608 - placeholders are literal
+            [status, *ids],
+        )
+        return result or 0
+
     @staticmethod
     def _to_source_data(row: Mapping[str, Any], highlight: str | None = None) -> SourceData:
         """Convert a SQLite row into a validated SourceData model."""
