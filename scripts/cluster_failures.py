@@ -1,30 +1,30 @@
-"""Cluster failed samples with relay embeddings or a TF-IDF fallback (P64.2 T11)."""
+"""Cluster failed samples with the fixed offline TF-IDF backend (P64.3 P3)."""
 
 from __future__ import annotations
 
 import argparse
-import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
-from multiscribe_agent.eval.clustering import EmbeddingClient, cosine, kmeans
+from multiscribe_agent.eval.clustering import EMBEDDING_BACKEND, cosine, kmeans, tfidf_vectors
 from multiscribe_agent.eval.collector.bad_case import BadCaseCollector
 
 
 def latest_report(reports_dir: Path) -> Path:
+    """Return the newest curation report or fail with an actionable message."""
     reports = sorted(reports_dir.glob("curation-recall_*.md"))
     if not reports:
         raise SystemExit(f"no curation-recall report under {reports_dir}")
     return reports[-1]
 
 
-async def run(args: argparse.Namespace) -> Path:
+def run(args: argparse.Namespace) -> Path:
+    """Build deterministic clusters and write their Markdown report."""
     out_dir = cast("Path", args.out)
-    report = cast("Path", args.report) if args.report else latest_report(out_dir)
-    fixtures_dir = cast("Path", args.fixtures)
-    collector = BadCaseCollector(fixtures_dir)
-    records = collector.collect(report, threshold=float(args.threshold))
+    report = args.report or latest_report(out_dir)
+    collector = BadCaseCollector(args.fixtures)
+    records = collector.collect(report, threshold=args.threshold)
     if not records:
         raise SystemExit("no failed samples to cluster")
 
@@ -46,27 +46,22 @@ async def run(args: argparse.Namespace) -> Path:
         texts.append(" ".join(titles) or record.sample_id)
         titles_by_record.append(titles)
 
-    client = EmbeddingClient(cache_dir=Path("data/eval/embedding_cache"))
-    probe_ok = await client.probe()
-    source = "relay:text-embedding-3-small" if probe_ok else "fallback:tfidf-char-ngram"
-    vectors = await client.embed(texts)
-    result = kmeans(vectors, k=int(args.k))
+    vectors = tfidf_vectors(texts)
+    result = kmeans(vectors, k=args.k)
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     target = out_dir / f"failure-clusters_{timestamp}.md"
     lines = [
-        "# 失败样本聚类 (P64.2 T11)",
+        "# 失败样本聚类 (P64.3 P3)",
         "",
         f"- 输入报告: `{report}`",
         f"- 失败样本: {len(records)}",
-        f"- 向量来源: {source}",
+        f"- 向量来源: {EMBEDDING_BACKEND} (fixed offline decision)",
         f"- k = {result.k}",
         "",
     ]
     for cluster in range(result.k):
-        members = [
-            index for index, label in enumerate(result.labels) if label == cluster
-        ]
+        members = [index for index, label in enumerate(result.labels) if label == cluster]
         if not members:
             continue
         ranked = sorted(
@@ -81,19 +76,20 @@ async def run(args: argparse.Namespace) -> Path:
                 lines.append(f"  - 候选: {title}")
         lines.append("")
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"source={source} k={result.k} clusters={result.k}")
+    print(f"source={EMBEDDING_BACKEND} k={result.k} clusters={result.k}")
     print(target)
     return target
 
 
 def main() -> None:
+    """Parse CLI arguments and run offline clustering."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, default=None)
     parser.add_argument("--fixtures", type=Path, default=Path("tests/eval/fixtures"))
     parser.add_argument("--threshold", type=float, default=0.7)
     parser.add_argument("--k", type=int, default=4, help="cluster count (plan: 3-5)")
     parser.add_argument("--out", type=Path, default=Path("data/eval/reports"))
-    asyncio.run(run(parser.parse_args()))
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":

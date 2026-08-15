@@ -35,6 +35,13 @@ async def main() -> None:
         reports_dir=Path("data/eval/reports"),
         baseline_path=Path("data/eval/baselines/curation_recall.json"),
         trace_sink=TraceSink(Path("data/eval/traces")),
+        ledger_path=Path("data/eval/ledgers/rejected_runs.jsonl"),
+        model=settings.default_curation_model,
+        phase_min_f1=(
+            float(os.environ["EVAL_PHASE_MIN_F1"])
+            if "EVAL_PHASE_MIN_F1" in os.environ
+            else None
+        ),
         threshold=0.05,
         target_count=12,
         concurrency=int(os.environ.get("EVAL_CONCURRENCY", "4")),
@@ -44,7 +51,9 @@ async def main() -> None:
         f"recall={summary.avg_recall:.3f} f1={summary.avg_f1:.3f} "
         f"passed={summary.passed}/{summary.total} "
         f"tokens={summary.avg_tokens} p50={summary.p50_latency_ms:.0f}ms "
-        f"p95={summary.p95_latency_ms:.0f}ms",
+        f"p95={summary.p95_latency_ms:.0f}ms "
+        f"wall={summary.wall_clock_seconds:.1f}s "
+        f"throughput={summary.total / summary.wall_clock_seconds:.3f}/s",
         flush=True,
     )
 

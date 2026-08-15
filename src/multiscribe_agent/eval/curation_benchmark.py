@@ -25,11 +25,13 @@ from multiscribe_agent.eval.benchmark import RegressionDetected
 from multiscribe_agent.eval.collector.trace_sink import TraceSink
 from multiscribe_agent.eval.curation_dataset import CurationDataset, CurationSample
 from multiscribe_agent.eval.curation_scorer import CurationScore, score_curation
+from multiscribe_agent.eval.ledger import RejectedRun, append_rejected
 from multiscribe_agent.eval.metrics_schema import EvalMetrics, MetricThresholds
 from multiscribe_agent.eval.safety_gate import SafetyGate, SafetyReport
 from multiscribe_agent.eval.trace_collector import TraceCollector
 from multiscribe_agent.llm.provider import AIProvider
 from multiscribe_agent.observability.meter import MetricsRegistry, get_metrics_registry
+from multiscribe_agent.observability.notifier import RegressionNotifier
 
 CURATION_SYSTEM_INSTRUCTION = "You are a careful Chinese AI news curation assistant."
 
@@ -68,6 +70,7 @@ class CurationBenchmarkSummary:
     p50_latency_ms: float = 0.0
     p95_latency_ms: float = 0.0
     avg_tool_calls: int = 0
+    wall_clock_seconds: float = 0.0
     injection_blocked: int = 0
     pii_violations: int = 0
     permission_violations: int = 0
@@ -117,6 +120,10 @@ async def run_curation_benchmark(
     trace_collector: TraceCollector | None = None,
     workflow_events: AsyncIterable[WorkflowEvent] | None = None,
     trace_sink: TraceSink | None = None,
+    ledger_path: Path | None = None,
+    model: str = "",
+    phase_min_f1: float | None = None,
+    notifier: RegressionNotifier | None = None,
     # N=8 was fastest in the 20-sample T9 sweep. Full 100-sample quality
     # drift later appeared under both N=8 and N=4, so N=4 is a conservative
     # throughput default, not a proven remedy for provider-side drift.
@@ -133,6 +140,7 @@ async def run_curation_benchmark(
     if concurrency < 1:
         raise ValueError("concurrency must be positive")
     selected_thresholds = thresholds or MetricThresholds()
+    benchmark_started = time.perf_counter()
     meter = get_metrics_registry()
     fallback_collector = trace_collector or TraceCollector()
     event_collector = TraceCollector() if workflow_events is not None else None
@@ -164,6 +172,7 @@ async def run_curation_benchmark(
                 await event_task
     if trace_sink is not None:
         trace_sink.write(collector.all_traces())
+    wall_clock_seconds = time.perf_counter() - benchmark_started
 
     results = [(run.result, run.score) for run in runs]
     injection_count = sum(run.injection_count for run in runs)
@@ -180,15 +189,31 @@ async def run_curation_benchmark(
         pii_count=pii_count,
         total_tokens=total_tokens,
         latencies=durations,
+        wall_clock_seconds=wall_clock_seconds,
     )
     report_path = _write_report(dataset, results, summary, reports_dir, safety_flags)
-    summary = CurationBenchmarkSummary(
-        **{**asdict(summary), "report_path": str(report_path)}
-    )
+    summary = CurationBenchmarkSummary(**{**asdict(summary), "report_path": str(report_path)})
     if baseline_path is not None:
-        _check_and_write_baseline(
-            summary, baseline_path, threshold, selected_thresholds
-        )
+        try:
+            _check_and_write_baseline(
+                summary,
+                baseline_path,
+                threshold,
+                selected_thresholds,
+                ledger_path=ledger_path,
+                concurrency=concurrency,
+                model=model,
+                phase_min_f1=phase_min_f1,
+            )
+        except RegressionDetected as exc:
+            if notifier is not None:
+                await notifier.notify(
+                    exc,
+                    dataset_name=dataset.name,
+                    model=model,
+                    report_path=summary.report_path,
+                )
+            raise
     return summary
 
 
@@ -351,6 +376,7 @@ def _summarize(
     pii_count: int,
     total_tokens: int,
     latencies: list[float],
+    wall_clock_seconds: float,
 ) -> CurationBenchmarkSummary:
     """Aggregate sample scores together with process, efficiency, and safety metrics."""
     total = len(results)
@@ -376,6 +402,7 @@ def _summarize(
         p95_latency_ms=_percentile(latencies, 0.95) * 1000.0,
         # The curation harness invokes no tools, so this stays a real zero.
         avg_tool_calls=0,
+        wall_clock_seconds=wall_clock_seconds,
         injection_blocked=injection_count,
         pii_violations=pii_count,
         permission_violations=0,
@@ -411,6 +438,11 @@ def _write_report(
         f"- avg_tokens: {summary.avg_tokens}",
         f"- p50_latency_ms: {summary.p50_latency_ms:.1f}",
         f"- p95_latency_ms: {summary.p95_latency_ms:.1f}",
+        f"- wall_clock_seconds: {summary.wall_clock_seconds:.3f}",
+        (
+            f"- throughput_samples_per_second: "
+            f"{_safe_pct(summary.total, summary.wall_clock_seconds):.3f}"
+        ),
         f"- avg_tool_calls: {summary.avg_tool_calls} (策展链路无工具调用,真值 0)",
         "",
         "## 安全层 (P64.1 灰度: 只记录, 不阻断)",
@@ -467,19 +499,120 @@ def _archive_baseline(baseline_path: Path) -> Path:
     return archive
 
 
+@dataclass(frozen=True, slots=True)
+class _GateViolation:
+    """One baseline comparison that failed with serializable audit metadata."""
+
+    dimension: str
+    baseline: float
+    current: float
+    threshold: float
+
+
+def _collect_gate_violations(
+    summary: CurationBenchmarkSummary,
+    payload: Mapping[str, object],
+    threshold: float,
+    thresholds: MetricThresholds,
+    phase_min_f1: float | None,
+) -> list[_GateViolation]:
+    """Collect every failed comparison without mutating a baseline or raising."""
+    violations: list[_GateViolation] = []
+    baseline_f1 = _baseline_dim(payload, "avg_f1") or _baseline_dim(payload, "overall")
+    if baseline_f1 - summary.avg_f1 > threshold:
+        violations.append(_GateViolation("f1", baseline_f1, summary.avg_f1, threshold))
+
+    for name, current in (
+        ("precision", summary.avg_precision),
+        ("recall", summary.avg_recall),
+        ("step_success_rate", summary.step_success_rate),
+    ):
+        baseline_key = f"avg_{name}" if name in {"precision", "recall"} else name
+        if baseline_key not in payload:
+            continue
+        baseline = _baseline_dim(payload, baseline_key)
+        if baseline - current > threshold:
+            violations.append(_GateViolation(name, baseline, current, threshold))
+
+    if summary.retry_rate > thresholds.max_retry_rate:
+        violations.append(
+            _GateViolation(
+                "retry_rate",
+                thresholds.max_retry_rate,
+                summary.retry_rate,
+                thresholds.max_retry_rate,
+            )
+        )
+
+    baseline_tokens = _baseline_dim(payload, "avg_tokens")
+    if baseline_tokens > 0:
+        token_increase = (summary.avg_tokens - baseline_tokens) / baseline_tokens
+        if token_increase > thresholds.token_increase_ratio:
+            violations.append(
+                _GateViolation(
+                    "avg_tokens_ratio",
+                    baseline_tokens,
+                    float(summary.avg_tokens),
+                    thresholds.token_increase_ratio,
+                )
+            )
+
+    baseline_p95 = _baseline_dim(payload, "p95_latency_ms")
+    if baseline_p95 > 0:
+        latency_increase = (summary.p95_latency_ms - baseline_p95) / baseline_p95
+        if latency_increase > thresholds.latency_p95_increase_ratio:
+            violations.append(
+                _GateViolation(
+                    "p95_latency_ratio",
+                    baseline_p95,
+                    summary.p95_latency_ms,
+                    thresholds.latency_p95_increase_ratio,
+                )
+            )
+
+    if (
+        thresholds.max_tokens_per_sample is not None
+        and summary.avg_tokens > thresholds.max_tokens_per_sample
+    ):
+        violations.append(
+            _GateViolation(
+                "avg_tokens_cap",
+                float(thresholds.max_tokens_per_sample),
+                float(summary.avg_tokens),
+                float(thresholds.max_tokens_per_sample),
+            )
+        )
+
+    if (
+        thresholds.max_p95_latency_ms is not None
+        and summary.p95_latency_ms > thresholds.max_p95_latency_ms
+    ):
+        violations.append(
+            _GateViolation(
+                "p95_latency_cap",
+                float(thresholds.max_p95_latency_ms),
+                summary.p95_latency_ms,
+                float(thresholds.max_p95_latency_ms),
+            )
+        )
+
+    if phase_min_f1 is not None and summary.avg_f1 < phase_min_f1:
+        violations.append(_GateViolation("phase_f1", phase_min_f1, summary.avg_f1, phase_min_f1))
+    return violations
+
+
 def _check_and_write_baseline(
     summary: CurationBenchmarkSummary,
     baseline_path: Path,
     threshold: float,
     thresholds: MetricThresholds,
+    *,
+    ledger_path: Path | None = None,
+    concurrency: int = 1,
+    model: str = "",
+    phase_min_f1: float | None = None,
 ) -> None:
-    """Compare each recorded dimension to a previous baseline and persist the summary.
-
-    Multi-dimensional gate (P64.1 T5): every dimension the baseline actually
-    records is compared with the same drop rule as avg_f1; dimensions missing
-    from an older baseline are skipped so legacy files keep loading. Safety
-    counters are gray-mode in P64.1 and never trigger the gate.
-    """
+    """Gate a summary, ledger every rejection, then archive and replace accepted baselines."""
     if baseline_path.exists():
         try:
             payload = json.loads(baseline_path.read_text(encoding="utf-8"))
@@ -490,68 +623,34 @@ def _check_and_write_baseline(
                 raise ValueError("baseline avg_f1 must be numeric")
         except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
             raise ValueError(f"Invalid curation benchmark baseline {baseline_path}: {exc}") from exc
-        if baseline_value - summary.avg_f1 > threshold:
-            raise RegressionDetected(float(baseline_value), summary.avg_f1, threshold)
 
-        drop_dimensions: tuple[tuple[str, float], ...] = (
-            ("avg_precision", summary.avg_precision),
-            ("avg_recall", summary.avg_recall),
-            ("step_success_rate", summary.step_success_rate),
-        )
-        for name, current in drop_dimensions:
-            if name not in payload:
-                continue
-            previous = _baseline_dim(payload, name)
-            if previous - current > threshold:
-                raise RegressionDetected(previous, current, threshold)
-
-        if summary.retry_rate > thresholds.max_retry_rate:
-            raise RegressionDetected(
-                thresholds.max_retry_rate, summary.retry_rate, thresholds.max_retry_rate
-            )
-        baseline_tokens = payload.get("avg_tokens")
-        if (
-            isinstance(baseline_tokens, (int, float))
-            and not isinstance(baseline_tokens, bool)
-            and float(baseline_tokens) > 0
-        ):
-            token_increase = (summary.avg_tokens - float(baseline_tokens)) / float(baseline_tokens)
-            if token_increase > thresholds.token_increase_ratio:
-                raise RegressionDetected(
-                    float(baseline_tokens),
-                    float(summary.avg_tokens),
-                    thresholds.token_increase_ratio,
+        violations = _collect_gate_violations(summary, payload, threshold, thresholds, phase_min_f1)
+        if violations:
+            if ledger_path is not None:
+                append_rejected(
+                    RejectedRun(
+                        timestamp=datetime.now(UTC).isoformat(timespec="seconds"),
+                        report_path=summary.report_path,
+                        precision=summary.avg_precision,
+                        recall=summary.avg_recall,
+                        f1=summary.avg_f1,
+                        avg_tokens=summary.avg_tokens,
+                        p95_latency_ms=summary.p95_latency_ms,
+                        wall_clock_seconds=summary.wall_clock_seconds,
+                        rejected_dimensions=[violation.dimension for violation in violations],
+                        concurrency=concurrency,
+                        model=model,
+                    ),
+                    ledger_path,
                 )
-        baseline_p95 = payload.get("p95_latency_ms")
-        if (
-            isinstance(baseline_p95, (int, float))
-            and not isinstance(baseline_p95, bool)
-            and float(baseline_p95) > 0
-        ):
-            latency_increase = (summary.p95_latency_ms - float(baseline_p95)) / float(baseline_p95)
-            if latency_increase > thresholds.latency_p95_increase_ratio:
-                raise RegressionDetected(
-                    float(baseline_p95),
-                    summary.p95_latency_ms,
-                    thresholds.latency_p95_increase_ratio,
-                )
-        if (
-            thresholds.max_tokens_per_sample is not None
-            and summary.avg_tokens > thresholds.max_tokens_per_sample
-        ):
+            first = violations[0]
             raise RegressionDetected(
-                float(thresholds.max_tokens_per_sample),
-                float(summary.avg_tokens),
-                float(thresholds.max_tokens_per_sample),
-            )
-        if (
-            thresholds.max_p95_latency_ms is not None
-            and summary.p95_latency_ms > thresholds.max_p95_latency_ms
-        ):
-            raise RegressionDetected(
-                float(thresholds.max_p95_latency_ms),
-                summary.p95_latency_ms,
-                float(thresholds.max_p95_latency_ms),
+                first.baseline,
+                first.current,
+                first.threshold,
+                dimension=first.dimension,
+                violations=tuple(violation.dimension for violation in violations),
+                report_path=summary.report_path,
             )
 
     baseline_path.parent.mkdir(parents=True, exist_ok=True)
@@ -563,16 +662,15 @@ def _check_and_write_baseline(
 
 
 __all__ = [
-    'CurationBenchmarkResult',
-    'CurationBenchmarkSummary',
-    'EvalMetrics',
-    'MetricThresholds',
-    'RegressionDetected',
-    'SafetyGate',
-    'SafetyReport',
-    'TraceCollector',
-    'run_curation',
-    'run_curation_benchmark',
-    'run_curation_with_response',
+    "CurationBenchmarkResult",
+    "CurationBenchmarkSummary",
+    "EvalMetrics",
+    "MetricThresholds",
+    "RegressionDetected",
+    "SafetyGate",
+    "SafetyReport",
+    "TraceCollector",
+    "run_curation",
+    "run_curation_benchmark",
+    "run_curation_with_response",
 ]
-

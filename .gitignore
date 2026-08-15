@@ -21,6 +21,7 @@ __pycache__/
 # pytest basetemp temporary artifacts (never commit generated test fixtures)
 .tmp-pytest/
 .pytest_tmp/
+.pytest_tmp*/
 .ptmp/
 .pytest-tmp/
 .pytest-tmp-*/

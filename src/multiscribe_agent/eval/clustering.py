@@ -1,118 +1,26 @@
-"""Failure clustering with relay embeddings, cache, and a TF-IDF fallback (T11).
+"""Deterministic TF-IDF failure clustering (P64.3 P3).
 
-Embedding decision chain (docs/phases/P64.2 §T11):
-1. relay ``text-embedding-3-small`` via the configured OpenAI-compatible endpoint
-2. (not bundled) local sentence-transformers — would add a heavy dependency
-3. zero-dependency character n-gram TF-IDF fallback, always available
+Decision recorded 2026-08-15:
+- relay ``text-embedding-3-small`` returned HTTP 404 model_not_found;
+- P64.2's specified local ``paraphrase-multilingual-MiniMax`` repository
+  returned RepositoryNotFoundError;
+- 36 failed samples already produced four usable clusters with TF-IDF.
+
+TF-IDF is intentionally the fixed P64.3 backend. Its vocabulary is generated
+per batch, so vectors cannot safely be reused as per-text embedding-cache
+entries; ``data/eval/embedding_cache`` is not read or written by this module.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
 import math
-import os
 from dataclasses import dataclass
-from pathlib import Path
 
-import httpx
-
-EMBEDDING_MODEL = "text-embedding-3-small"
-
-
-class EmbeddingClient:
-    """Call the OpenAI-compatible /embeddings endpoint with an on-disk cache."""
-
-    def __init__(
-        self,
-        base_url: str | None = None,
-        api_key: str | None = None,
-        cache_dir: Path | None = None,
-        model: str = EMBEDDING_MODEL,
-    ) -> None:
-        self.base_url = (base_url or os.environ.get("OPENAI_API_BASE_URL", "")).rstrip("/")
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
-        self.model = model
-        self.cache_dir = cache_dir
-        if cache_dir is not None:
-            cache_dir.mkdir(parents=True, exist_ok=True)
-
-    async def probe(self) -> bool:
-        """Return True when the endpoint answers a one-text embedding request."""
-        if not self.base_url or not self.api_key:
-            return False
-        try:
-            vectors = await self._fetch(["probe"])
-            return bool(vectors and vectors[0])
-        except (httpx.HTTPError, OSError, ValueError, KeyError):
-            return False
-
-    async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Embed texts, reusing cached vectors; falls back to TF-IDF on failure."""
-        if not self.base_url or not self.api_key:
-            return tfidf_vectors(texts)
-        vectors: list[list[float] | None] = [None] * len(texts)
-        missing: list[int] = []
-        for index, text in enumerate(texts):
-            cached = self._cache_get(text)
-            if cached is None:
-                missing.append(index)
-            else:
-                vectors[index] = cached
-        if missing:
-            try:
-                fetched = await self._fetch([texts[i] for i in missing])
-                for position, index in enumerate(missing):
-                    vectors[index] = fetched[position]
-                    self._cache_put(texts[index], fetched[position])
-            except (httpx.HTTPError, OSError, ValueError, KeyError):
-                fallback = tfidf_vectors([texts[i] for i in missing])
-                for position, index in enumerate(missing):
-                    vectors[index] = fallback[position]
-        return [vector if vector is not None else [] for vector in vectors]
-
-    async def _fetch(self, texts: list[str]) -> list[list[float]]:
-        request = {"model": self.model, "input": texts}
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        async with httpx.AsyncClient(timeout=60.0, trust_env=False) as client:
-            response = await client.post(
-                f"{self.base_url}/embeddings", json=request, headers=headers
-            )
-            response.raise_for_status()
-            payload: dict[str, object] = response.json()
-        rows = payload.get("data")
-        if not isinstance(rows, list):
-            raise ValueError("embeddings response missing data")
-        vectors: list[list[float]] = []
-        for row in rows:
-            if not isinstance(row, dict) or not isinstance(row.get("embedding"), list):
-                raise ValueError("embeddings response missing embedding")
-            vectors.append([float(value) for value in row["embedding"]])
-        return vectors
-
-    def _cache_key(self, text: str) -> str:
-        return hashlib.sha256(f"{self.model}|{text}".encode()).hexdigest()
-
-    def _cache_get(self, text: str) -> list[float] | None:
-        if self.cache_dir is None:
-            return None
-        path = self.cache_dir / f"{self._cache_key(text)}.json"
-        if not path.exists():
-            return None
-        loaded: object = json.loads(path.read_text(encoding="utf-8"))
-        if isinstance(loaded, list):
-            return [float(value) for value in loaded]
-        return None
-
-    def _cache_put(self, text: str, vector: list[float]) -> None:
-        if self.cache_dir is None:
-            return
-        path = self.cache_dir / f"{self._cache_key(text)}.json"
-        path.write_text(json.dumps(vector), encoding="utf-8")
+EMBEDDING_BACKEND = "tfidf-char-ngram"
 
 
 def tfidf_vectors(texts: list[str]) -> list[list[float]]:
-    """Zero-dependency character bigram TF-IDF fallback."""
+    """Build zero-dependency, batch-relative character bigram/trigram vectors."""
     if not texts:
         return []
     documents = [_char_ngrams(text) for text in texts]
@@ -156,14 +64,15 @@ def _normalize(vector: list[float]) -> list[float]:
 
 
 def cosine(a: list[float], b: list[float]) -> float:
+    """Return cosine similarity after requiring compatible vector dimensions."""
     if len(a) != len(b):
-        return 0.0
+        raise ValueError("cannot compare vectors with different dimensions")
     return sum(x * y for x, y in zip(a, b, strict=True))
 
 
 @dataclass(frozen=True, slots=True)
 class ClusterResult:
-    """K-means clustering output over failure texts."""
+    """Deterministic k-means output over one batch of failure texts."""
 
     labels: list[int]
     centroids: list[list[float]]
@@ -173,9 +82,12 @@ class ClusterResult:
 def kmeans(
     vectors: list[list[float]], k: int, iterations: int = 50, seed: int = 64
 ) -> ClusterResult:
-    """Cosine k-means with deterministic seeding (multiplier LCG)."""
+    """Run cosine k-means with a deterministic LCG seed over same-size vectors."""
     if not vectors:
         return ClusterResult(labels=[], centroids=[], k=k)
+    dimensions = len(vectors[0])
+    if any(len(vector) != dimensions for vector in vectors):
+        raise ValueError("kmeans requires vectors with identical dimensions")
     k = min(k, len(vectors))
     state = seed
 
@@ -204,8 +116,7 @@ def kmeans(
                 continue
             size = len(members)
             centroids[cluster] = [
-                sum(member[dim] for member in members) / size
-                for dim in range(len(members[0]))
+                sum(member[dim] for member in members) / size for dim in range(dimensions)
             ]
             centroids[cluster] = _normalize(centroids[cluster])
         if not changed:
@@ -213,11 +124,4 @@ def kmeans(
     return ClusterResult(labels=labels, centroids=centroids, k=k)
 
 
-__all__ = [
-    "EMBEDDING_MODEL",
-    "ClusterResult",
-    "EmbeddingClient",
-    "cosine",
-    "kmeans",
-    "tfidf_vectors",
-]
+__all__ = ["EMBEDDING_BACKEND", "ClusterResult", "cosine", "kmeans", "tfidf_vectors"]

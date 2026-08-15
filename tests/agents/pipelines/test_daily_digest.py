@@ -540,9 +540,9 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         items=json.dumps(projected, ensure_ascii=False, separators=(",", ":")),
         feedback="无",
         target_count=12,
-        preferred_tags="（无）",
-        blocked_topics="（无）",
-        kb_snippets="（无）",
+        preferred_tags="（无）",  # noqa: RUF001
+        blocked_topics="（无）",  # noqa: RUF001
+        kb_snippets="（无）",  # noqa: RUF001
     )
     old_prompt = CURATE_PROMPT.format(
         items=json.dumps(
@@ -552,9 +552,9 @@ def test_curate_projection_excludes_full_content_and_bounds_one_hundred_candidat
         ),
         feedback="无",
         target_count=12,
-        preferred_tags="（无）",
-        blocked_topics="（无）",
-        kb_snippets="（无）",
+        preferred_tags="（无）",  # noqa: RUF001
+        blocked_topics="（无）",  # noqa: RUF001
+        kb_snippets="（无）",  # noqa: RUF001
     )
 
     # Core minimal fields stay; full description and metadata must not leak.
@@ -574,9 +574,10 @@ def test_daily_digest_prompts_require_chinese_page_content() -> None:
     """English sources are translated before the digest is archived and published."""
     assert "title 必须将原标题翻译或改写为" in CURATE_PROMPT
     assert "summary 必须使用中文" in CURATE_PROMPT
-    assert "目标范围为 10 到 15 条" in CURATE_PROMPT
+    assert "目标范围 10 到 12 条" in CURATE_PROMPT
     assert "{target_count}" in CURATE_PROMPT
     assert "只返回中文概览正文" in DIGEST_OVERVIEW_PROMPT
+
 
 
 def test_article_preview_image_prefers_safe_open_graph_metadata() -> None:
@@ -1530,12 +1531,6 @@ async def test_curate_prompt_carries_user_preferences_and_kb_snippets() -> None:
         ),
         [],
     )
-    kb = FakeKnowledgeService(
-        snippets_by_query={
-            "One": ["RAG 实战笔记：检索增强生成的工程要点"],
-            "Three": ["Agent 框架对比与选型建议"],
-        }
-    )
 
     pipeline, _, _ = _pipeline(
         [_curation_json(), _curation_json(), "overview"],
@@ -1543,7 +1538,7 @@ async def test_curate_prompt_carries_user_preferences_and_kb_snippets() -> None:
         memory_service=memory,
         blocked_source_filter=BlockedSourceFilter([]),
         kb_snippet_provider=lambda items: [
-            "RAG 实战笔记：检索增强生成的工程要点",
+            "RAG 实战笔记：检索增强生成的工程要点",  # noqa: RUF001
             "Agent 框架对比与选型建议",
         ][: len(items) + 1],
     )
@@ -1551,9 +1546,9 @@ async def test_curate_prompt_carries_user_preferences_and_kb_snippets() -> None:
     result = await pipeline.run(run_date="2026-07-17")
 
     prompt = curator.inputs[0]
-    assert "关注主题：agent、rag" in prompt
-    assert "不看主题：融资公告" in prompt
-    assert "RAG 实战笔记：检索增强生成的工程要点" in prompt
+    assert "关注主题：agent、rag" in prompt  # noqa: RUF001
+    assert "不看主题：融资公告" in prompt  # noqa: RUF001
+    assert "RAG 实战笔记：检索增强生成的工程要点" in prompt  # noqa: RUF001
     assert result["result_count"] == 2
 
 

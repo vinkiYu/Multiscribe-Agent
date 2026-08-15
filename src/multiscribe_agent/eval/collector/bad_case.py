@@ -58,12 +58,8 @@ def parse_report_rows(report_path: Path) -> dict[str, ReportRow]:
             selected: frozenset[str] = frozenset()
             expected: frozenset[str] = frozenset()
         else:
-            selected = frozenset(
-                item for item in selection["sel"].strip().split(",") if item
-            )
-            expected = frozenset(
-                item for item in selection["exp"].strip().split(",") if item
-            )
+            selected = frozenset(item for item in selection["sel"].strip().split(",") if item)
+            expected = frozenset(item for item in selection["exp"].strip().split(",") if item)
         rows[match["sample_id"]] = ReportRow(
             sample_id=match["sample_id"],
             precision=float(match["precision"]),
@@ -125,20 +121,15 @@ class BadCaseCollector:
             if fixture is None:
                 continue
             candidates = cast("list[dict[str, str]]", fixture.get("candidates", []))
-            classification = classify_failure(
-                set(row.expected_ids), set(row.selected_ids)
-            )
-            failure_type = (
-                classification.failure_type if classification else classify_row(row)
-            )
+            classification = classify_failure(set(row.expected_ids), set(row.selected_ids))
+            failure_type = classification.failure_type if classification else classify_row(row)
             digest = {
                 "selected_ids": sorted(row.selected_ids),
                 "expected_ids": sorted(row.expected_ids),
                 "false_negatives": list(classification.false_negatives) if classification else [],
                 "false_positives": list(classification.false_positives) if classification else [],
                 "candidates": [
-                    {"id": c["id"], "title": c["title"], "source": c["source"]}
-                    for c in candidates
+                    {"id": c["id"], "title": c["title"], "source": c["source"]} for c in candidates
                 ],
             }
             records.append(

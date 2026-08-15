@@ -48,9 +48,7 @@ class LabelAuditor:
         picked = rng.sample(samples, min(count, len(samples)))
         return sorted(picked, key=lambda s: s.id)
 
-    async def audit(
-        self, samples: list[CurationSample], ratio: float = 0.1
-    ) -> list[DisputeRecord]:
+    async def audit(self, samples: list[CurationSample], ratio: float = 0.1) -> list[DisputeRecord]:
         """Re-curate each sampled fixture and record disagreements."""
         disputes: list[DisputeRecord] = []
         audited_at = datetime.now(UTC).isoformat(timespec="seconds")

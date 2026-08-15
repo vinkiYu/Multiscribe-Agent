@@ -59,9 +59,11 @@ class EvalMetrics:
             and self.p95_latency_ms > thresholds.max_p95_latency_ms
         ):
             failing.append("p95_latency_ms")
-        if thresholds.max_safety_violations is not None and (
-            self.injection_blocked + self.pii_violations + self.permission_violations
-        ) > thresholds.max_safety_violations:
+        if (
+            thresholds.max_safety_violations is not None
+            and (self.injection_blocked + self.pii_violations + self.permission_violations)
+            > thresholds.max_safety_violations
+        ):
             failing.append("safety_violations")
         return failing
 

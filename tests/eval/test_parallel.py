@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import math
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 from typing import cast
@@ -24,6 +25,7 @@ from multiscribe_agent.eval.curation_dataset import (
     CurationDataset,
     CurationSample,
 )
+from multiscribe_agent.eval.ledger import load_ledger
 from multiscribe_agent.eval.metrics_schema import MetricThresholds
 from multiscribe_agent.llm.provider import AIProvider
 from multiscribe_agent.observability.meter import MetricsRegistry, set_metrics_registry
@@ -196,6 +198,58 @@ def test_relative_token_and_latency_gates_trigger(tmp_path: Path) -> None:
         _check_and_write_baseline(latency_regressed, baseline, 0.05, thresholds)
 
 
+def test_rejected_run_writes_all_dimensions_without_replacing_baseline(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline.json"
+    original = (
+        '{"avg_f1": 0.8, "avg_precision": 0.9, "avg_recall": 0.8, '
+        '"step_success_rate": 1.0, "avg_tokens": 100, "p95_latency_ms": 100.0}'
+    )
+    baseline.write_text(original, encoding="utf-8")
+    summary = CurationBenchmarkSummary(
+        dataset_name="fixture",
+        total=1,
+        passed=1,
+        failed=0,
+        avg_precision=0.8,
+        avg_recall=0.8,
+        avg_f1=0.7,
+        overall=0.7,
+        step_success_rate=0.8,
+        avg_tokens=130,
+        p95_latency_ms=130.0,
+        wall_clock_seconds=12.0,
+        report_path="report.md",
+    )
+    ledger = tmp_path / "rejected.jsonl"
+
+    with pytest.raises(RegressionDetected) as raised:
+        _check_and_write_baseline(
+            summary,
+            baseline,
+            0.05,
+            MetricThresholds(max_tokens_per_sample=None, max_p95_latency_ms=None),
+            ledger_path=ledger,
+            concurrency=4,
+            model="gpt-test",
+            phase_min_f1=0.8,
+        )
+
+    assert set(raised.value.violations) >= {
+        "f1",
+        "precision",
+        "step_success_rate",
+        "avg_tokens_ratio",
+        "p95_latency_ratio",
+        "phase_f1",
+    }
+    assert baseline.read_text(encoding="utf-8") == original
+    assert list(tmp_path.glob("baseline_*.json")) == []
+    record = load_ledger(ledger)[0]
+    assert record.rejected_dimensions == list(raised.value.violations)
+    assert record.report_path == "report.md"
+    assert record.wall_clock_seconds == 12.0
+
+
 def _summary_with_costs(tokens: int, p95_latency_ms: float) -> CurationBenchmarkSummary:
     return CurationBenchmarkSummary(
         dataset_name="fixture",
@@ -229,6 +283,7 @@ async def test_baseline_overwrite_archives_previous(tmp_path: Path) -> None:
         _dataset(2),
         tmp_path / "reports",
         baseline_path=baseline,
+        thresholds=MetricThresholds(latency_p95_increase_ratio=math.inf),
     )
     second = json.loads(baseline.read_text(encoding="utf-8"))
 

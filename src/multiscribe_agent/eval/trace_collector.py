@@ -35,9 +35,7 @@ class TraceCollector:
     def __init__(self) -> None:
         self._traces: dict[str, SampleTrace] = {}
 
-    def start_sample(
-        self, sample_id: str, planned_steps: Iterable[str] | None = None
-    ) -> None:
+    def start_sample(self, sample_id: str, planned_steps: Iterable[str] | None = None) -> None:
         """Begin recording a sample; optionally accept the planned step ids."""
         self._traces[sample_id] = SampleTrace(
             sample_id=sample_id,
@@ -68,13 +66,9 @@ class TraceCollector:
     def on_event(self, event: WorkflowEvent) -> None:
         """Consume one workflow event; step_start counts as one planned step."""
         if event.type == "step_start":
-            self._ensure(event.trace_id).steps_planned.append(
-                str(event.data.get("step_id", ""))
-            )
+            self._ensure(event.trace_id).steps_planned.append(str(event.data.get("step_id", "")))
         elif event.type == "step_complete":
-            self._ensure(event.trace_id).steps_completed.append(
-                str(event.data.get("step_id", ""))
-            )
+            self._ensure(event.trace_id).steps_completed.append(str(event.data.get("step_id", "")))
         elif event.type == "step_error":
             self._ensure(event.trace_id)  # an errored step never completes
         elif event.type == "loop_iteration":

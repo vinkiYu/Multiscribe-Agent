@@ -447,6 +447,13 @@ class SystemSettings(BaseSettings):
         default="",
         validation_alias=AliasChoices("ALERT_TARGETS", "MULTISCRIBE_ALERT_TARGETS"),
     )
+    eval_regression_alert_targets: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "EVAL_REGRESSION_ALERT_TARGETS",
+            "MULTISCRIBE_EVAL_REGRESSION_ALERT_TARGETS",
+        ),
+    )
     daily_ai_news_cron: str = Field(
         default="0 9 * * *",
         validation_alias=AliasChoices("DAILY_AI_NEWS_CRON", "MULTISCRIBE_DAILY_AI_NEWS_CRON"),

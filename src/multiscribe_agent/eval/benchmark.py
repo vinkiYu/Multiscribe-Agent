@@ -13,16 +13,28 @@ from multiscribe_agent.llm.provider import AIProvider
 
 
 class RegressionDetected(RuntimeError):
-    """Raised when overall score drops more than the regression threshold."""
+    """Raised when one or more evaluation dimensions violate a regression gate."""
 
-    def __init__(self, baseline: float, current: float, threshold: float) -> None:
+    def __init__(
+        self,
+        baseline: float,
+        current: float,
+        threshold: float,
+        *,
+        dimension: str = "f1",
+        violations: tuple[str, ...] = (),
+        report_path: str = "",
+    ) -> None:
         super().__init__(
-            f"Regression: {baseline:.2f} → {current:.2f} "
+            f"Regression[{dimension}]: {baseline:.2f} → {current:.2f} "
             f"(drop {baseline - current:.2f} > {threshold:.2f})"
         )
         self.baseline = baseline
         self.current = current
         self.threshold = threshold
+        self.dimension = dimension
+        self.violations = violations or (dimension,)
+        self.report_path = report_path
 
 
 @dataclass(frozen=True, slots=True)

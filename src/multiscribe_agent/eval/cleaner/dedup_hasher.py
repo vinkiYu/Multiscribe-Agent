@@ -35,9 +35,7 @@ class DedupHasher:
         key = normalize_title(title) or normalize_url(url)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
-    def find_duplicates(
-        self, fixtures: dict[str, list[dict[str, str]]]
-    ) -> list[DuplicateGroup]:
+    def find_duplicates(self, fixtures: dict[str, list[dict[str, str]]]) -> list[DuplicateGroup]:
         """Group candidates sharing a hash across different samples or sources.
 
         ``fixtures`` maps sample_id -> candidate list (fixture JSON shape).
@@ -46,9 +44,7 @@ class DedupHasher:
         by_hash: dict[str, list[DuplicateMember]] = {}
         for sample_id, candidates in fixtures.items():
             for candidate in candidates:
-                digest = self.hash_candidate(
-                    candidate.get("title", ""), candidate.get("url", "")
-                )
+                digest = self.hash_candidate(candidate.get("title", ""), candidate.get("url", ""))
                 by_hash.setdefault(digest, []).append(
                     DuplicateMember(
                         sample_id=sample_id,

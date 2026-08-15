@@ -59,8 +59,7 @@ def analyze_failures(
         sources = analysis.source_stats_by_type.setdefault(failure_type, Counter())
         involved = _involved_titles(record)
         sources.update(
-            str(candidate.get("source", ""))
-            for candidate in _involved_candidates(record)
+            str(candidate.get("source", "")) for candidate in _involved_candidates(record)
         )
         keywords = analysis.keyword_stats_by_type.setdefault(failure_type, Counter())
         keywords.update(_keywords(involved))
@@ -112,25 +111,18 @@ def _involved_candidates(record: BadCaseRecord) -> list[dict[str, object]]:
     if not isinstance(candidates, list):
         return []
     involved = [c for c in candidates if isinstance(c, dict) and c.get("id") in involved_ids]
-    return involved if involved else [
-        c for c in candidates if isinstance(c, dict)
-    ][:3]
+    return involved if involved else [c for c in candidates if isinstance(c, dict)][:3]
 
 
 def _involved_titles(record: BadCaseRecord) -> list[str]:
-    return [
-        str(candidate.get("title", ""))
-        for candidate in _involved_candidates(record)
-    ]
+    return [str(candidate.get("title", "")) for candidate in _involved_candidates(record)]
 
 
 def _keywords(titles: list[str]) -> list[str]:
     tokens: list[str] = []
     for title in titles:
         lowered = title.casefold()
-        tokens.extend(
-            token for token in lowered.replace(",", " ").split() if len(token) >= 4
-        )
+        tokens.extend(token for token in lowered.replace(",", " ").split() if len(token) >= 4)
     return tokens
 
 

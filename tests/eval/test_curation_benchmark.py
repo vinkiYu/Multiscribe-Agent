@@ -129,10 +129,13 @@ async def test_benchmark_emits_all_layers_with_real_efficiency(tmp_path: Path) -
     assert summary.avg_tokens == 420
     assert summary.p50_latency_ms > 0.0
     assert summary.p95_latency_ms > 0.0
+    assert summary.wall_clock_seconds > 0.0
     report = next((tmp_path / "reports").glob("*.md")).read_text(encoding="utf-8")
     assert "## 过程层" in report
     assert "## 效率层" in report
     assert "avg_tokens: 420" in report
+    assert "wall_clock_seconds:" in report
+    assert "throughput_samples_per_second:" in report
     assert "step_success_rate: 1.000" in report
     assert "## 安全层" in report
 

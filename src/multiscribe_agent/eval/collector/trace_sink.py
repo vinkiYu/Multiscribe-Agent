@@ -23,9 +23,7 @@ class TraceSink:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         target = self.out_dir / f"benchmark_{timestamp}.jsonl.gz"
-        payload = "\n".join(
-            json.dumps(asdict(trace), ensure_ascii=False) for trace in traces
-        )
+        payload = "\n".join(json.dumps(asdict(trace), ensure_ascii=False) for trace in traces)
         with gzip.open(target, "wt", encoding="utf-8") as handle:
             handle.write(payload + "\n")
         self.prune()
