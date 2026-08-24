@@ -1,0 +1,137 @@
+/* =========================================================================
+   Design tokens — Multiscribe Console prototype
+   Visual language reference: skills-catalog.html
+   Brand: graphite primary, with green/violet/amber accents
+   Shape: 1px hairline borders, soft layered shadows, generous whitespace
+   Type: Geist (latin), Geist Mono (code/ids), Noto Sans SC (zh)
+   ========================================================================= */
+
+:root {
+  /* ---- Surfaces & ink ---- */
+  --canvas: #f5f6fb;
+  --surface: #ffffff;
+  --surface-soft: #f8f8fb;
+  --surface-sunken: #eef0f7;
+  --ink: #181a26;
+  --ink-secondary: #454857;
+  --muted: #5c5e68;
+  --muted-soft: #8a8d99;
+  --line: #e6e7ee;
+  --line-strong: #c8cad4;
+  --line-focus: rgba(91, 100, 122, 0.42);
+
+  /* ---- Brand ---- */
+  /* primary palette: muted graphite (was cyan). Accents unchanged. */
+  --cyan: #5b647a;
+  --cyan-soft: #e9ebf2;
+  --cyan-deep: #3d4458;
+  --green: #52bb9c;
+  --green-soft: #e6f7ef;
+  --green-deep: #2f8a6e;
+  --violet: #7c6bff;
+  --violet-soft: #ece8ff;
+  --amber: #d99432;
+  --amber-soft: #fbeed1;
+  --danger: #d83a4d;
+  --danger-soft: #fce6ea;
+
+  /* ---- Elevation ---- */
+  --shadow-sm: 0 1px 2px rgba(20, 23, 34, 0.05);
+  --shadow-md: 0 6px 18px rgba(20, 23, 34, 0.07), 0 1px 2px rgba(20, 23, 34, 0.04);
+  --shadow-lg: 0 14px 32px rgba(20, 23, 34, 0.09), 0 4px 12px rgba(20, 23, 34, 0.05);
+
+  /* ---- Radius ---- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 340ms;
+
+  /* ---- Typography ---- */
+  --font-sans: "Geist", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+  --font-zh: "Noto Sans SC", "Geist", system-ui, sans-serif;
+
+  /* ---- Layout ---- */
+  --sidebar-w: 232px;
+  --railbar-h: 54px;
+  --content-max: 1560px;
+}
+
+/* ---- Dark theme — soft graphite, not pure black, no glassmorphism ---- */
+[data-theme="dark"] {
+  --canvas: #202431;
+  --surface: #2a2d3a;
+  --surface-soft: #2f3240;
+  --surface-sunken: #1c1f2a;
+  --ink: #f7f8fb;
+  --ink-secondary: #c8ccd6;
+  --muted: #a3a6b0;
+  --muted-soft: #767a87;
+  --line: #383b49;
+  --line-strong: #4a4d5c;
+  --line-focus: rgba(150, 160, 184, 0.55);
+
+  --cyan: #a8b0c4;
+  --cyan-soft: #2c2f3c;
+  --cyan-deep: #c8cfde;
+  --green: #6ed0b1;
+  --green-soft: #1f3a32;
+  --green-deep: #8de2c5;
+  --violet: #9a8bff;
+  --violet-soft: #2c2747;
+  --amber: #e9b269;
+  --amber-soft: #3a2f1c;
+  --danger: #ec6273;
+  --danger-soft: #3d2128;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.42), 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 16px 38px rgba(0, 0, 0, 0.46), 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100vh; }
+
+html {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.55), transparent 28%),
+    radial-gradient(circle at 86% 12%, rgba(255, 255, 255, 0.4), transparent 30%),
+    var(--canvas);
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(168, 176, 196, 0.05), transparent 32%),
+    radial-gradient(circle at 86% 12%, rgba(110, 208, 177, 0.05), transparent 30%),
+    var(--canvas);
+}

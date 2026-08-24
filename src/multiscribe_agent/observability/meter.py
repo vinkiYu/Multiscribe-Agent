@@ -130,6 +130,10 @@ class MetricsRegistry:
         if name is not None:
             self._record_counter(name)
 
+    def llm_latency_seconds(self) -> list[float]:
+        """Return the recorded llm_latency samples from the fallback store."""
+        return list(self._histogram_values.get("llm_latency", ()))
+
     def render_prometheus(self) -> str:
         """Render a dependency-free Prometheus text exposition."""
         lines: list[str] = []

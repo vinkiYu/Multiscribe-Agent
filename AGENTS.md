@@ -182,3 +182,13 @@ api → agents/services → domain（模型/端口）
 ---
 
 *Last Updated: 2026-07-15*
+
+## Agent skills
+
+### Issue tracker
+
+Issues 存放在本仓库的 GitHub Issues（使用 `gh` CLI）。详见 `docs/agents/issue-tracker.md`。
+
+### Domain docs
+
+单上下文布局：仓库根一个 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。

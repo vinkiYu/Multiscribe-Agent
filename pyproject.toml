@@ -79,7 +79,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "S", "PT", "RUF"]
-per-file-ignores = { "tests/**/*.py" = ["ANN", "S"] }
+per-file-ignores = { "tests/**/*.py" = ["ANN", "S"], "src/multiscribe_agent/eval/curation_benchmark.py" = ["RUF001"] }
 
 [tool.ruff.format]
 

@@ -273,6 +273,28 @@ class MemoryEntry(_DomainModel):
     metadata: JsonObject = Field(default_factory=dict)
 
 
+class ChatSession(_DomainModel):
+    """Persistent conversation session for the chat surface."""
+
+    id: str
+    title: str = ""
+    created_at: int
+    updated_at: int
+    message_count: int = 0
+    metadata: JsonObject = Field(default_factory=dict)
+
+
+class ChatMessage(_DomainModel):
+    """One message inside a persistent chat session."""
+
+    id: str
+    session_id: str
+    role: Literal["user", "assistant", "system"]
+    content: str
+    created_at: int
+    metadata: JsonObject = Field(default_factory=dict)
+
+
 class KBCategory(_DomainModel):
     """Knowledge-base category summary."""
 

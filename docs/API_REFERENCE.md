@@ -329,13 +329,12 @@ applies to daily digest tasks.
 
 List configured adapters and their enabled state.
 
-### POST `/api/sources`
-
-Create an adapter configuration with `id`, `type`, `enabled`, and `config`.
-
 ### PUT `/api/sources/{source_id}`
 
-Update an adapter configuration. Unknown ids return `404`.
+Create or replace an adapter configuration. The body carries `type`, `enabled`,
+and `config`; the path `source_id` is assigned to the entry. Sensitive
+configuration values are masked on read so existing secrets are preserved when
+the masked value is sent back unchanged.
 
 ### GET `/api/kb/capabilities`
 
@@ -482,11 +481,13 @@ arguments return `400`.
 
 ## Click tracking
 
-### GET `/api/track-click?url=https%3A%2F%2Fexample.com&tags=agent,rag`
+### GET `/api/track-click?digest_date=2026-07-30&item_url=https%3A%2F%2Fexample.com&item_tags=agent,rag`
 
-Public redirect endpoint used by published digest links. Only `http` and
-`https` URLs are accepted. The endpoint records click tags and returns a `302`
-redirect; unsafe schemes such as `javascript:` and `file:` are rejected.
+Public redirect endpoint used by published digest links. `digest_date` is
+required, `item_url` is the destination, and `item_source` / `item_tags` are
+optional metadata. Only `http` and `https` URLs are accepted. The endpoint
+records click tags and returns a `302` redirect; unsafe schemes such as
+`javascript:` and `file:` are rejected.
 
 ## Error format
 

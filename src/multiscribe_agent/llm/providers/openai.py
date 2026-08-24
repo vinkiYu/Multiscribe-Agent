@@ -48,7 +48,9 @@ class OpenAIProvider:
             raise ProviderError(f"no api key configured for provider {config.id}")
         self._config = config
         self._model = model
-        self._http_client = httpx.AsyncClient(proxy=proxy) if proxy else None
+        # Proxy comes from explicit configuration only; trust_env=False keeps
+        # machine-level HTTP_PROXY/HTTPS_PROXY env vars from leaking into requests.
+        self._http_client = httpx.AsyncClient(proxy=proxy, trust_env=False)
         self._llm: BaseChatModel = ChatOpenAI(
             model=model,
             api_key=config.api_key,

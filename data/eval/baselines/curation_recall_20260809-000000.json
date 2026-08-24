@@ -1,0 +1,22 @@
+{
+  "dataset_name": "curation-recall",
+  "total": 100,
+  "passed": 71,
+  "failed": 29,
+  "avg_precision": 0.77,
+  "avg_recall": 0.845,
+  "avg_f1": 0.7739,
+  "overall": 0.7739,
+  "report_path": "seed:P57-final(docs/phases/P64-Eval-体系优化.md §1.2)",
+  "step_success_rate": 1.0,
+  "avg_steps_per_sample": 0.0,
+  "plan_match_rate": 1.0,
+  "retry_rate": 0.0,
+  "avg_tokens": 0,
+  "p50_latency_ms": 0.0,
+  "p95_latency_ms": 0.0,
+  "avg_tool_calls": 0,
+  "injection_blocked": 0,
+  "pii_violations": 0,
+  "permission_violations": 0
+}

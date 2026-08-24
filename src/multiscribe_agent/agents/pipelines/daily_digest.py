@@ -45,9 +45,15 @@ from multiscribe_agent.domain.ports import (
     DatabaseProtocol,
     SourceDataRepository,
 )
-from multiscribe_agent.memory.digest_context import DigestMemoryContextBuilder, DigestMemoryService
+from multiscribe_agent.memory.digest_context import (
+    DigestMemoryContextBuilder,
+    DigestMemoryService,
+    KBSnippetProvider,
+)
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from multiscribe_agent.services.blocked_sources import BlockedSourceFilter
+from multiscribe_agent.services.candidate_filter import CandidateFilter
 from multiscribe_agent.services.preference_feedback import PreferenceFeedbackService
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
@@ -388,11 +394,6 @@ def build_daily_digest_workflow(config: DailyDigestConfig) -> WorkflowDefinition
     )
 
 
-def _sort_fallback_candidates(items: list[UnifiedData], limit: int) -> list[UnifiedData]:
-    """Make degraded curation deterministic by preferring the newest source records."""
-    return sorted(items, key=lambda item: item.published_date, reverse=True)[:limit]
-
-
 # 每日信息聚合管道
 class DailyDigestPipeline:
     """Assemble per-run pipeline dependencies into a P10 workflow execution."""
@@ -414,6 +415,9 @@ class DailyDigestPipeline:
         iteration_store: IterationStore | None = None,
         curation_evaluations: object | None = None,
         alert_engine: QualityAlertRecorder | None = None,
+        blocked_source_filter: BlockedSourceFilter | None = None,
+        preference_loader: object | None = None,
+        kb_snippet_provider: KBSnippetProvider | None = None,
     ) -> None:
         """Configure injected service boundaries for a reusable scheduled pipeline."""
         self._ingestion_service = ingestion_service
@@ -431,15 +435,23 @@ class DailyDigestPipeline:
         self._iteration_store = iteration_store
         self._curation_evaluations = curation_evaluations
         self._alert_engine = alert_engine
+        self._blocked_source_filter = blocked_source_filter or BlockedSourceFilter([])
+        self._preference_loader = preference_loader
+        self._kb_snippet_provider = kb_snippet_provider
+        self._candidate_filter = CandidateFilter(self._config.curate_candidate_limit)
+        self._blocked_sources_count = 0
 
     async def run(
         self, *, run_date: str | None = None, workflow_run_id: str | None = None
     ) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
         if self._preference_feedback is not None and self._db is not None:
-            await self._preference_feedback.apply_click_feedback(self._db)  # type: ignore[arg-type]  # Legacy service annotation still names the SQLite alias.
+            await self._preference_feedback.apply_signals_and_history(self._db)  # type: ignore[arg-type]  # Legacy service annotation still names the SQLite alias.
+        # Reset per-run counters so the executor reports fresh values for this run.
+        self._blocked_sources_count = 0
         date_value = run_date or datetime.now(UTC).date().isoformat()
         engine, usage = self._engine(date_value)
+        step_executor = engine._executor
         loop_summary = _LoopIterationAccumulator()
         resolved_run_id = workflow_run_id or ""
         final: object = ""
@@ -452,6 +464,7 @@ class DailyDigestPipeline:
                 loop_summary.record(event.data)
             if event.type == "workflow_complete":
                 final = event.data["final"]
+                self._blocked_sources_count = getattr(step_executor, "_blocked_sources_count", 0)
         if not isinstance(final, str):
             raise WorkflowError("daily digest workflow returned a non-text final result")
         payload = _json_object(final)
@@ -511,6 +524,7 @@ class DailyDigestPipeline:
             "usage": usage.as_dict(),
             "loop_summary": serialized_loop_summary,
             "workflow_run_id": resolved_run_id,
+            "blocked_sources_count": self._blocked_sources_count,
         }
 
     async def _record_quality_alert(self, date_value: str) -> None:
@@ -567,6 +581,10 @@ class DailyDigestPipeline:
             preference_feedback=self._preference_feedback,
             iteration_store=self._iteration_store,
             curation_evaluations=self._curation_evaluations,
+            alert_engine=self._alert_engine,
+            blocked_source_filter=self._blocked_source_filter,
+            preference_loader=self._preference_loader,
+            kb_snippet_provider=self._kb_snippet_provider,
         )
         run_date = run_id.split(":", 1)[1] if run_id is not None and ":" in run_id else None
         return await pipeline.run(run_date=run_date, workflow_run_id=run_id)
@@ -589,6 +607,9 @@ class DailyDigestPipeline:
             self._pushed_content_repo,
             usage,
             self._archive_repo,
+            self._blocked_source_filter,
+            self._kb_snippet_provider,
+            self._candidate_filter,
         )
         run_reflector = self._reflector
         set_usage_sink = getattr(run_reflector, "set_usage_sink", None)
@@ -648,6 +669,9 @@ class _DailyDigestStepExecutor:
         pushed_content_repo: PushedContentRepository | None = None,
         usage: _DigestUsage | None = None,
         archive_repo: DailyDigestArchive | None = None,
+        blocked_source_filter: BlockedSourceFilter | None = None,
+        kb_snippet_provider: KBSnippetProvider | None = None,
+        candidate_filter: CandidateFilter | None = None,
     ) -> None:
         self._ingestion_service = ingestion_service
         self._source_data_repo = source_data_repo
@@ -661,6 +685,11 @@ class _DailyDigestStepExecutor:
         self._pushed_content_repo = pushed_content_repo
         self._usage = usage or _DigestUsage()
         self._archive_repo = archive_repo or get_daily_digest_archive()
+        self._blocked_source_filter = blocked_source_filter or BlockedSourceFilter([])
+        self._kb_snippet_provider = kb_snippet_provider
+        self._candidate_filter = candidate_filter or CandidateFilter(
+            self._config.curate_candidate_limit
+        )
         self._total_scanned = 0
         self._raw_candidate_count = 0
         self._deduped_count = 0
@@ -670,6 +699,7 @@ class _DailyDigestStepExecutor:
         self._images_failed = 0
         self._fetched_counts: dict[str, int] = {}
         self._content_hash_by_url: dict[str, str] = {}
+        self._blocked_sources_count = 0
 
     async def execute(self, agent_id: str, user_input: str) -> str:
         """Dispatch one workflow node while preserving the P10 text executor contract."""
@@ -707,6 +737,13 @@ class _DailyDigestStepExecutor:
         source_data = await self._recent_daily_candidates(start, fallback_start, end)
         source_data = self._filter_configured_rss_sources(source_data)
         items = [UnifiedData.model_validate(item.model_dump()) for item in source_data]
+        items, blocked_count = self._blocked_source_filter.filter_items(items)
+        self._blocked_sources_count += blocked_count
+        if blocked_count:
+            log.info(
+                "daily_digest_candidates_blocked_sources",
+                count=blocked_count,
+            )
         total_new = sum(self._fetched_counts.values())
         if total_new == 0 and not items and adapter_configs:
             raise WorkflowError(
@@ -862,13 +899,21 @@ class _DailyDigestStepExecutor:
         item_payload, feedback = _split_feedback(value)
         items = _load_unified_items(item_payload)
         memory_summaries: list[str] = []
+        kb_snippets: list[str] = []
+        preferred_tags: list[str] = []
+        blocked_topics: list[str] = []
         if self._memory_service is not None:
             try:
                 memory_context = await DigestMemoryContextBuilder(
-                    self._memory_service, self._config.curate_candidate_limit
+                    self._memory_service,
+                    self._config.curate_candidate_limit,
+                    kb_snippet_provider=self._kb_snippet_provider,
                 ).build(items)
                 items = memory_context.items
                 memory_summaries = memory_context.memory_summaries
+                kb_snippets = memory_context.kb_snippets
+                preferred_tags = list(memory_context.preferred_tags)
+                blocked_topics = list(memory_context.blocked_topics)
                 if memory_context.blocked_count:
                     log.info(
                         "daily_digest_candidates_blocked",
@@ -876,14 +921,17 @@ class _DailyDigestStepExecutor:
                     )
             except Exception as exc:  # Memory must never block the scheduled digest.
                 log.warning("daily_digest_memory_degraded", error_type=type(exc).__name__)
-                items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
+                items = self._candidate_filter.fallback_rank(items)
         else:
-            items = _sort_fallback_candidates(items, self._config.curate_candidate_limit)
+            items = self._candidate_filter.fallback_rank(items)
         self._curate_candidate_count = len(items)
         prompt = CURATE_PROMPT.format(
             items=_dump_json([_curate_item_dict(item) for item in items]),
             feedback=feedback or "无",
             target_count=self._config.top_n,
+            preferred_tags="\u3001".join(preferred_tags) or "\uff08\u65e0\uff09",
+            blocked_topics="\u3001".join(blocked_topics) or "\uff08\u65e0\uff09",
+            kb_snippets="\n".join(kb_snippets) or "\uff08\u65e0\uff09",
         )
         if isinstance(self._curate_executor, MemoryAwareObservingAgentStepExecutor):
             output, usage = await self._curate_executor.execute_observed_with_memory(
@@ -1078,6 +1126,7 @@ class _DailyDigestStepExecutor:
             "curated_count": self._curated_count,
             "images_found": self._images_found,
             "images_failed": self._images_failed,
+            "blocked_sources_count": self._blocked_sources_count,
         }
 
     async def _filter_already_succeeded_targets(

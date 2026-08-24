@@ -59,6 +59,36 @@ async def get_current_user(request: Request) -> dict[str, object]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
+async def get_optional_user(request: Request) -> dict[str, object] | None:
+    """Resolve bearer authentication, returning None on absence or invalid token.
+
+    Used by routes that allow a SYSTEM_PASSWORD downgrade path: when no system
+    password is configured, the ``X-Admin-Bypass: 1`` header can replace bearer
+    auth so a single-user deployment can use the UI without first setting a
+    password.
+    """
+    settings = request.app.state.settings
+    configured_password = bool(getattr(settings, "system_password", ""))
+    if not configured_password and request.headers.get("X-Admin-Bypass", "").strip() == "1":
+        return {"sub": "admin", "role": "admin", "must_change_password": True}
+    authorization = request.headers.get("Authorization", "")
+    if not authorization.startswith("Bearer "):
+        return None
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+
+
+def is_admin_user(user: dict[str, object] | None) -> bool:
+    """Return whether the optional-auth user dict looks like a local admin."""
+    if not user:
+        return False
+    subject = user.get("sub")
+    role = user.get("role")
+    return subject == "admin" or role == "admin"
+
+
 def verify_login_password(password: str, settings: SystemSettings) -> bool:
     """Compare login input with configured or explicitly documented development password."""
     expected = settings.system_password or "admin123"
