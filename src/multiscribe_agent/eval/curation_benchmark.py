@@ -17,9 +17,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
-from multiscribe_agent.agents.pipelines.daily_digest import CURATE_SUMMARY_CHAR_LIMIT
+import structlog
+
+from multiscribe_agent.agents.pipelines.daily_digest import (
+    CURATE_SUMMARY_CHAR_LIMIT,
+    fallback_summary,
+)
 from multiscribe_agent.agents.pipelines.prompts import CURATE_PROMPT
 from multiscribe_agent.agents.workflow.events import WorkflowEvent
+from multiscribe_agent.core.errors import ProviderError
 from multiscribe_agent.domain.models import AIMessage, AIResponse
 from multiscribe_agent.eval.benchmark import RegressionDetected
 from multiscribe_agent.eval.collector.trace_sink import TraceSink
@@ -34,6 +40,8 @@ from multiscribe_agent.observability.meter import MetricsRegistry, get_metrics_r
 from multiscribe_agent.observability.notifier import RegressionNotifier
 
 CURATION_SYSTEM_INSTRUCTION = "You are a careful Chinese AI news curation assistant."
+
+log = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,7 +270,45 @@ async def _run_sample(
         flagged_ids.append(candidate.id)
 
     start = time.perf_counter()
-    selected, response = await run_curation_with_response(provider, sample, target_count)
+    try:
+        selected, response = await run_curation_with_response(provider, sample, target_count)
+    except (ValueError, ProviderError) as first_error:
+        # One malformed/unavailable output must not kill the whole run: retry
+        # once, then score the sample 0 and keep going (P64.4, glm robustness).
+        log.warning(
+            "curator_output_retry",
+            sample_id=sample.id,
+            error=type(first_error).__name__,
+            detail=str(first_error)[:200],
+        )
+        try:
+            selected, response = await run_curation_with_response(provider, sample, target_count)
+        except (ValueError, ProviderError) as second_error:
+            log.warning(
+                "curator_output_dropped",
+                sample_id=sample.id,
+                error=type(second_error).__name__,
+                detail=str(second_error)[:200],
+            )
+            duration_seconds = time.perf_counter() - start
+            score = score_curation(set(), set(sample.expected_selected_ids))
+            result = CurationBenchmarkResult(
+                sample_id=sample.id,
+                precision=score.precision,
+                recall=score.recall,
+                f1=score.f1,
+                passed=score.passed,
+            )
+            meter.record_llm_call(tokens=0, duration_seconds=duration_seconds)
+            return _SampleRun(
+                result=result,
+                score=score,
+                tokens=0,
+                duration_seconds=duration_seconds,
+                flagged_ids=flagged_ids,
+                injection_count=injection_count,
+                pii_count=pii_count,
+            )
     duration_seconds = time.perf_counter() - start
 
     output_report = safety.check_output(response.content)
@@ -317,6 +363,8 @@ def _project_candidate(candidate: object) -> dict[str, object]:
         "url": url,
         "source": source,
     }
+    if not str(projected["summary"]).strip():
+        projected["summary"] = fallback_summary(title)
     if source == "github_trending":
         projected["g"] = True
     # Static curation fixtures do not model the runtime freshness fallback metadata.

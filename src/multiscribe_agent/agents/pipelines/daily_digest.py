@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import math
+import re
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, time, timedelta
@@ -62,6 +63,24 @@ from multiscribe_agent.services.scheduler import TaskExecutorRegistry
 CURATE_SUMMARY_CHAR_LIMIT = 150
 # Backwards-compatible alias for existing callers; use CURATE_SUMMARY_CHAR_LIMIT for new code.
 _CURATE_SUMMARY_CHAR_LIMIT = CURATE_SUMMARY_CHAR_LIMIT
+
+# Headline-bundle feeds (TLDR AI) ship title-only rows; an emoji-stripped title
+# stands in as the summary so the curator can judge the headlines at all.
+# Without it an empty summary trips the prompt's low-density reject rule
+# before the model ever sees the product names (P64.4).
+_EMOJI_PATTERN = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF\u2B00-\u2BFF\uFE0F\u200D]"
+)
+
+
+def fallback_summary(title: str) -> str:
+    """Derive a curator-visible summary from the title when no description exists."""
+    cleaned = _EMOJI_PATTERN.sub("", title)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = re.sub(r"\s+([,;、,])", r"\1", cleaned)
+    return cleaned[:CURATE_SUMMARY_CHAR_LIMIT]
+
+
 _ARTICLE_IMAGE_TIMEOUT_SECONDS = 8.0
 
 INGEST_AGENT_ID = "daily_digest_ingest"
@@ -1699,6 +1718,8 @@ def _curate_item_dict(item: UnifiedData) -> dict[str, object]:
         "url": item.url,
         "source": item.source,
     }
+    if not str(projected["summary"]).strip():
+        projected["summary"] = fallback_summary(item.title)
     if item.source == "github_trending":
         projected["g"] = True
     if item.metadata.get("digest_freshness") == "fallback":
