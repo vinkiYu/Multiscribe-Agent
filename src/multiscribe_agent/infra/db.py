@@ -581,6 +581,29 @@ class SqliteDatabase:
             return False
         return True
 
+    async def migrate_rag_index_registry(self) -> None:
+        """Create the backend-neutral manifest for P66 RAG vectors."""
+        await self.execute(
+            """
+            CREATE TABLE IF NOT EXISTS rag_index_registry (
+                chunk_id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                doc_type TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                indexed_at TEXT NOT NULL,
+                index_version TEXT NOT NULL
+            )
+            """
+        )
+        await self.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rag_index_registry_document "
+            "ON rag_index_registry(document_id)"
+        )
+        await self.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rag_index_registry_type ON rag_index_registry(doc_type)"
+        )
+
     async def _configure(self) -> None:
         """Apply connection-level SQLite settings required by the application."""
         for statement in (
@@ -941,6 +964,7 @@ async def init_db(
     await database.migrate_daily_digest_archives()
     await database.migrate_adapter_health()
     await database.migrate_kb()
+    await database.migrate_rag_index_registry()
     await _recover_interrupted_tasks(database)
     await _backfill_source_fts(database)
     return database
@@ -1020,6 +1044,7 @@ async def init_database(
                 await connection.execute(statement)
 
         await database.migrate_daily_digest()
+        await database.migrate_rag_index_registry()
 
         # ``Database`` is the historical SQLite alias used by existing
         # repositories. The backend-neutral protocol is introduced gradually;
