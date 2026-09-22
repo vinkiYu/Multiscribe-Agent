@@ -52,6 +52,9 @@ dev = [
     "pytest-cov>=4.1",
     "pytest-benchmark>=4.0",
     "pytest-postgresql>=6.0",
+    # haystack-ai 引入纯 Python 版 psycopg(无 libpq),Windows 上 pytest-postgresql
+    # 初始化即报 "no pq wrapper";binary extra 自带 libpq wheel 修复插件加载。
+    "psycopg[binary]>=3.1",
     "respx>=0.21",
     "ruff>=0.5",
     "testcontainers>=4.10",

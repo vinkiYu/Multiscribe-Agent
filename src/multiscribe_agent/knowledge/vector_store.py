@@ -31,8 +31,14 @@ class VectorStore(DialectRepositoryMixin):
                 (chunk_id, list(embedding)),
             )
         else:
+            # sqlite-vec vec0 tables do not honor INSERT OR REPLACE for their
+            # primary key (P66.2 full-rebuild hit UNIQUE constraint), so an
+            # idempotent upsert is delete-then-insert.
             await self._execute(
-                "INSERT OR REPLACE INTO kb_chunks_vec(chunk_id, embedding) VALUES (?, ?)",
+                "DELETE FROM kb_chunks_vec WHERE chunk_id = ?", (chunk_id,)
+            )
+            await self._execute(
+                "INSERT INTO kb_chunks_vec(chunk_id, embedding) VALUES (?, ?)",
                 (chunk_id, struct.pack(f"<{self._dim}f", *embedding)),
             )
 

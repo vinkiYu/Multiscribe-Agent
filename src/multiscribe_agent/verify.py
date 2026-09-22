@@ -19,8 +19,30 @@ Known scope exclusions (documented debt, not silent skips):
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
+
+# pytest wipes ``--basetemp`` at session start; under Windows that rmtree
+# intermittently fails on a polluted in-repo directory (file locks, long
+# paths) and kills every tmp_path test at setup (observed: 86 setup errors).
+# Use a short OS-temp location and pre-clean with errors ignored so the
+# session always starts from a fresh, writable directory.
+_BASETEMP = Path(tempfile.gettempdir()) / "ms-verify-tmp"
+
+# Hermetic test env: loading sentence-transformers triggers an online
+# HuggingFace revision check that hangs on networks where HF is unreachable
+# (observed: test_api_kb froze >45s at KB ingestion). The model is cached
+# locally; offline flags force cache-only loads. Haystack telemetry pings an
+# external endpoint as well.
+_OFFLINE_ENV: dict[str, str] = {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "HAYSTACK_TELEMETRY_ENABLED": "false",
+}
 
 STEPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("ruff check src", (sys.executable, "-m", "ruff", "check", "src")),
@@ -37,7 +59,7 @@ STEPS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "pytest",
             "tests/",
             "--ignore=tests/api",
-            "--basetemp=.verify_tmp",
+            f"--basetemp={_BASETEMP}",
             "-q",
         ),
     ),
@@ -46,9 +68,11 @@ STEPS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 def main() -> int:
     """Run each gate in order, stopping at the first failure."""
+    shutil.rmtree(_BASETEMP, ignore_errors=True)
+    env = {**os.environ, **_OFFLINE_ENV}
     for name, command in STEPS:
         print(f"\n=== verify: {name} ===", flush=True)
-        completed = subprocess.run(command)  # noqa: S603 - fixed argv, no shell
+        completed = subprocess.run(command, env=env)  # noqa: S603 - fixed argv, no shell
         if completed.returncode != 0:
             print(f"\nverify FAILED at: {name}", flush=True)
             return 1
