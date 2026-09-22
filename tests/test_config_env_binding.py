@@ -7,6 +7,7 @@ import pytest
 from multiscribe_agent.bootstrap import (
     DEFAULT_CURATION_AGENT_ID,
     DEFAULT_DAILY_AI_NEWS_TASK_ID,
+    _LEGACY_DAILY_AI_NEWS_RSS_URLS,
     ServiceContext,
 )
 from multiscribe_agent.config import ProviderConfig, SystemSettings
@@ -100,14 +101,13 @@ def test_default_digest_settings_have_mvp_values(monkeypatch: pytest.MonkeyPatch
     assert settings.default_digest_adapter_ids == ["rss-adapter"]
     assert settings.daily_ai_news_cron == "0 9 * * *"
     assert settings.daily_ai_news_rss_urls == [
-        "https://huggingface.co/blog/feed.xml",
+        "https://huggingface.co/daily-papers/rss.xml",
+        "https://tldr.tech/api/rss/ai",
+        "https://news.ycombinator.com/rss",
+        "https://www.lastweekin.ai/feed",
         "https://openai.com/news/rss.xml",
         "https://blog.google/technology/ai/rss/",
-        "https://aws.amazon.com/blogs/machine-learning/feed/",
-        "https://export.arxiv.org/rss/cs.AI",
-        "https://export.arxiv.org/rss/cs.CL",
         "https://simonwillison.net/atom/everything/",
-        "https://github.blog/feed/",
     ]
 
 
@@ -178,11 +178,7 @@ async def test_bootstrap_replaces_only_the_legacy_default_rss_list(tmp_path) -> 
         stored = await context.entities.get("schedules", DEFAULT_DAILY_AI_NEWS_TASK_ID)
         assert stored is not None
         adapter_configs = stored["config"]["adapter_configs"]
-        adapter_configs["rss"]["rss_urls"] = [
-            "https://huggingface.co/blog/feed.xml",
-            "https://openai.com/news/rss.xml",
-            "https://www.deeplearning.ai/the-batch/rss/",
-        ]
+        adapter_configs["rss"]["rss_urls"] = list(_LEGACY_DAILY_AI_NEWS_RSS_URLS)
         await context.entities.save("schedules", DEFAULT_DAILY_AI_NEWS_TASK_ID, stored)
 
         await context._bootstrap_daily_ai_news_schedule(context.entities)

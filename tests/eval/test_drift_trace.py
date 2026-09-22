@@ -63,8 +63,14 @@ def test_drift_skips_missing_cost_history() -> None:
 
 
 def test_load_snapshots_orders_and_reads_live_last(tmp_path: Path) -> None:
-    base = {"avg_f1": 0.77, "avg_precision": 0.77, "avg_recall": 0.84,
-            "avg_tokens": 0, "p50_latency_ms": 0.0, "p95_latency_ms": 0.0}
+    base = {
+        "avg_f1": 0.77,
+        "avg_precision": 0.77,
+        "avg_recall": 0.84,
+        "avg_tokens": 0,
+        "p50_latency_ms": 0.0,
+        "p95_latency_ms": 0.0,
+    }
     (tmp_path / "curation_recall_20260809-000000.json").write_text(
         json.dumps(base), encoding="utf-8"
     )

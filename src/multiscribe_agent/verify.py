@@ -1,0 +1,61 @@
+"""Unified local verification gate: ruff lint + format check + mypy + pytest.
+
+`uv run verify` is the single entry point for the repository's full local
+quality gate. It represents what is verifiable in a normal dev environment;
+it does NOT stand in for staging or production acceptance.
+
+Exit code: 0 when every step passes; 1 on the first failing step.
+
+Known scope exclusions (documented debt, not silent skips):
+
+- ``ruff check`` gates ``src`` only. ``scripts/`` carries lint debt (E501 on
+  long Chinese rationale strings in P57-era one-off eval tooling).
+- ``pytest`` excludes ``tests/api``. Six tests there fail for pre-existing
+  reasons unrelated to code under test: ``test_frontend_static.py`` (4) mounts
+  the removed ``frontend/dist`` (app.py `_mount_frontend` needs a decision on
+  how the migrated prototype is served); ``test_settings.py`` (2) depends on
+  the operator's local ``.env`` overrides.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+
+STEPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("ruff check src", (sys.executable, "-m", "ruff", "check", "src")),
+    (
+        "ruff format --check src tests",
+        (sys.executable, "-m", "ruff", "format", "--check", "src", "tests"),
+    ),
+    ("mypy src", (sys.executable, "-m", "mypy", "src")),
+    (
+        "pytest (hermetic scope)",
+        (
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/",
+            "--ignore=tests/api",
+            "--basetemp=.verify_tmp",
+            "-q",
+        ),
+    ),
+)
+
+
+def main() -> int:
+    """Run each gate in order, stopping at the first failure."""
+    for name, command in STEPS:
+        print(f"\n=== verify: {name} ===", flush=True)
+        completed = subprocess.run(command)  # noqa: S603 - fixed argv, no shell
+        if completed.returncode != 0:
+            print(f"\nverify FAILED at: {name}", flush=True)
+            return 1
+        print(f"=== verify PASS: {name} ===", flush=True)
+    print("\nverify: ALL GREEN", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

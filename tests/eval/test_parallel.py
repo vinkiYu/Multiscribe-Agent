@@ -141,10 +141,7 @@ async def test_benchmark_uses_supplied_workflow_events_for_process_metrics(tmp_p
 async def test_concurrency_must_be_positive(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="concurrency"):
         await run_curation_benchmark(
-            cast("AIProvider", SlowFakeProvider()),
-            _dataset(1),
-            tmp_path / "reports",
-            concurrency=0
+            cast("AIProvider", SlowFakeProvider()), _dataset(1), tmp_path / "reports", concurrency=0
         )
 
 

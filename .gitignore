@@ -22,6 +22,7 @@ __pycache__/
 .tmp-pytest/
 .pytest_tmp/
 .pytest_tmp*/
+.verify_tmp/
 .ptmp/
 .pytest-tmp/
 .pytest-tmp-*/
@@ -49,9 +50,12 @@ logs/migration-*.json
 # Agent 执行prompt、review 记录
 codex/
 # 规划/设计/阶段文档保留本地；README 展示用截图位于 docs/pic/ 并推送。
+# 治理文档(架构/ADR)按 AI Coding 工程规范入库,是 Agent 与人的共同契约。
 docs/*
 !docs/pic/
 !docs/pic/*.png
+!docs/architecture/
+!docs/adr/
 # Local release notes are kept for operator reference and never published.
 docs/release-notes/
 DESIGN.md
@@ -65,7 +69,6 @@ database.sqlite
 .impeccable/
 FRONTEND_PRODUCT_UX_REVIEW.md
 PRODUCT.md
-logo.png
 
 # === 前端迁移遗留 (frontend 已搬到外层 prototype/) ===
 # frontend 整目录的压缩备份，37MB，不入 git

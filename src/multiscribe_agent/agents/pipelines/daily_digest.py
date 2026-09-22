@@ -69,7 +69,7 @@ _CURATE_SUMMARY_CHAR_LIMIT = CURATE_SUMMARY_CHAR_LIMIT
 # Without it an empty summary trips the prompt's low-density reject rule
 # before the model ever sees the product names (P64.4).
 _EMOJI_PATTERN = re.compile(
-    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF\u2B00-\u2BFF\uFE0F\u200D]"
+    "[\U0001f000-\U0001faff\U00002600-\U000027bf\U0001f1e6-\U0001f1ff\u2b00-\u2bff\ufe0f\u200d]"
 )
 
 

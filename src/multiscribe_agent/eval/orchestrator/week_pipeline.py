@@ -129,9 +129,7 @@ class WeekPipeline:
             self._succeed(
                 report,
                 PipelineStep.BENCH,
-                (
-                    "planned benchmark; dry-run made no LLM or filesystem call"
-                ),
+                ("planned benchmark; dry-run made no LLM or filesystem call"),
             )
             self._skip(report, PipelineStep.GATE, "dry-run did not evaluate or promote a baseline")
         else:
@@ -158,10 +156,7 @@ class WeekPipeline:
                 self._succeed(
                     report,
                     PipelineStep.BENCH,
-                    (
-                        f"F1={summary.avg_f1:.3f}, "
-                        f"wall={summary.wall_clock_seconds:.3f}s"
-                    ),
+                    (f"F1={summary.avg_f1:.3f}, wall={summary.wall_clock_seconds:.3f}s"),
                     (summary.report_path,),
                 )
                 self._succeed(report, PipelineStep.GATE, "accepted; baseline promoted")
@@ -180,11 +175,7 @@ class WeekPipeline:
                     report,
                     PipelineStep.GATE,
                     f"rejected dimensions: {', '.join(exc.violations)}",
-                    (
-                        (str(self._ledger_path),)
-                        if self._ledger_path.exists()
-                        else ()
-                    ),
+                    ((str(self._ledger_path),) if self._ledger_path.exists() else ()),
                 )
 
         if benchmark_report is None:
@@ -195,9 +186,7 @@ class WeekPipeline:
         try:
             analysis = analyze_failures(benchmark_report, self._fixtures_dir)
             analysis_markdown = render_analysis(analysis)
-            cluster_markdown = self._render_clusters(
-                collector.collect(benchmark_report), k=4
-            )
+            cluster_markdown = self._render_clusters(collector.collect(benchmark_report), k=4)
             drift_points = load_snapshots(self._baselines_dir)
             detector = DriftDetector()
             drift_markdown = detector.render_trend(drift_points, detector.detect(drift_points))
@@ -214,10 +203,7 @@ class WeekPipeline:
             self._succeed(
                 report,
                 PipelineStep.ANALYZE,
-                (
-                    f"{analysis.total_failed} failures; "
-                    f"{len(drift_points)} accepted baseline points"
-                ),
+                (f"{analysis.total_failed} failures; {len(drift_points)} accepted baseline points"),
                 analysis_paths,
             )
             report.feedback = self._feedback(analysis.distribution)
