@@ -1,7 +1,22 @@
 # MultiscribeAgent — Agent 开发指南（强制首读）
 
 > 本文是任何在本仓库中工作的 AI Agent（含 Codex 执行 Agent）的**强制首读**。
-> 开工前必须完整阅读本文 + `docs/conventions/*`，再阅读所执行的 `docs/phases/Px-*.md`。
+> 开工前必须完整阅读本文 + `CONTEXT.md`（领域词汇）+ `docs/architecture/README.md`（当前架构）+ `docs/conventions/*`，再阅读所执行的 `docs/phases/Px-*.md`；涉及既有关键决策时读 `docs/adr/`。
+
+---
+
+## 0.0 指令优先级（冲突裁决规则）
+
+当文档、代码与历史实现互相冲突时，按以下顺序裁决：
+
+1. 安全规则（本文 §7）与 Agent 协作合同（本文 §0）；
+2. 当前有效的架构文档（`docs/architecture/README.md`）；
+3. 当前功能的 Spec / ADR（`docs/adr/`）；
+4. 当前代码与自动化测试；
+5. 已确认的验证证据（review 中的真实命令输出）；
+6. 历史文档（`docs/phases/` 旧任务包、`codex/reviews/` 归档）——只用于解释"当时为什么这样做"，**不自动覆盖当前架构**。
+
+发现文档与代码事实冲突时：修文档（或提 ADR），不要按过时文档改代码。
 
 ---
 
@@ -17,11 +32,13 @@
 
 **Codex 六条红线**：
 1. 只改当前 `Px-*.md` 的「可改范围（白名单）」内文件，禁动黑名单。
-2. 开工前必读：`AGENTS.md` → 相关 `docs/conventions/*` → 当前 `Px-*.md`。
+2. 开工前必读：`AGENTS.md` → `CONTEXT.md`（术语）→ `docs/architecture/README.md` → 相关 `docs/adr/*` → `docs/conventions/*` → 当前 `Px-*.md`。
 3. 测试是硬门：必须跑全部质量命令并贴**原始输出**，不过不得声称完成。
 4. 完工必须按 `codex/REVIEW_TEMPLATE.md` 自报 review。
 5. 遇歧义**停下问**，禁止在 review 里悄悄猜测实现。
 6. 不硬编码任何密钥；日志不得泄露隐私。
+
+**术语纪律**：写代码、测试名、日志字段、文档时使用 `CONTEXT.md` 的术语，同一概念全仓一个名字；新概念先入 `CONTEXT.md` 再使用。
 
 ---
 
@@ -59,6 +76,7 @@ MultiscribeAgent 是 PrismFlowAgent（TypeScript）的 **Python 重构版**。
 
 ```bash
 uv sync                          # 安装依赖（首次/拉取后）
+uv run verify                    # ★ 一键本地门禁（见下方"统一验证入口"）
 uv run pytest                    # 跑全部测试
 uv run pytest tests/path/ -q     # 跑指定测试
 uv run ruff check .              # lint
@@ -69,34 +87,51 @@ uv run python -m multiscribe_agent serve       # 启动 API
 uv run python -m multiscribe_agent eval --dataset xxx --agent yyy  # 评估（后置）
 ```
 
-**提交前必跑**：`ruff check . && ruff format --check . && mypy src && pytest`，全绿方可提交。
+### 统一验证入口（Policy as Code）
+
+`verify` 代表本仓库在普通开发环境可完成的完整本地门禁（**不**代表真实环境/生产验收完成）：
+
+```bash
+uv run verify   # = ruff check . + ruff format --check . + mypy src + pytest
+```
+
+提交前必跑且全绿；各 phase 文档与 review 中的"质量命令"统一引用 `uv run verify`，不得各自拼装命令造成口径漂移。测试结果标注口径：`PASS`（已执行并通过）/ `FAIL`（已执行但失败）/ `SKIPPED`（主动跳过并说明）/ `PENDING`（缺环境或权限）——四态不得互相替代，Mock 通过不等于真实服务可用。
 
 ## 4. 目录结构
 
 ```
 MultiscribeAgent-main/
 ├── AGENTS.md                   # 本文件（强制首读）
+├── CONTEXT.md                  # 领域词汇表（术语强制）
 ├── docs/
-│   ├── PRD.md  MVP.md  ARCHITECTURE.md
+│   ├── PRD.md  MVP.md
+│   ├── architecture/           # 当前有效架构 + 模块所有权 + 依赖方向
+│   ├── adr/                    # 重大技术决策记录（背景/备选/取舍）
 │   ├── conventions/            # 编码规范、Plugin 契约（硬约束）
-│   └── phases/                 # 分阶段任务包（Px-*.md）+ 进度看板
-├── codex/
-│   ├── EXEC_PROMPT.md          # Codex 总执行 prompt
-│   └── REVIEW_TEMPLATE.md      # 完工自报模板
+│   ├── phases/                 # 分阶段任务包（Px-*.md）+ 进度看板（实施计划层）
+│   ├── reviews/                # 正式验收 review（决策视角）
+│   └── pic/                    # 截图与 logo（含 prototype-screenshots/）
+├── codex/                      # 执行侧工作区（本地保留）：执行 prompt、自评模板、95+ 篇执行原始 review
+├── prototype/                  # 唯一前端（React 19 + Vite，见 ADR-0004）
 ├── src/multiscribe_agent/
 │   ├── api/                    # FastAPI 路由层（薄）
 │   ├── core/                   # 交叉关注点：logging/security/errors/telemetry
 │   ├── domain/                 # 领域模型（pydantic）+ 仓储接口（Port）
-│   ├── infra/                  # db/repositories/embedding/file 持久化实现
+│   ├── infra/                  # db（双方言）/repositories/postgres
 │   ├── llm/                    # Provider 抽象 + 各家实现
 │   ├── agents/                 # Harness + workflow engine + pipelines
 │   ├── plugins/                # adapters/publishers/storages/tools + registries
-│   ├── knowledge/              # 知识库 + 记忆（后置）
-│   ├── observability/          # OTel tracer/meter
-│   └── eval/                   # 评估框架（后置）
+│   ├── knowledge/              # 知识库：摄取 + 混合检索 + VectorStorePort
+│   ├── memory/                 # 长期记忆 / 偏好 / chat 会话
+│   ├── services/               # 采集编排 / candidate_filter / chat_service / interop
+│   ├── eval/                   # 评测体系（四层指标 + 多维门禁 + 周流水线）
+│   ├── mcp/ skills/ renderers/ observability/
+│   ├── app.py cli.py config.py bootstrap.py   # bootstrap = 组合根
 ├── tests/                      # 镜像 src 结构
 └── data/                       # 运行时数据（gitignore）
 ```
+
+文档分工（对应 AI Coding 工程规范）：`CONTEXT.md`=领域语言；`docs/architecture/`=当前架构与所有权；`docs/adr/`=决策与取舍；`docs/phases/`=实施计划与看板；`docs/reviews/` + `codex/reviews/`=验证证据（前者决策视角、后者执行原始记录）。
 
 ### 分层依赖方向（强约束）
 
@@ -172,16 +207,16 @@ api → agents/services → domain（模型/端口）
 
 ## 9. Agent 操作流程（每次开工）
 
-1. **读**：`AGENTS.md` → 相关 `docs/conventions/*` → 当前 `docs/phases/Px-*.md` → `codex/EXEC_PROMPT.md`。
-2. **确认范围**：列出将改动的文件，与白名单/黑名单核对。
+1. **读**：`AGENTS.md` → `CONTEXT.md` → `docs/architecture/README.md` → 相关 `docs/adr/*` → `docs/conventions/*` → 当前 `docs/phases/Px-*.md` → `codex/EXEC_PROMPT.md`。
+2. **确认范围**：列出将改动的文件，与白名单/黑名单核对；确认行为归属模块（见架构文档所有权表）。
 3. **改码**：遵循规范；增量提交。
-4. **自测**：跑 `ruff check . && ruff format --check . && mypy src && pytest`，贴原始输出。
-5. **自报 review**：按 `codex/REVIEW_TEMPLATE.md` 填写，逐条对照验收条件。
+4. **自测**：跑 `uv run verify`（= ruff + ruff format --check + mypy + pytest），贴原始输出。
+5. **自报 review**：按 `codex/REVIEW_TEMPLATE.md` 填写，逐条对照验收条件；如实区分"已完成/未完成"，禁用"基本完成"。
 6. **遇阻**：BLOCKED 项写明原因，停下等指令，不猜。
 
 ---
 
-*Last Updated: 2026-07-15*
+*Last Updated: 2026-09-22*
 
 ## Agent skills
 

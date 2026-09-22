@@ -70,12 +70,16 @@ CREATE TABLE IF NOT EXISTS task_logs (
 );
 """
 
+_JSONB_TABLE_DDL = (
+    "CREATE TABLE IF NOT EXISTS {name} "
+    "(id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{{}}'::jsonb)"
+)
+
 ENTITIES_TABLES = [
-    "CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb)",
-    "CREATE TABLE IF NOT EXISTS skills (id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb)",
-    "CREATE TABLE IF NOT EXISTS workflows (id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb)",
-    "CREATE TABLE IF NOT EXISTS mcp_configs (id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb)",
-    "CREATE TABLE IF NOT EXISTS schedules (id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb, updated_at TEXT)",
+    _JSONB_TABLE_DDL.format(name=name) for name in ("agents", "skills", "workflows", "mcp_configs")
+] + [
+    "CREATE TABLE IF NOT EXISTS schedules "
+    "(id TEXT PRIMARY KEY, data JSONB NOT NULL DEFAULT '{}'::jsonb, updated_at TEXT)",
 ]
 
 SQL_AUDIT_LOG_TABLE = """

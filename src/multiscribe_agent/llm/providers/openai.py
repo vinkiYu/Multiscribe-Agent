@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import AsyncIterator
 from typing import cast
 
@@ -25,7 +26,9 @@ from multiscribe_agent.llm.provider import (
     to_lc_messages,
 )
 
-REQUEST_TIMEOUT_SECONDS = 60.0
+# Heavy generations (long Chinese summaries, thinking-mode models) can exceed
+# 60s; operators can raise the ceiling without a code change (P64.4).
+REQUEST_TIMEOUT_SECONDS = float(os.environ.get("LLM_REQUEST_TIMEOUT_SECONDS", "60.0"))
 log = structlog.get_logger(__name__)
 
 

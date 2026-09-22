@@ -15,7 +15,7 @@ def test_get_settings_defaults(monkeypatch) -> None:
     assert settings.selection_fetch_days == 2
     assert settings.selection_query_field == "ingestion_date"
     assert len(settings.ai_providers) == 4
-    assert len(settings.adapters) == 4
+    assert len(settings.adapters) == 8
     assert len(settings.publishers) == 5
     assert len(settings.storages) == 2
 
@@ -35,6 +35,10 @@ def test_default_plugin_identifiers() -> None:
         "follow-api",
         "ai-search",
         "rss-adapter",
+        "hf-daily-papers",
+        "tldr-ai",
+        "hacker-news",
+        "last-week-in-ai",
     }
     assert {publisher.id for publisher in settings.publishers} == {
         "feishu_bot",

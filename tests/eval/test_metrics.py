@@ -89,9 +89,7 @@ def test_passes_flags_p95_latency_against_formal_default_cap() -> None:
 
 def test_passes_flags_safety_violations_above_zero() -> None:
     """Any single safety counter above max_safety_violations=0 must report 'safety_violations'."""
-    metrics = EvalMetrics(
-        precision=0.9, recall=0.9, f1=0.9, injection_blocked=1
-    )
+    metrics = EvalMetrics(precision=0.9, recall=0.9, f1=0.9, injection_blocked=1)
     failing = metrics.passes(MetricThresholds(max_safety_violations=0))
     assert "safety_violations" in failing
 
@@ -201,9 +199,7 @@ def test_check_input_detects_chinese_injection() -> None:
 
 def test_check_input_detects_phone_pii() -> None:
     """A mainland mobile number is flagged as PII (P64.2 T15)."""
-    report = SafetyGate().check_input(
-        {"title": "联系 13800138000 获取", "description": "探测"}
-    )
+    report = SafetyGate().check_input({"title": "联系 13800138000 获取", "description": "探测"})
     assert not report.passed
     assert report.pii_detected
 

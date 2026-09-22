@@ -103,7 +103,7 @@ class PreferenceExtractor:
         *,
         max_tags: int = MAX_CONVERSATION_DELTA_TAGS,
     ) -> UserPreferences:
-        """Fold one conversation delta into existing preferences without overwriting manual fields."""
+        """Fold one conversation delta into existing preferences, keeping manual fields."""
         if not delta:
             return preferences
         preferred_tags = _merge_list(

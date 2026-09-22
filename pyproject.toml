@@ -69,6 +69,7 @@ text = [
 
 [project.scripts]
 multiscribe-agent = "multiscribe_agent.cli:main"
+verify = "multiscribe_agent.verify:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/multiscribe_agent"]
@@ -79,7 +80,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "S", "PT", "RUF"]
-per-file-ignores = { "tests/**/*.py" = ["ANN", "S"], "src/multiscribe_agent/eval/curation_benchmark.py" = ["RUF001"] }
+# RUF001/501 豁免范围(均为有意为之,不是漂移):
+# - curation_benchmark.py: CURATE_PROMPT 的全角括号 placeholder 文本(P57 共用契约)
+# - memory/extractor.py: 抽取规则中的中文标点(业务语义,不可改半角)
+per-file-ignores = { "tests/**/*.py" = ["ANN", "S"], "src/multiscribe_agent/eval/curation_benchmark.py" = ["RUF001"], "src/multiscribe_agent/memory/extractor.py" = ["RUF001"] }
 
 [tool.ruff.format]
 

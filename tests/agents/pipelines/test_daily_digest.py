@@ -579,7 +579,6 @@ def test_daily_digest_prompts_require_chinese_page_content() -> None:
     assert "只返回中文概览正文" in DIGEST_OVERVIEW_PROMPT
 
 
-
 def test_article_preview_image_prefers_safe_open_graph_metadata() -> None:
     """Article metadata supplies a preview only when it resolves to HTTP(S)."""
     html = '<meta property="og:image" content="/images/preview.jpg"><meta name="twitter:image" content="https://example.test/ignored.jpg">'

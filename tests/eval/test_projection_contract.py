@@ -59,3 +59,59 @@ def test_projection_github_trending_marker_aligns() -> None:
 
     assert _curate_item_dict(item).get("g") is True
     assert _project_candidate(candidate).get("g") is True
+
+
+def test_projection_synthesizes_summary_from_title_when_description_empty() -> None:
+    """Title-only feeds must never reach the curator with an empty summary (P64.4)."""
+    title = "Claude Code browser 🌍, Cursor general agent 🤖, Claude Fable extension ⏳"
+    candidate = CurationCandidate(
+        id="t1",
+        title=title,
+        description="",
+        url="https://example.test/t1",
+        source="TLDR AI",
+    )
+
+    eval_view = _project_candidate(candidate)
+
+    summary = str(eval_view["summary"])
+    assert summary, "empty description must synthesize a visible summary"
+    assert "🌍" not in summary
+    assert "🤖" not in summary
+    assert "Claude Code browser" in summary
+    assert "Cursor general agent" in summary
+
+
+def test_projection_summary_fallback_aligns_between_eval_and_pipeline() -> None:
+    """Both projectors must apply the identical title-derived fallback."""
+    item = UnifiedData(
+        id="t2",
+        title="DeepSeek V4 Flash ⚡, OpenAI's math breakthrough 🔢",
+        description="",
+        url="https://example.test/t2",
+        published_date="2026-09-05",
+        source="TLDR AI",
+        category="tech",
+    )
+    candidate = CurationCandidate(
+        id="t2",
+        title="DeepSeek V4 Flash ⚡, OpenAI's math breakthrough 🔢",
+        description="",
+        url="https://example.test/t2",
+        source="TLDR AI",
+    )
+
+    assert _curate_item_dict(item) == _project_candidate(candidate)
+
+
+def test_projection_keeps_nonempty_description_untouched() -> None:
+    """The fallback must not override a real description."""
+    candidate = CurationCandidate(
+        id="d1",
+        title="Some title",
+        description="A real description with substance.",
+        url="https://example.test/d1",
+        source="rss",
+    )
+
+    assert str(_project_candidate(candidate)["summary"]) == "A real description with substance."

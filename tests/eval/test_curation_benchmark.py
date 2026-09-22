@@ -166,9 +166,7 @@ async def test_safety_gate_gray_mode_flags_but_does_not_block(tmp_path: Path) ->
     )
     dataset = CurationDataset(name="fixture", description="fixture", samples=[poisoned])
 
-    summary = await run_curation_benchmark(
-        FakeProvider({"good"}), dataset, tmp_path / "reports"
-    )
+    summary = await run_curation_benchmark(FakeProvider({"good"}), dataset, tmp_path / "reports")
 
     assert summary.injection_blocked >= 1
     assert summary.total == 1

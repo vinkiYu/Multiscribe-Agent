@@ -141,10 +141,7 @@ async def test_benchmark_uses_supplied_workflow_events_for_process_metrics(tmp_p
 async def test_concurrency_must_be_positive(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="concurrency"):
         await run_curation_benchmark(
-            cast("AIProvider", SlowFakeProvider()),
-            _dataset(1),
-            tmp_path / "reports",
-            concurrency=0
+            cast("AIProvider", SlowFakeProvider()), _dataset(1), tmp_path / "reports", concurrency=0
         )
 
 
@@ -291,3 +288,61 @@ async def test_baseline_overwrite_archives_previous(tmp_path: Path) -> None:
     assert len(archives) == 1
     assert json.loads(archives[0].read_text(encoding="utf-8")) == first
     assert second["total"] == 2
+
+
+class GarbageProvider:
+    """Return unparseable output for the first ``bad_calls`` calls."""
+
+    def __init__(self, bad_calls: int) -> None:
+        self._bad_calls = bad_calls
+        self.calls = 0
+
+    async def generate(self, messages: list[AIMessage], **_: object) -> AIResponse:
+        self.calls += 1
+        if self.calls <= self._bad_calls:
+            return AIResponse(
+                content="sorry, no json here",
+                usage=TokenUsage(input_tokens=100, output_tokens=10, total_tokens=110),
+            )
+        prompt = str(messages[0].content)
+        import re
+
+        ids = re.findall(r'"id":\s*"(cr-\d+-a1)"', prompt)
+        return AIResponse(
+            content=json.dumps([{"id": item} for item in sorted(set(ids))]),
+            usage=TokenUsage(input_tokens=100, output_tokens=50, total_tokens=150),
+        )
+
+
+@pytest.mark.asyncio
+async def test_malformed_output_is_retried_and_recovers(tmp_path: Path) -> None:
+    """One malformed output triggers a retry; the sample recovers (P64.4)."""
+    provider = GarbageProvider(bad_calls=1)
+    summary = await run_curation_benchmark(
+        cast("AIProvider", provider),
+        _dataset(2),
+        tmp_path / "reports",
+        baseline_path=None,
+    )
+
+    assert provider.calls == 3  # 2 samples + 1 retry
+    assert summary.total == 2
+    assert summary.passed == 2
+    assert summary.failed == 0
+
+
+@pytest.mark.asyncio
+async def test_persistent_malformed_output_scores_zero_without_crashing(tmp_path: Path) -> None:
+    """Every call malformed: both samples score 0, the run still completes."""
+    provider = GarbageProvider(bad_calls=10)
+    summary = await run_curation_benchmark(
+        cast("AIProvider", provider),
+        _dataset(2),
+        tmp_path / "reports",
+        baseline_path=None,
+    )
+
+    assert provider.calls == 4  # 2 samples x (1 + 1 retry)
+    assert summary.total == 2
+    assert summary.failed == 2
+    assert summary.avg_f1 == 0.0

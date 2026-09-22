@@ -58,7 +58,7 @@ def _write_fixtures(tmp_path: Path) -> Path:
 
 def test_classify_failure_five_classes() -> None:
     """The five plan classes derive from exact diff sets."""
-    assert classify_failure({"a", "b", "c"}, {"a"}) .failure_type == "miss"
+    assert classify_failure({"a", "b", "c"}, {"a"}).failure_type == "miss"
     assert classify_failure({"a"}, {"a", "b", "c"}).failure_type == "over_select"
     assert classify_failure({"a", "b"}, {"b", "c"}).failure_type == "mixed"
     assert classify_failure({"a"}, set()).failure_type == "all_reject"
@@ -71,9 +71,7 @@ def test_parse_report_rows_from_file(tmp_path: Path) -> None:
     report.write_text(_REPORT, encoding="utf-8")
     rows = parse_report_rows(report)
     assert rows["cr-001"].selected_ids == frozenset({"cr-001-a1"})
-    assert rows["cr-001"].expected_ids == frozenset(
-        {"cr-001-a1", "cr-001-a2", "cr-001-a3"}
-    )
+    assert rows["cr-001"].expected_ids == frozenset({"cr-001-a1", "cr-001-a2", "cr-001-a3"})
     assert rows["cr-001"].f1 == 0.667
     assert classify_row(rows["cr-001"]) == "miss"
     assert classify_row(rows["cr-008"]) == "all_reject"

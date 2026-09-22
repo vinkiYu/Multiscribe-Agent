@@ -47,6 +47,7 @@ CURATE_PROMPT = """你是一名 AI 资讯编辑，最终只返回严格 JSON 数
 - "Celebrating $100 million for open source" → 拒（融资公告）
 - AI 公司新闻（Anthropic / DeepSeek / Meta / OpenAI / Google 产品发布、研究结果） → 选
 - 教程/操作步骤即使主题是 AI（如"Build with Claude Code"）→ 拒
+- **TLDR AI 等简报聚合条目（一条标题内含多条快讯）**：其中含具体模型/产品发布或公司重大动态（有模型名/产品名/公司名，如 Claude Code browser、Cursor general agent、DeepSeek V4 Flash）→ 按"产品与功能更新"或"行业事件"正常评分可选；纯市场行情、与 AI 无关的行业动态、不含任何具体 AI 模型/产品/公司名 → 拒
 
 【用户偏好】
 关注主题：{preferred_tags}
