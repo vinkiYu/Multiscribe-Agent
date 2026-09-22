@@ -50,14 +50,14 @@ class WideFakeEmbedder:
         return [[1.0] * 384 for _ in texts]
 
 
-def _adapted(description: str = "first"):
+def _adapted(description: str = "first", *, source_id: str = "source-1"):
     from datetime import UTC, datetime
 
     from multiscribe_agent.domain.models import SourceData
 
     now = datetime(2026, 9, 22, tzinfo=UTC).isoformat()
     row = SourceData(
-        id="source-1",
+        id=source_id,
         title="One",
         url="https://example.com/one",
         description=description,
@@ -158,5 +158,29 @@ async def test_sqlite_vec_receives_indexed_embedding(tmp_path) -> None:
             (adapted.chunks[0].chunk_id,),
         )
         assert row is not None
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
+async def test_prune_source_documents_deletes_vector_and_registry_rows(tmp_path) -> None:
+    """SourceData outside the active window is removed from both stores."""
+    db = await init_db(str(tmp_path / "rag.sqlite"))
+    try:
+        first = _adapted("keep", source_id="source-1")
+        second = _adapted("remove", source_id="source-2")
+        assert first is not None
+        assert second is not None
+        vector_store = FakeVectorStore()
+        registry = RagIndexRegistry(db)
+        pipeline = RagIndexingPipeline(vector_store, registry, FakeEmbedder())
+
+        await pipeline.index([first, second], index_version="v1")
+        deleted = await pipeline.prune_source_documents({first.document.document_id})
+
+        assert deleted == (second.chunks[0].chunk_id,)
+        assert second.chunks[0].chunk_id not in vector_store.values
+        assert await registry.get_by_document(second.document.document_id) == []
+        assert await registry.get_by_document(first.document.document_id)
     finally:
         await db.close()
