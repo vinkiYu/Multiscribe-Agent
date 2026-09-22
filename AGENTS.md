@@ -40,6 +40,12 @@
 
 **术语纪律**：写代码、测试名、日志字段、文档时使用 `CONTEXT.md` 的术语，同一概念全仓一个名字；新概念先入 `CONTEXT.md` 再使用。
 
+**分支纪律**（Git 操作归执行 Agent）：
+1. **新模块开发、大规模重构**（跨包 / 预计改动 > 20 文件 / 动公共契约）**必须拉新分支**：从最新 `master` 拉（先 `git fetch`），命名 `feature/<编号>-<主题>`（如 `feature/p66-rag-pipeline`）。
+2. 规划 Agent 与决策者不做 git 操作；执行 Agent 负责拉分支 / commit / push / 合并，**合回 `master` 须经决策者拍板**。
+3. 每子包 ≥ 1 个独立 commit（沿用 `{类型}({范围}): {主题}` 风格）；合回前工作区干净且 `uv run verify` 全绿；合并默认 fast-forward，合完删除 feature 分支（本地+远端）。
+4. 小修（文档 / 单点 bug / 格式）可在分支或 `master` 直接进行，但不得与在途 feature 分支混淆。
+
 ---
 
 ## 1. 项目定位
