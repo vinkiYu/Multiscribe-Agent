@@ -60,6 +60,36 @@ _Avoid_: Top-N(仅指排序取前 N 的通用动作)
 
 _Avoid_: Knowledge 单独指表;Document 与 UnifiedData 混称
 
+**KnowledgeDocument / KnowledgeChunk**
+
+P66 RAG 子系统的统一文档与切分契约:KnowledgeDocument 同时承载 KB 与 SourceData 的来源、用户归属、时间和内容哈希;KnowledgeChunk 是可被索引和召回的最小内容单元。它们是跨后端的对外模型,不是新的业务表。
+
+_Avoid_: 把 KnowledgeDocument 当作数据库实体;用 UnifiedData 代替已索引文档;把 KBDocument 与 SourceData 混成同一来源
+
+**RetrievedEvidence**
+
+RAG 返回给 Agent 的带证据结果,同时包含 KnowledgeChunk、KnowledgeDocument、检索分数、检索来源和 RetrievalScope。后续 Agent Context 注入必须优先消费该对象,不得只传裸文本而丢失标题、URL、来源和范围。
+
+_Avoid_: RetrievedContext 裸字符串列表;无来源的 chunk 文本;把 score 当作业务可信度
+
+**RetrievalScope**
+
+检索可见范围。`user_id` 是硬隔离边界,跨用户不可见;`agent_id` 是可选的软过滤维度,为 None 时表示在当前用户范围内不过滤 Agent。categories、sources、doc_types 和时间范围是附加过滤条件。
+
+_Avoid_: 把 agent_id 当成用户权限边界;省略 user_id 的全局检索;跨用户共享 KB
+
+**RagService**
+
+业务层依赖的统一 RAG 服务协议,负责 retrieve、index_document、rebuild_index 和 capabilities。Haystack、BM25、向量库和可选 reranker 都只能藏在该协议之后;P66.1 只冻结接口,实现从 P66.2/P66.3 开始。
+
+_Avoid_: 在 Agent/API 里直接调用 Haystack;把 Retriever、KBService 和 SearchSourceDataTool 当作统一服务名
+
+**时间窗索引**
+
+SourceData 的 RAG 索引策略:默认只索引最近 7 天的资讯,通过 `RAG_SOURCE_WINDOW_DAYS` 配置,并采用增量更新;旧资讯自然滚出索引。SourceData 的现有 FTS 路径在迁移期间始终保留。
+
+_Avoid_: 把全部历史 SourceData 永久放入向量索引;用时间窗索引替代事实源 `source_data` 表
+
 **Hybrid Retrieval(混合检索)**
 
 FTS5/bm25 关键词召回 + 向量召回,经 RRF(Reciprocal Rank Fusion, K=60)融合的检索方式。由 `knowledge/retriever.py` 实现。

@@ -42,6 +42,7 @@
 | `agents/` | Harness、DAG workflow 引擎、daily_digest pipeline、ContextProvider、curator_judge | `executor.py`、`context.py`、`workflow/`、`pipelines/` | 直接写库(经仓储);绕过 Provider 直连 SDK |
 | `plugins/` | 四类插件(Adapter/Publisher/Storage/Tool)+ 注册发现 + 审批边界 | `base.py`、`registry.py`、`discovery.py`、`builtin/`、`security.py` | custom 插件未审计入主进程 |
 | `knowledge/` | 知识库:摄取(切分/去重)、混合检索(RRF)、VectorStorePort、embedding | `kb_service.py`、`retriever.py`、`vector_store.py`、`embedding_service.py` | 依赖 agents/api/memory(检索协议层保持单向) |
+| `rag/` | P66 统一 RAG 对外契约:KnowledgeDocument/Chunk、RetrievedEvidence、RetrievalScope、RagService Protocol | `models.py`、`ports.py` | P66.1 只定义接口;不得在此放 Haystack、数据库或具体检索实现 |
 | `memory/` | 长期记忆、用户偏好、chat 会话、digest 上下文 | `memory_service.py`、`preference_store.py`、`retriever.py` | — |
 | `services/` | 应用服务:采集编排、candidate_filter、chat_service、interop(对外 API key) | `ingestion.py`、`chat_service.py` | 跳过 domain 模型传裸 dict |
 | `eval/` | 评测体系:curation benchmark(P/R/F1)、四层指标 schema、安全门、trace、ledger、drift、week pipeline | `curation_benchmark.py`、`metrics_schema.py`、`safety_gate.py`、`orchestrator/` | 评测逻辑散落 scripts |
@@ -55,6 +56,7 @@
 bootstrap(组合根) → 一切
 api → services → agents/plugins → domain(模型+Protocol)
 agents/plugins → llm / knowledge / memory / infra(经注入)
+rag → (pydantic + stdlib only; P66.2+ 的适配器由 knowledge/infra 实现)
 infra / llm / knowledge / memory → domain
 domain → (pydantic + stdlib only)
 eval → domain / llm(评测独立于生产链路,不反向注入)
