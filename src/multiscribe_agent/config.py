@@ -366,6 +366,18 @@ class SystemSettings(BaseSettings):
             "PROVIDER_OUTPUT_TOKENS", "MULTISCRIBE_PROVIDER_OUTPUT_TOKENS"
         ),
     )
+    rag_source_window_days: int = Field(
+        default=7,
+        ge=0,
+        validation_alias=AliasChoices(
+            "RAG_SOURCE_WINDOW_DAYS", "MULTISCRIBE_RAG_SOURCE_WINDOW_DAYS"
+        ),
+    )
+    rag_default_user_id: str = Field(
+        default="default",
+        min_length=1,
+        validation_alias=AliasChoices("RAG_DEFAULT_USER_ID", "MULTISCRIBE_RAG_DEFAULT_USER_ID"),
+    )
     http_proxy: str = Field(
         default="",
         validation_alias=AliasChoices("HTTP_PROXY", "MULTISCRIBE_HTTP_PROXY"),
