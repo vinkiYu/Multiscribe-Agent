@@ -1,4 +1,4 @@
-"""PostgreSQL schema for the P66 RAG index manifest."""
+"""PostgreSQL schema for the P66 RAG derived index."""
 
 from __future__ import annotations
 
@@ -17,4 +17,28 @@ CREATE TABLE IF NOT EXISTS rag_index_registry (
 RAG_INDEX_REGISTRY_INDEXES = (
     "CREATE INDEX IF NOT EXISTS idx_rag_index_registry_document ON rag_index_registry(document_id)",
     "CREATE INDEX IF NOT EXISTS idx_rag_index_registry_type ON rag_index_registry(doc_type)",
+)
+
+RAG_CHUNKS_TABLE = """
+CREATE TABLE IF NOT EXISTS rag_chunks (
+    chunk_id TEXT PRIMARY KEY,
+    document_id TEXT NOT NULL,
+    doc_type TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    content_tsv tsvector NOT NULL,
+    published_at TEXT,
+    category TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    agent_id TEXT
+)
+"""
+
+RAG_CHUNKS_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_document ON rag_chunks(document_id)",
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_scope "
+    "ON rag_chunks(user_id, doc_type, published_at)",
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_content_tsv ON rag_chunks USING GIN(content_tsv)",
 )

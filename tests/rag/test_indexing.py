@@ -95,6 +95,11 @@ async def test_registry_and_incremental_indexing(tmp_path) -> None:
         assert len(unchanged.skipped_chunk_ids) == 1
         assert len(changed.indexed_chunk_ids) == 1
         assert len(await registry.get_by_document(first.document.document_id)) == 1
+        rag_chunk = await db.fetchone(
+            "SELECT chunk_id FROM rag_chunks WHERE chunk_id = ?",
+            (first.chunks[0].chunk_id,),
+        )
+        assert rag_chunk is not None
         assert len(vector_store.values) == 1
         assert len(embedder.calls) >= 2
     finally:
@@ -181,6 +186,13 @@ async def test_prune_source_documents_deletes_vector_and_registry_rows(tmp_path)
         assert deleted == (second.chunks[0].chunk_id,)
         assert second.chunks[0].chunk_id not in vector_store.values
         assert await registry.get_by_document(second.document.document_id) == []
+        assert (
+            await db.fetchone(
+                "SELECT chunk_id FROM rag_chunks WHERE chunk_id = ?",
+                (second.chunks[0].chunk_id,),
+            )
+            is None
+        )
         assert await registry.get_by_document(first.document.document_id)
     finally:
         await db.close()

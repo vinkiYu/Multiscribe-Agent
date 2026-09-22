@@ -25,6 +25,7 @@ from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
 from multiscribe_agent.rag.adapter import AdaptedDocument
 from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument
+from multiscribe_agent.rag.schema import RagChunksStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,11 +355,13 @@ class _VectorSinkComponent:
         vector_store: VectorStorePort,
         registry: RagIndexRegistry,
         documents: dict[str, KnowledgeDocument],
+        rag_chunks: RagChunksStore,
     ) -> None:
-        """Bind the backend-neutral vector store and registry."""
+        """Bind the vector store, registry, and content-side derived index."""
         self._vector_store = vector_store
         self._registry = registry
         self._documents = documents
+        self._rag_chunks = rag_chunks
 
     @component.output_types(
         indexed_chunk_ids=list[str],
@@ -390,6 +393,13 @@ class _VectorSinkComponent:
                         index_version=index_version,
                     )
                 )
+                _run_async(
+                    self._rag_chunks.upsert(
+                        item.chunk,
+                        document,
+                        indexed_at=indexed_at,
+                    )
+                )
                 indexed.append(item.chunk.chunk_id)
             except (RuntimeError, ValueError, TypeError) as exc:
                 log.warning(
@@ -400,6 +410,9 @@ class _VectorSinkComponent:
                 )
                 if item.chunk.document_id not in failed:
                     failed.append(item.chunk.document_id)
+                _run_async(self._vector_store.delete(item.chunk.chunk_id))
+                _run_async(self._registry.delete(item.chunk.chunk_id))
+                _run_async(self._rag_chunks.delete(item.chunk.chunk_id))
         return {"indexed_chunk_ids": indexed, "failed_document_ids": failed}
 
 
@@ -416,6 +429,7 @@ class RagIndexingPipeline:
         self._vector_store = vector_store
         self._registry = registry
         self._embedder = embedder
+        self._rag_chunks = RagChunksStore(registry._db)
 
     async def index(
         self,
@@ -427,6 +441,7 @@ class RagIndexingPipeline:
     ) -> IndexReport:
         """Index adapted documents with hash-based skipping and stale cleanup."""
         await self._registry.ensure_schema()
+        await self._rag_chunks.ensure_schema()
         candidates: list[AdaptedDocument] = []
         skipped: list[str] = []
         deleted: list[str] = []
@@ -440,11 +455,16 @@ class RagIndexingPipeline:
                 if chunk_id not in current_ids:
                     await self._vector_store.delete(chunk_id)
                     await self._registry.delete(chunk_id)
+                    await self._rag_chunks.delete(chunk_id)
                     deleted.append(chunk_id)
             chunks_to_index: list[KnowledgeChunk] = []
             for chunk in adapted.chunks:
                 old_hash = existing.get(chunk.chunk_id, {}).get("content_hash")
-                if incremental and old_hash == _content_hash(chunk.content):
+                if (
+                    incremental
+                    and old_hash == _content_hash(chunk.content)
+                    and await self._rag_chunks.exists(chunk.chunk_id)
+                ):
                     skipped.append(chunk.chunk_id)
                 else:
                     chunks_to_index.append(chunk)
@@ -458,6 +478,7 @@ class RagIndexingPipeline:
                     chunk_id = str(row["chunk_id"])
                     await self._vector_store.delete(chunk_id)
                     await self._registry.delete(chunk_id)
+                    await self._rag_chunks.delete(chunk_id)
                     deleted.append(chunk_id)
 
         if not candidates:
@@ -490,6 +511,7 @@ class RagIndexingPipeline:
     async def prune_source_documents(self, active_document_ids: set[str]) -> tuple[str, ...]:
         """Delete source-data vectors that have rolled outside the active window."""
         await self._registry.ensure_schema()
+        await self._rag_chunks.ensure_schema()
         deleted: list[str] = []
         for row in await self._registry.list_source_documents():
             document_id = str(row["document_id"])
@@ -498,6 +520,7 @@ class RagIndexingPipeline:
             chunk_id = str(row["chunk_id"])
             await self._vector_store.delete(chunk_id)
             await self._registry.delete(chunk_id)
+            await self._rag_chunks.delete(chunk_id)
             deleted.append(chunk_id)
         return tuple(deleted)
 
@@ -508,7 +531,12 @@ class RagIndexingPipeline:
         pipeline.add_component("embedder", _EmbeddingComponent(self._embedder))
         pipeline.add_component(
             "sink",
-            _VectorSinkComponent(self._vector_store, self._registry, documents),
+            _VectorSinkComponent(
+                self._vector_store,
+                self._registry,
+                documents,
+                self._rag_chunks,
+            ),
         )
         pipeline.connect("source.chunks", "embedder.chunks")
         pipeline.connect("embedder.embedded", "sink.embedded")

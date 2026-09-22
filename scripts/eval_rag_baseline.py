@@ -1,9 +1,4 @@
-"""Measure the P66.1 baseline of the existing KB and SourceData retrievers.
-
-This script deliberately does not import Haystack or the new RAG contracts.  It
-is a frozen comparison harness for the pre-P66 paths; later phases can run the
-same dataset and compare their metrics without changing this baseline method.
-"""
+"""Compare the frozen legacy retriever with the P66.3 RagService path."""
 
 from __future__ import annotations
 
@@ -11,18 +6,21 @@ import argparse
 import asyncio
 import hashlib
 import json
+import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from multiscribe_agent.infra.db import SqliteDatabase
+from multiscribe_agent.infra.db import SqliteDatabase, init_db
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
 from multiscribe_agent.knowledge.kb_service import KBService
 from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_store import VectorStore
+from multiscribe_agent.rag.models import RetrievalScope
+from multiscribe_agent.rag.service import RagService
 
 ALLOWED_INTENTS = {"exact-term", "semantic", "mixed", "temporal"}
 DEFAULT_DATASET = Path("data/eval/rag_queries.jsonl")
@@ -65,6 +63,7 @@ class QueryResult:
     recall_at_10: float
     reciprocal_rank: float
     citation_coverage: float
+    latency_ms: float
     errors: tuple[str, ...]
 
 
@@ -75,6 +74,17 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
     parser.add_argument("--candidate-k", type=int, default=20)
+    parser.add_argument(
+        "--impl",
+        choices=("old", "new", "both"),
+        default="old",
+        help="Run the frozen legacy path, P66.3 RagService, or both.",
+    )
+    parser.add_argument(
+        "--user-id",
+        default="default",
+        help="RetrievalScope user_id used by the new RagService path.",
+    )
     parser.add_argument(
         "--enable-vector",
         action="store_true",
@@ -176,6 +186,7 @@ async def _search_one(
     candidate_k: int,
 ) -> QueryResult:
     """Run both legacy retrieval paths and normalize their ranked results."""
+    started = time.perf_counter()
     ranked: list[RankedResult] = []
     errors: list[str] = []
     try:
@@ -231,8 +242,63 @@ async def _search_one(
         recall_at_10=_recall(deduped[:10], relevant),
         reciprocal_rank=_mrr(deduped, relevant),
         citation_coverage=_citation_coverage(deduped),
+        latency_ms=(time.perf_counter() - started) * 1000,
         errors=tuple(errors),
     )
+
+
+async def _search_one_new(
+    record: QueryRecord,
+    rag_service: RagService,
+    scope: RetrievalScope,
+    candidate_k: int,
+) -> QueryResult:
+    """Run P66.3 hybrid retrieval and normalize RetrievedEvidence for the harness."""
+    started = time.perf_counter()
+    errors: list[str] = []
+    try:
+        evidence = await rag_service.retrieve(record.query, scope, top_k=candidate_k)
+    except Exception as exc:  # Keep one malformed query from hiding the comparison.
+        evidence = []
+        errors.append(f"rag:{type(exc).__name__}")
+    ranked = [
+        RankedResult(
+            key=_evidence_key(
+                item.document.doc_type,
+                item.document.document_id,
+                item.chunk.content,
+            ),
+            title=item.document.title,
+            url=item.document.url,
+            source=item.document.source,
+            retrieval_source=item.retrieval_source,
+            score=item.score,
+            citation_complete=bool(
+                item.document.title.strip()
+                and item.document.url.strip()
+                and item.document.source.strip()
+            ),
+        )
+        for item in evidence
+    ]
+    relevant = set(record.relevant)
+    return QueryResult(
+        query=record,
+        results=tuple(ranked),
+        recall_at_5=_recall(ranked[:5], relevant),
+        recall_at_10=_recall(ranked[:10], relevant),
+        reciprocal_rank=_mrr(ranked, relevant),
+        citation_coverage=_citation_coverage(ranked),
+        latency_ms=(time.perf_counter() - started) * 1000,
+        errors=tuple(errors),
+    )
+
+
+def _evidence_key(doc_type: str, document_id: str, content: str) -> tuple[str, str]:
+    """Map a RetrievedEvidence identity to the frozen dataset identity."""
+    if doc_type == "source_data":
+        return (doc_type, document_id.removeprefix("source_data:"))
+    return (doc_type, hashlib.sha256(content.encode()).hexdigest()[:16])
 
 
 def _recall(results: list[RankedResult], relevant: set[tuple[str, str]]) -> float:
@@ -267,7 +333,10 @@ def _aggregate(results: list[QueryResult]) -> dict[str, float | int]:
             "mrr": 0.0,
             "citation_coverage": 0.0,
             "queries_with_results": 0,
+            "latency_p50_ms": 0.0,
+            "latency_p95_ms": 0.0,
         }
+    latencies = sorted(item.latency_ms for item in results)
     return {
         "queries": len(results),
         "recall_at_5": sum(item.recall_at_5 for item in results) / len(results),
@@ -275,7 +344,17 @@ def _aggregate(results: list[QueryResult]) -> dict[str, float | int]:
         "mrr": sum(item.reciprocal_rank for item in results) / len(results),
         "citation_coverage": sum(item.citation_coverage for item in results) / len(results),
         "queries_with_results": sum(bool(item.results) for item in results),
+        "latency_p50_ms": _percentile(latencies, 0.50),
+        "latency_p95_ms": _percentile(latencies, 0.95),
     }
+
+
+def _percentile(values: list[float], quantile: float) -> float:
+    """Return a deterministic nearest-rank percentile for a non-empty list."""
+    if not values:
+        return 0.0
+    index = min(len(values) - 1, max(0, round((len(values) - 1) * quantile)))
+    return values[index]
 
 
 def _render_report(
@@ -286,93 +365,115 @@ def _render_report(
     source_count: int,
     chunk_count: int,
     vector_enabled: bool,
-    results: list[QueryResult],
+    results_by_impl: dict[str, list[QueryResult]],
 ) -> str:
-    """Render a human-readable report with overall and per-intent metrics."""
-    grouped: dict[str, list[QueryResult]] = defaultdict(list)
-    for result in results:
-        grouped[result.query.intent].append(result)
+    """Render a human-readable old/new comparison report."""
     vector_state = "enabled" if vector_enabled else "disabled"
     lines = [
-        "# P66.1 RAG 旧路径基线",
+        "# P66.3 RAG 检索对照报告",
         "",
         f"- 生成时间: `{generated_at}`",
-        f"- 数据集: `{dataset}` ({len(results)} 条)",
+        f"- 数据集: `{dataset}`",
         f"- 数据库: `{database}`",
         f"- 当前数据: SourceData `{source_count}` 条, KBChunk `{chunk_count}` 条",
-        f"- 向量路径: `{vector_state}` (默认关闭以避免基线触发模型下载)",
-        "",
-        "## 指标",
-        "",
-        "| 意图 | Queries | Recall@5 | Recall@10 | MRR | 引用覆盖率 | 有结果查询 |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        f"- 向量路径: `{vector_state}`",
     ]
-    for intent in ("exact-term", "semantic", "mixed", "temporal"):
-        metrics = _aggregate(grouped[intent])
-        lines.append(
-            f"| {intent} | {metrics['queries']} | {metrics['recall_at_5']:.4f} | "
-            f"{metrics['recall_at_10']:.4f} | {metrics['mrr']:.4f} | "
-            f"{metrics['citation_coverage']:.4f} | {metrics['queries_with_results']} |"
+    for implementation, results in results_by_impl.items():
+        grouped: dict[str, list[QueryResult]] = defaultdict(list)
+        for result in results:
+            grouped[result.query.intent].append(result)
+        lines.extend(
+            [
+                "",
+                f"## {implementation}",
+                "",
+                "| 意图 | Queries | Recall@5 | Recall@10 | MRR | 引用覆盖率 | "
+                "有结果查询 | p50(ms) | p95(ms) |",
+                "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
         )
-    metrics = _aggregate(results)
-    lines.extend(
-        [
+        for intent in ("exact-term", "semantic", "mixed", "temporal"):
+            metrics = _aggregate(grouped[intent])
+            lines.append(
+                f"| {intent} | {metrics['queries']} | {metrics['recall_at_5']:.4f} | "
+                f"{metrics['recall_at_10']:.4f} | {metrics['mrr']:.4f} | "
+                f"{metrics['citation_coverage']:.4f} | {metrics['queries_with_results']} | "
+                f"{metrics['latency_p50_ms']:.2f} | {metrics['latency_p95_ms']:.2f} |"
+            )
+        metrics = _aggregate(results)
+        lines.append(
             f"| **overall** | **{metrics['queries']}** | **{metrics['recall_at_5']:.4f}** | "
             f"**{metrics['recall_at_10']:.4f}** | **{metrics['mrr']:.4f}** | "
-            f"**{metrics['citation_coverage']:.4f}** | **{metrics['queries_with_results']}** |",
-            "",
-            "## 查询明细",
-            "",
-            "| Query ID | Intent | 返回数 | Recall@5 | Recall@10 | MRR | Citation | 错误 |",
-            "| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
-        ]
-    )
-    for item in results:
-        lines.append(
-            f"| {item.query.query_id} | {item.query.intent} | {len(item.results)} | "
-            f"{item.recall_at_5:.4f} | {item.recall_at_10:.4f} | "
-            f"{item.reciprocal_rank:.4f} | {item.citation_coverage:.4f} | "
-            f"{', '.join(item.errors) or '-'} |"
+            f"**{metrics['citation_coverage']:.4f}** | **{metrics['queries_with_results']}** | "
+            f"**{metrics['latency_p50_ms']:.2f}** | **{metrics['latency_p95_ms']:.2f}** |"
         )
+        lines.extend(
+            [
+                "",
+                "### 查询明细",
+                "",
+                "| Query ID | Intent | 返回数 | Recall@5 | Recall@10 | MRR | "
+                "Citation | p50(ms) | 错误 |",
+                "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+            ]
+        )
+        for item in results:
+            lines.append(
+                f"| {item.query.query_id} | {item.query.intent} | {len(item.results)} | "
+                f"{item.recall_at_5:.4f} | {item.recall_at_10:.4f} | "
+                f"{item.reciprocal_rank:.4f} | {item.citation_coverage:.4f} | "
+                f"{item.latency_ms:.2f} | {', '.join(item.errors) or '-'} |"
+            )
     lines.extend(
         [
             "",
-            "> 说明: P66.1 基线只测现有 `KBService/Retriever` 与 "
-            "`SourceDataRepository.search_fts`, "
-            "不引入 Haystack, 不改变生产检索行为。KB 结果当前没有完整 title/url/source 元数据, "
-            "因此引用覆盖率如实反映旧路径能力。",
+            "> 说明: `old` 只测现有 `KBService/Retriever` 与 "
+            "`SourceDataRepository.search_fts`; `new` 测 P66.3 `RagService` 的 BM25 + 向量 + RRF。",
         ]
     )
     return "\n".join(lines) + "\n"
 
 
 async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]:
-    """Run validation, legacy retrieval, and report generation."""
+    """Run one or both retrieval implementations and write a comparison report."""
     records = _load_queries(args.dataset)
     if args.candidate_k < 1:
         raise ValueError("--candidate-k must be positive")
-    db = await SqliteDatabase.open(str(args.database), enable_sql_audit=False)
+    # ``init_db`` loads sqlite-vec on the active connection; opening a raw
+    # connection would make the dense route look unavailable in evaluation.
+    db = await init_db(str(args.database), enable_sql_audit=False)
     try:
         source_count, chunk_count, _, _ = await _validate_references(db, records)
         vector_requested = args.enable_vector and EmbeddingService.is_available()
         embeddings = EmbeddingService() if vector_requested else None
         vector_store = VectorStore(db) if embeddings is not None else None
-        kb_service = KBService(
-            db,
-            DocumentProcessor(),
-            embeddings,
-            vector_store,
-            Retriever(db, vector_store, embeddings),
-        )
-        source_repository = SourceDataRepository(db)
-        results = [
-            await _search_one(record, kb_service, source_repository, args.candidate_k)
-            for record in records
-        ]
+        results_by_impl: dict[str, list[QueryResult]] = {}
+        if args.impl in {"old", "both"}:
+            kb_service = KBService(
+                db,
+                DocumentProcessor(),
+                embeddings,
+                vector_store,
+                Retriever(db, vector_store, embeddings),
+            )
+            source_repository = SourceDataRepository(db)
+            results_by_impl["old"] = [
+                await _search_one(record, kb_service, source_repository, args.candidate_k)
+                for record in records
+            ]
+        if args.impl in {"new", "both"}:
+            rag_service = RagService(db, vector_store, embeddings, candidate_k=args.candidate_k)
+            scope = RetrievalScope(user_id=args.user_id)
+            results_by_impl["new"] = [
+                await _search_one_new(record, rag_service, scope, args.candidate_k)
+                for record in records
+            ]
     finally:
         await db.close()
     generated_at = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    stem = f"rag-baseline_{generated_at}"
+    stem = (
+        f"rag-compare_{generated_at}" if args.impl == "both" else f"rag-{args.impl}_{generated_at}"
+    )
     args.report_dir.mkdir(parents=True, exist_ok=True)
     report_path = args.report_dir / f"{stem}.md"
     json_path = args.report_dir / f"{stem}.json"
@@ -384,10 +485,34 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
             source_count=source_count,
             chunk_count=chunk_count,
             vector_enabled=vector_requested,
-            results=results,
+            results_by_impl=results_by_impl,
         ),
         encoding="utf-8",
     )
+    machine_by_impl = {
+        implementation: {
+            "overall": _aggregate(results),
+            "by_intent": {
+                intent: _aggregate([r for r in results if r.query.intent == intent])
+                for intent in sorted(ALLOWED_INTENTS)
+            },
+            "queries": [
+                {
+                    "query_id": item.query.query_id,
+                    "intent": item.query.intent,
+                    "returned": len(item.results),
+                    "recall_at_5": item.recall_at_5,
+                    "recall_at_10": item.recall_at_10,
+                    "mrr": item.reciprocal_rank,
+                    "citation_coverage": item.citation_coverage,
+                    "latency_ms": item.latency_ms,
+                    "errors": list(item.errors),
+                }
+                for item in results
+            ],
+        }
+        for implementation, results in results_by_impl.items()
+    }
     machine = {
         "generated_at": datetime.now(UTC).isoformat(),
         "dataset": str(args.dataset),
@@ -395,24 +520,8 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
         "source_data_count": source_count,
         "kb_chunk_count": chunk_count,
         "vector_enabled": vector_requested,
-        "overall": _aggregate(results),
-        "by_intent": {
-            intent: _aggregate([r for r in results if r.query.intent == intent])
-            for intent in sorted(ALLOWED_INTENTS)
-        },
-        "queries": [
-            {
-                "query_id": item.query.query_id,
-                "intent": item.query.intent,
-                "returned": len(item.results),
-                "recall_at_5": item.recall_at_5,
-                "recall_at_10": item.recall_at_10,
-                "mrr": item.reciprocal_rank,
-                "citation_coverage": item.citation_coverage,
-                "errors": list(item.errors),
-            }
-            for item in results
-        ],
+        "impl": args.impl,
+        "implementations": machine_by_impl,
     }
     json_path.write_text(json.dumps(machine, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report_path, json_path, machine
@@ -422,10 +531,9 @@ def main() -> int:
     """Run the async baseline harness as a CLI command."""
     args = _parse_args()
     report_path, json_path, machine = asyncio.run(_run(args))
-    overall = machine["overall"]
     print(f"report={report_path}")
     print(f"json={json_path}")
-    print(json.dumps(overall, ensure_ascii=False, sort_keys=True))
+    print(json.dumps(machine["implementations"], ensure_ascii=False, sort_keys=True))
     return 0
 
 
