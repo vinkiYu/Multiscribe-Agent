@@ -18,7 +18,7 @@
 | LLM | LangChain(`langchain-openai/-anthropic/-google-genai`)+ LangGraph | provider 经中转(base_url)或官方端点 |
 | 数据库 | **双方言**:SQLite + WAL(默认)/ PostgreSQL(`DB_DRIVER=postgres`) | 结构化列 + JSON blob;无正式迁移框架,`CREATE TABLE IF NOT EXISTS` 幂等 |
 | 全文检索 | SQLite FTS5(bm25)/ PostgreSQL tsvector | 方言差异收敛在 `knowledge/fts_query.py` + `infra/dialect.py` |
-| 向量 | **`VectorStorePort` 协议**:SQLite→`sqlite-vec`;PostgreSQL→pgvector | embedding 默认 `sentence-transformers/all-MiniLM-L6-v2`(384 维,惰性加载) |
+| 向量 | **`VectorStorePort` 协议**:SQLite→`sqlite-vec`;PostgreSQL→pgvector | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭 |
 | 工作流 | 自研 DAG(Kahn 拓扑 + 批次并行 + 子工作流嵌套 + Loop 自评) | |
 | Agent 执行 | 自研 Harness(ReAct 循环 + 滑窗上下文 + 工具压缩 + 反思重试) | MCP 经官方 Python SDK 接入 |
 | 模板 | Jinja2 | prompt + 推送渲染 |
@@ -104,7 +104,7 @@ query → [FTS bm25 top-k (kb_chunks_fts / source_data_fts)]
 ```
 
 - 向量不可用时自动降级为纯 FTS(`KBCapabilities.degraded`),不报错中断。
-- 已知债务(将于 P66 RAG 重构处理):category 为事后过滤伤害召回;搜索期重复 encode 去重;embedding 硬编码英文小模型;`agent_id` 未参与 scope(`context_provider.py` 现直接丢弃)。
+- 已知债务(后续 P66.6 处理):category 为事后过滤伤害召回;旧检索路径仍保留作降级与回滚通道;`agent_id` scope 已在 P66.4 接入。
 
 ### 4.4 评测链路(P64)
 
