@@ -74,7 +74,7 @@ async def test_service_similarity_deduplicates_adjacent_document_hits(kb_db) -> 
     service = KBService(
         kb_db,
         DocumentProcessor(),
-        EmbeddingService(SameVectorEncoder()),
+        EmbeddingService(SameVectorEncoder(), dimension=2),
         None,
         None,
     )

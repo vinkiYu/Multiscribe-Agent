@@ -390,9 +390,7 @@ class SystemSettings(BaseSettings):
     )
     rag_reranker_enabled: bool = Field(
         default=False,
-        validation_alias=AliasChoices(
-            "RAG_RERANKER_ENABLED", "MULTISCRIBE_RAG_RERANKER_ENABLED"
-        ),
+        validation_alias=AliasChoices("RAG_RERANKER_ENABLED", "MULTISCRIBE_RAG_RERANKER_ENABLED"),
     )
     rag_reranker_model: str = Field(
         default="BAAI/bge-reranker-v2-m3",
