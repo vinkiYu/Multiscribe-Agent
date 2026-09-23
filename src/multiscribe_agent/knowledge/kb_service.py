@@ -1,4 +1,4 @@
-"""Knowledge-base persistence, ingestion, deduplication, and retrieval orchestration."""
+"""Knowledge-base persistence, ingestion, deduplication, and RAG facade."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+import structlog
+
 from multiscribe_agent.domain.models import KBCategory, KBChunk, KBDocument
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
@@ -18,8 +20,26 @@ from multiscribe_agent.knowledge.embedding_service import (
     EmbeddingService,
     EmbeddingUnavailableError,
 )
-from multiscribe_agent.knowledge.retriever import RetrievalHit, Retriever
 from multiscribe_agent.knowledge.vector_store import VectorStore, VectorStoreUnavailable
+from multiscribe_agent.rag.adapter import adapt_kb_document
+from multiscribe_agent.rag.index_version import make_index_version
+from multiscribe_agent.rag.indexing import RagIndexRegistry
+from multiscribe_agent.rag.models import RetrievalScope, RetrievedEvidence
+from multiscribe_agent.rag.ports import RagServiceProtocol
+from multiscribe_agent.rag.schema import RagChunksStore
+
+log = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class KBSearchHit:
+    """Compatibility view of one RAG evidence item for KB-facing callers."""
+
+    chunk_id: str
+    document_id: str
+    content: str
+    score: float
+    source: list[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,7 +66,7 @@ class KBCapabilities:
 
 
 class KBService(DialectRepositoryMixin):
-    """Coordinate local document parsing, SQLite persistence, and hybrid retrieval."""
+    """Coordinate local document parsing, persistence, and the RAG search facade."""
 
     def __init__(
         self,
@@ -54,13 +74,15 @@ class KBService(DialectRepositoryMixin):
         processor: DocumentProcessor,
         embeddings: EmbeddingService | None,
         vector_store: VectorStore | None,
-        retriever: Retriever | None,
+        rag_service: RagServiceProtocol | None = None,
+        default_user_id: str = "admin",
     ) -> None:
         self._db = db
         self._processor = processor
         self._embeddings = embeddings
         self._vector_store = vector_store
-        self._retriever = retriever or Retriever(db, vector_store, embeddings)
+        self._rag_service = rag_service
+        self._default_user_id = default_user_id.strip() or "admin"
 
     @property
     def capabilities(self) -> KBCapabilities:
@@ -172,6 +194,7 @@ class KBService(DialectRepositoryMixin):
                 (str(chunk.metadata["sha256"]), chunk.id, datetime.now(UTC).isoformat()),
             )
         await self._store_vectors(chunks)
+        await self._sync_rag_index(document, chunks)
         return document
 
     async def search(
@@ -182,14 +205,19 @@ class KBService(DialectRepositoryMixin):
         category_id: str | None = None,
         deduplicate: bool = True,
         similarity_threshold: float = 0.95,
-    ) -> list[RetrievalHit]:
-        """Search candidates then apply category and duplicate filtering."""
-        hits = await self._retriever.search(query, top_k=top_k * 3)
-        if category_id is not None:
-            hits = await self._filter_category(hits, category_id)
-        if deduplicate:
-            hits = await self._deduplicate_hits(hits, similarity_threshold)
-        return hits[:top_k]
+        user_id: str | None = None,
+    ) -> list[KBSearchHit]:
+        """Delegate KB retrieval to the P66 RAG service without legacy RRF code."""
+        del deduplicate, similarity_threshold
+        if self._rag_service is None or not query.strip() or top_k < 1:
+            return []
+        scope = RetrievalScope(
+            user_id=(user_id or self._default_user_id).strip() or self._default_user_id,
+            categories=[category_id] if category_id else [],
+            doc_types=["kb"],
+        )
+        evidence = await self._rag_service.retrieve(query, scope, top_k=top_k)
+        return [_as_search_hit(item) for item in evidence]
 
     async def list_categories(self) -> list[KBCategory]:
         """Return categories with live document counts."""
@@ -226,6 +254,7 @@ class KBService(DialectRepositoryMixin):
                 with suppress(VectorStoreUnavailable):
                     await self._vector_store.delete(chunk_id)
             await self._execute("DELETE FROM kb_chunk_dedup WHERE chunk_id = ?", (chunk_id,))
+        await self._delete_rag_document(document_id, len(rows))
         await self._execute("DELETE FROM kb_chunks WHERE document_id = ?", (document_id,))
         await self._execute("DELETE FROM kb_documents WHERE id = ?", (document_id,))
 
@@ -278,60 +307,48 @@ class KBService(DialectRepositoryMixin):
         except (EmbeddingUnavailableError, VectorStoreUnavailable):
             return
 
+    async def _sync_rag_index(self, document: KBDocument, chunks: list[KBChunk]) -> None:
+        """Write KB text into the live RAG BM25 index after successful persistence."""
+        if self._rag_service is None or not chunks:
+            return
+        try:
+            adapted = adapt_kb_document(document, chunks, user_id=document.owner_user_id)
+            registry = RagIndexRegistry(self._db)
+            rag_chunks = RagChunksStore(self._db)
+            await registry.ensure_schema()
+            await rag_chunks.ensure_schema()
+            indexed_at = datetime.now(UTC).isoformat()
+            index_version = make_index_version()
+            for chunk in adapted.chunks:
+                await rag_chunks.upsert(chunk, adapted.document, indexed_at=indexed_at)
+                await registry.upsert(
+                    chunk,
+                    adapted.document,
+                    indexed_at=indexed_at,
+                    index_version=index_version,
+                )
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            log.warning("kb_rag_live_index_degraded", error_type=type(exc).__name__)
+
+    async def _delete_rag_document(self, document_id: str, chunk_count: int) -> None:
+        """Remove derived RAG rows for a deleted KB document."""
+        if self._rag_service is None:
+            return
+        try:
+            registry = RagIndexRegistry(self._db)
+            rag_chunks = RagChunksStore(self._db)
+            for index in range(chunk_count):
+                chunk_id = f"kb:{document_id}:{index}"
+                await registry.delete(chunk_id)
+                await rag_chunks.delete(chunk_id)
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            log.warning("kb_rag_live_delete_degraded", error_type=type(exc).__name__)
+
     async def _require_category(self, category_id: str) -> None:
         """Reject ingestion that references no durable category."""
         row = await self._fetchone("SELECT id FROM kb_categories WHERE id = ?", (category_id,))
         if row is None:
             raise ValueError("knowledge-base category was not found")
-
-    async def _filter_category(
-        self, hits: list[RetrievalHit], category_id: str
-    ) -> list[RetrievalHit]:
-        """Keep only retrieval results owned by the requested category."""
-        documents = await self._fetchall(
-            "SELECT id FROM kb_documents WHERE category_id = ?", (category_id,)
-        )
-        document_ids = {str(row["id"]) for row in documents}
-        return [hit for hit in hits if hit.document_id in document_ids]
-
-    async def _deduplicate_hits(
-        self, hits: list[RetrievalHit], threshold: float
-    ) -> list[RetrievalHit]:
-        """Remove exact repeats and highly similar adjacent chunks from one document."""
-        seen_hashes: set[str] = set()
-        kept: list[RetrievalHit] = []
-        vectors: dict[str, list[float]] = {}
-        if self._embeddings is not None:
-            try:
-                vectors = dict(
-                    zip(
-                        [hit.chunk_id for hit in hits],
-                        await self._embeddings.encode([hit.content for hit in hits]),
-                        strict=True,
-                    )
-                )
-            except EmbeddingUnavailableError:
-                vectors = {}
-        for hit in hits:
-            digest = hashlib.sha256(hit.content.encode()).hexdigest()
-            if digest in seen_hashes:
-                continue
-            previous = next(
-                (item for item in reversed(kept) if item.document_id == hit.document_id), None
-            )
-            if (
-                previous is not None
-                and hit.chunk_id in vectors
-                and previous.chunk_id in vectors
-                and EmbeddingService.cosine_similarity(
-                    vectors[hit.chunk_id], vectors[previous.chunk_id]
-                )
-                > threshold
-            ):
-                continue
-            seen_hashes.add(digest)
-            kept.append(hit)
-        return kept
 
 
 def _timestamp() -> int:
@@ -347,3 +364,15 @@ def _dump_model(model: KBCategory | KBDocument) -> str:
 def _dump_object(value: dict[str, object]) -> str:
     """Serialize structured metadata deterministically."""
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def _as_search_hit(evidence: RetrievedEvidence) -> KBSearchHit:
+    """Convert structured RAG evidence to the stable KB compatibility shape."""
+    document_id = evidence.document.document_id.removeprefix("kb:")
+    return KBSearchHit(
+        chunk_id=evidence.chunk.chunk_id,
+        document_id=document_id,
+        content=evidence.chunk.content,
+        score=evidence.score,
+        source=[evidence.retrieval_source],
+    )

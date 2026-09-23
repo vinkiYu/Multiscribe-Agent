@@ -6,7 +6,6 @@ import pytest
 
 from multiscribe_agent.infra import text_tokenize
 from multiscribe_agent.infra.db import init_db
-from multiscribe_agent.knowledge.retriever import Retriever
 
 
 class _FakeJieba:
@@ -43,7 +42,9 @@ async def test_kb_chunk_fts_uses_tokenized_content(monkeypatch) -> None:
         assert row is not None
         assert "大模型" in str(row["content"])
 
-        hit = await Retriever(db)._fts_chunk_ids("大模型", 10)
-        assert hit == ["chunk-cn"]
+        rows = await db.fetchall(
+            "SELECT rowid FROM kb_chunks_fts WHERE kb_chunks_fts MATCH ?", ("大模型",)
+        )
+        assert len(rows) == 1
     finally:
         await db.close()

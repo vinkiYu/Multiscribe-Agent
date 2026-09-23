@@ -10,8 +10,7 @@ from multiscribe_agent.api.deps import get_context
 from multiscribe_agent.api.security import get_current_user
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.domain.models import KBCategory, KBDocument
-from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import RetrievalHit
+from multiscribe_agent.knowledge.kb_service import KBSearchHit, KBService
 
 router = APIRouter(
     prefix="/api/kb",
@@ -187,7 +186,7 @@ def _document_response(document: KBDocument) -> dict[str, object]:
     return document.model_dump(mode="json")
 
 
-def _hit_response(hit: RetrievalHit) -> dict[str, object]:
+def _hit_response(hit: KBSearchHit) -> dict[str, object]:
     """Serialize retrieval provenance without exposing implementation objects."""
     return {
         "chunk_id": hit.chunk_id,

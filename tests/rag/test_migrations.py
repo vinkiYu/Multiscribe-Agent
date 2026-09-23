@@ -13,9 +13,8 @@ from multiscribe_agent.domain.models import KBDocument
 from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.rag.indexing import RagIndexRegistry
-from multiscribe_agent.rag.migrations import migrate_rag_owner
+from multiscribe_agent.rag.migrations import migrate_rag_owner, migrate_source_timestamps
 from multiscribe_agent.rag.schema import RagChunksStore
 
 
@@ -93,6 +92,49 @@ async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_source_timestamp_backfill_is_idempotent(tmp_path) -> None:
+    """Sentinel publication dates are replaced by fetched_at exactly once."""
+    db = await init_db(str(tmp_path / "timestamps.sqlite"))
+    try:
+        await db.execute(
+            """
+            INSERT INTO source_data(
+                id, title, url, description, published_date, source, category, author,
+                metadata, fetched_at, ingestion_date, adapter_name, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "source-1",
+                "Unknown date",
+                "https://example.test/source-1",
+                "content",
+                "1970-01-01T00:00:00+00:00",
+                "rss",
+                "ai",
+                None,
+                "{}",
+                "2026-09-23T00:00:00+00:00",
+                "2026-09-23T00:00:00+00:00",
+                "rss",
+                None,
+            ),
+        )
+
+        first = await migrate_source_timestamps(db)
+        second = await migrate_source_timestamps(db)
+
+        assert first.updated == 1
+        assert first.already_marked is False
+        assert second.updated == 0
+        assert second.already_marked is True
+        assert await db.fetchone(
+            "SELECT published_date FROM source_data WHERE id = ?", ("source-1",)
+        ) == {"published_date": "2026-09-23T00:00:00+00:00"}
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
 async def test_bootstrap_owner_migration_is_fail_open(tmp_path, monkeypatch) -> None:
     """A backend-specific migration exception cannot prevent service startup."""
     db = await init_db(str(tmp_path / "bootstrap.sqlite"))
@@ -134,7 +176,7 @@ async def test_kb_ingest_persists_owner_user_id(tmp_path) -> None:
     """New KB ingestion writes the owner used by the RAG adapter later."""
     db = await init_db(str(tmp_path / "kb.sqlite"))
     try:
-        service = KBService(db, DocumentProcessor(), None, None, Retriever(db, None, None))
+        service = KBService(db, DocumentProcessor(), None, None)
         category = await service.create_category("engineering")
         document = await service.ingest_text(
             text="Agent ownership metadata",

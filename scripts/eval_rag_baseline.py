@@ -1,4 +1,4 @@
-"""Compare the frozen legacy retriever with the P66.3 RagService path."""
+"""Evaluate the P66 RagService path against the frozen labelled query set."""
 
 from __future__ import annotations
 
@@ -14,11 +14,7 @@ from pathlib import Path
 
 from multiscribe_agent.config import get_settings
 from multiscribe_agent.infra.db import SqliteDatabase, init_db
-from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
-from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.rag.models import RetrievalScope
 from multiscribe_agent.rag.reranker import CrossEncoderReranker
@@ -44,7 +40,7 @@ class QueryRecord:
 
 @dataclass(frozen=True, slots=True)
 class RankedResult:
-    """One result normalized across the old KB and SourceData paths."""
+    """One result normalized from a P66 RetrievedEvidence item."""
 
     key: tuple[str, str]
     title: str
@@ -78,9 +74,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-k", type=int, default=20)
     parser.add_argument(
         "--impl",
-        choices=("old", "new", "both"),
-        default="old",
-        help="Run the frozen legacy path, P66.3 RagService, or both.",
+        choices=("new",),
+        default="new",
+        help="Run the P66 RagService path. The legacy path was removed in P66.6.",
     )
     parser.add_argument(
         "--user-id",
@@ -184,74 +180,6 @@ async def _validate_references(
     if missing:
         raise ValueError("dataset references missing records: " + ", ".join(missing[:10]))
     return len(source_ids), len(chunk_rows), source_ids, chunk_prefixes
-
-
-async def _search_one(
-    record: QueryRecord,
-    kb_service: KBService,
-    source_repository: SourceDataRepository,
-    candidate_k: int,
-) -> QueryResult:
-    """Run both legacy retrieval paths and normalize their ranked results."""
-    started = time.perf_counter()
-    ranked: list[RankedResult] = []
-    errors: list[str] = []
-    try:
-        kb_hits = await kb_service.search(record.query, top_k=candidate_k)
-    except Exception as exc:  # Baseline reports path failures per query.
-        kb_hits = []
-        errors.append(f"kb:{type(exc).__name__}")
-    for hit in kb_hits:
-        digest = hashlib.sha256(hit.content.encode()).hexdigest()[:16]
-        ranked.append(
-            RankedResult(
-                key=("kb", digest),
-                title="",
-                url="",
-                source="",
-                retrieval_source="hybrid" if len(hit.source) > 1 else hit.source[0],
-                score=hit.score,
-                citation_complete=False,
-            )
-        )
-    try:
-        source_hits = await source_repository.search_fts(record.query, limit=candidate_k)
-    except Exception as exc:  # Malformed FTS input is a reportable baseline result.
-        source_hits = []
-        errors.append(f"source_data:{type(exc).__name__}")
-    for rank, item in enumerate(source_hits, start=1):
-        ranked.append(
-            RankedResult(
-                key=("source_data", item.id),
-                title=item.title,
-                url=item.url,
-                source=item.source,
-                retrieval_source="bm25",
-                score=1.0 / rank,
-                citation_complete=bool(
-                    item.title.strip() and item.url.strip() and item.source.strip()
-                ),
-            )
-        )
-    # The old paths have separate ranking domains.  Keep the legacy order
-    # deterministic: KB results first, then SourceData FTS results.
-    deduped: list[RankedResult] = []
-    seen: set[tuple[str, str]] = set()
-    for result in ranked:
-        if result.key not in seen:
-            deduped.append(result)
-            seen.add(result.key)
-    relevant = set(record.relevant)
-    return QueryResult(
-        query=record,
-        results=tuple(deduped),
-        recall_at_5=_recall(deduped[:5], relevant),
-        recall_at_10=_recall(deduped[:10], relevant),
-        reciprocal_rank=_mrr(deduped, relevant),
-        citation_coverage=_citation_coverage(deduped),
-        latency_ms=(time.perf_counter() - started) * 1000,
-        errors=tuple(errors),
-    )
 
 
 async def _search_one_new(
@@ -434,8 +362,8 @@ def _render_report(
     lines.extend(
         [
             "",
-            "> 说明: `old` 只测现有 `KBService/Retriever` 与 "
-            "`SourceDataRepository.search_fts`; `new` 测 P66.3 `RagService` 的 BM25 + 向量 + RRF。",
+            "> 说明: 本报告测 P66.3+ `RagService` 的 BM25 + 向量 + RRF; "
+            "旧检索路径已在 P66.6 删除。",
         ]
     )
     return "\n".join(lines) + "\n"
@@ -465,46 +393,28 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
             VectorStore(db, dim=settings.rag_embedding_dim) if embeddings is not None else None
         )
         results_by_impl: dict[str, list[QueryResult]] = {}
-        if args.impl in {"old", "both"}:
-            kb_service = KBService(
-                db,
-                DocumentProcessor(),
-                embeddings,
-                vector_store,
-                Retriever(db, vector_store, embeddings),
-            )
-            source_repository = SourceDataRepository(db)
-            if embeddings is not None and records:
-                await embeddings.encode_one(records[0].query)
-            results_by_impl["old"] = [
-                await _search_one(record, kb_service, source_repository, args.candidate_k)
-                for record in records
-            ]
-        if args.impl in {"new", "both"}:
-            reranker = (
-                CrossEncoderReranker(model_name=settings.rag_reranker_model)
-                if args.enable_reranker
-                else None
-            )
-            rag_service = RagService(
-                db,
-                vector_store,
-                embeddings,
-                candidate_k=args.candidate_k,
-                reranker=reranker,
-            )
-            scope = RetrievalScope(user_id=args.user_id)
-            await rag_service.retrieve(records[0].query, scope, top_k=args.candidate_k)
-            results_by_impl["new"] = [
-                await _search_one_new(record, rag_service, scope, args.candidate_k)
-                for record in records
-            ]
+        reranker = (
+            CrossEncoderReranker(model_name=settings.rag_reranker_model)
+            if args.enable_reranker
+            else None
+        )
+        rag_service = RagService(
+            db,
+            vector_store,
+            embeddings,
+            candidate_k=args.candidate_k,
+            reranker=reranker,
+        )
+        scope = RetrievalScope(user_id=args.user_id)
+        await rag_service.retrieve(records[0].query, scope, top_k=args.candidate_k)
+        results_by_impl["new"] = [
+            await _search_one_new(record, rag_service, scope, args.candidate_k)
+            for record in records
+        ]
     finally:
         await db.close()
     generated_at = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    stem = (
-        f"rag-compare_{generated_at}" if args.impl == "both" else f"rag-{args.impl}_{generated_at}"
-    )
+    stem = f"rag-new_{generated_at}"
     args.report_dir.mkdir(parents=True, exist_ok=True)
     report_path = args.report_dir / f"{stem}.md"
     json_path = args.report_dir / f"{stem}.json"

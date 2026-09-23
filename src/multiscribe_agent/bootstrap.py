@@ -58,9 +58,7 @@ from multiscribe_agent.infra.repositories.source_data import SourceDataRepositor
 from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
-from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
@@ -81,7 +79,7 @@ from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTo
 from multiscribe_agent.plugins.builtin.tools.search_source_data import SearchSourceDataTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
-from multiscribe_agent.rag.migrations import migrate_rag_owner
+from multiscribe_agent.rag.migrations import migrate_rag_owner, migrate_source_timestamps
 from multiscribe_agent.rag.reranker import CrossEncoderReranker
 from multiscribe_agent.rag.schema import RagChunksStore
 from multiscribe_agent.rag.service import RagService
@@ -411,7 +409,12 @@ class ServiceContext:
         tools.register_tool(ExecuteCommandTool(Path.cwd()))
         tools.register_tool(ReadArtifactTool())
         tools.register_tool(
-            SearchSourceDataTool(source_data, self.memory_service, CandidateFilter(20))
+            SearchSourceDataTool(
+                self.rag_service,
+                self.memory_service,
+                CandidateFilter(20),
+                default_user_id=self.settings.rag_default_user_id,
+            )
         )
         self.tools = tools
         default_provider = self._provider_for_default()
@@ -567,16 +570,6 @@ class ServiceContext:
                 vector_store = PostgresVectorStore(self.db, dim=self.settings.rag_embedding_dim)
             else:
                 vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
-        fts_builder = FtsQueryBuilder(backend)
-        retriever = Retriever(self.db, vector_store, embeddings, fts_builder=fts_builder)
-        self.kb_service = KBService(
-            self.db,
-            DocumentProcessor(),
-            embeddings,
-            cast(VectorStore | None, vector_store),
-            retriever,
-        )
-        self.kb_capabilities = self.kb_service.capabilities
         reranker = (
             CrossEncoderReranker(model_name=self.settings.rag_reranker_model)
             if self.settings.rag_reranker_enabled
@@ -591,12 +584,27 @@ class ServiceContext:
                 "rag_service_init_degraded",
                 error_type=type(exc).__name__,
             )
+        self.kb_service = KBService(
+            self.db,
+            DocumentProcessor(),
+            embeddings,
+            cast(VectorStore | None, vector_store),
+            self.rag_service,
+            default_user_id=self.settings.rag_default_user_id,
+        )
+        self.kb_capabilities = self.kb_service.capabilities
 
     async def _migrate_rag_owner(self) -> None:
-        """Backfill legacy RAG ownership without making startup fail closed."""
+        """Apply idempotent RAG ownership and source timestamp repairs."""
         if self.db is None:
             return
         try:
+            timestamp_report = await migrate_source_timestamps(self.db)
+            if timestamp_report.updated:
+                log.info(
+                    "source_timestamps_backfilled",
+                    updated=timestamp_report.updated,
+                )
             report = await migrate_rag_owner(
                 self.db,
                 owner_user_id=self.settings.rag_default_user_id,

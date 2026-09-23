@@ -10,8 +10,7 @@ from typing import Protocol
 import structlog
 
 from multiscribe_agent.domain.models import MemoryEntry, UnifiedData
-from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import RetrievalHit
+from multiscribe_agent.knowledge.kb_service import KBSearchHit
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.services.candidate_filter import CandidateFilter
 
@@ -36,7 +35,7 @@ class DigestMemoryService(Protocol):
 class DigestKnowledgeService(Protocol):
     """Knowledge-base retrieval consumed by the daily-digest pipeline."""
 
-    async def search(self, query: str, *, top_k: int = 3) -> list[RetrievalHit]:
+    async def search(self, query: str, *, top_k: int = 3) -> list[KBSearchHit]:
         """Return hybrid retrieval hits for one query."""
 
 
@@ -63,7 +62,7 @@ class DigestMemoryContextBuilder:
         self,
         service: DigestMemoryService,
         candidate_limit: int,
-        kb_service: DigestKnowledgeService | KBService | None = None,
+        kb_service: DigestKnowledgeService | None = None,
         kb_snippet_provider: KBSnippetProvider | None = None,
         candidate_filter: CandidateFilter | None = None,
     ) -> None:

@@ -89,10 +89,7 @@ class CrossEncoderReranker:
 
 
 def _with_rerank_score(evidence: RetrievedEvidence, score: float) -> RetrievedEvidence:
-    """Return evidence with reranker provenance while preserving P66.1 model files."""
-    # P66.1 froze retrieval_source to the three pre-rerank values.  ``model_copy``
-    # intentionally avoids changing that public contract while carrying the richer
-    # runtime provenance required by P66.5; callers still receive a normal Pydantic model.
+    """Return evidence with validated reranker provenance."""
     return evidence.model_copy(
         update={
             "score": score,

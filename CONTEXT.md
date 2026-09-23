@@ -92,7 +92,7 @@ _Avoid_: 把全部历史 SourceData 永久放入向量索引;用时间窗索引�
 
 **Hybrid Retrieval(混合检索)**
 
-FTS5/bm25 关键词召回 + 向量召回,经 RRF(Reciprocal Rank Fusion, K=60)融合的检索方式。由 `knowledge/retriever.py` 实现。
+FTS5/bm25 关键词召回 + 向量召回,经 RRF(Reciprocal Rank Fusion, K=60)融合的检索方式。由 `rag/RagService` 统一实现,旧 `knowledge/retriever.py` 已删除。
 
 _Avoid_: 语义检索(仅指向量一路)、双路检索
 

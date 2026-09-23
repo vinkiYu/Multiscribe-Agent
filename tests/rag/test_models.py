@@ -109,6 +109,34 @@ def test_capabilities_expose_degraded_state() -> None:
     assert healthy.degraded is False
 
 
+def test_reranked_provenance_is_part_of_the_public_contract() -> None:
+    """Reranker provenance survives Pydantic validation instead of relying on a bypass."""
+    evidence = RetrievedEvidence(
+        evidence_id="evidence-reranked",
+        chunk=KnowledgeChunk(
+            chunk_id="chunk-reranked",
+            document_id="doc-reranked",
+            content="reranked evidence",
+            index=0,
+        ),
+        document=KnowledgeDocument(
+            document_id="doc-reranked",
+            doc_type="kb",
+            title="Reranked",
+            url="kb://reranked",
+            source="fixture",
+            category="ai",
+            user_id="user-001",
+            content_hash="b" * 64,
+        ),
+        score=0.9,
+        retrieval_source="hybrid:reranked",
+        scope=RetrievalScope(user_id="user-001"),
+    )
+
+    assert evidence.retrieval_source == "hybrid:reranked"
+
+
 def test_fake_implementation_matches_protocols() -> None:
     """A lightweight adapter can satisfy both protocol contracts."""
 

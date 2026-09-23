@@ -46,6 +46,19 @@ def test_source_data_outside_window_is_ignored() -> None:
     assert from_source_data(old, user_id="default", window_days=7, now=now) is None
 
 
+def test_unknown_publication_date_uses_fetch_time_for_rag_window() -> None:
+    """Unknown adapter dates do not force a fresh row out of the RAG window."""
+    now = datetime(2026, 9, 22, tzinfo=UTC)
+    row = _source("1970-01-01T00:00:00+00:00")
+    row.fetched_at = now.isoformat()
+    row.ingestion_date = now.isoformat()
+
+    adapted = from_source_data(row, user_id="default", window_days=7, now=now)
+
+    assert adapted is not None
+    assert adapted.published_at == now.isoformat()
+
+
 def test_kb_uses_sliding_windows_with_character_offsets() -> None:
     """Long KB text is split using the existing sentence-aware chunking semantics."""
     document = KBDocument(

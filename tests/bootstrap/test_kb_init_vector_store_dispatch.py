@@ -20,14 +20,11 @@ class _FakeDatabase:
 
 
 @pytest.mark.asyncio
-async def test_kb_init_injects_fts_builder_for_driver(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Retriever receives the SQLite and PostgreSQL dialect selected by the DB port."""
+async def test_kb_init_does_not_construct_legacy_retriever(monkeypatch: pytest.MonkeyPatch) -> None:
+    """P66.6 removes the legacy Retriever from KB service assembly."""
     monkeypatch.setattr("multiscribe_agent.bootstrap.EmbeddingService.is_available", lambda: False)
 
-    for style, expected_backend in (
-        (PlaceholderStyle.QUESTION_MARK, "sqlite"),
-        (PlaceholderStyle.DOLLAR, "postgres"),
-    ):
+    for style in (PlaceholderStyle.QUESTION_MARK, PlaceholderStyle.DOLLAR):
         context = ServiceContext(SystemSettings(_env_file=None))
         database = _FakeDatabase(style)
         context.db = database  # type: ignore[assignment]
@@ -35,7 +32,7 @@ async def test_kb_init_injects_fts_builder_for_driver(monkeypatch: pytest.Monkey
         await context._init_kb()
 
         assert context.kb_service is not None
-        assert context.kb_service._retriever._fts_builder.backend == expected_backend
+        assert not hasattr(context.kb_service, "_retriever")
 
 
 @pytest.mark.asyncio

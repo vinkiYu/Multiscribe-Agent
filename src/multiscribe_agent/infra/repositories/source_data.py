@@ -12,6 +12,8 @@ from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
 from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
+UNKNOWN_PUBLISHED_DATE = "1970-01-01T00:00:00+00:00"
+
 _DATE_RANGE_STATEMENTS = {
     "ingestion_date": """
         SELECT * FROM source_data
@@ -112,13 +114,16 @@ class SourceDataRepository(DialectRepositoryMixin):
         fetched_at = datetime.now(UTC).isoformat()
         rows: list[tuple[object, ...]] = []
         for item in items:
+            published_date = item.published_date
+            if published_date == UNKNOWN_PUBLISHED_DATE:
+                published_date = item.ingestion_date or fetched_at
             rows.append(
                 (
                     item.id,
                     item.title,
                     item.url,
                     item.description,
-                    item.published_date,
+                    published_date,
                     item.source,
                     item.category,
                     item.author,

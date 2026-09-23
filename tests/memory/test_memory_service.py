@@ -8,7 +8,6 @@ from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.domain.models import AIResponse
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.memory.extractor import PreferenceExtractor
 from multiscribe_agent.memory.memory_service import MemoryService
 from multiscribe_agent.memory.preference_store import PreferenceStore
@@ -30,7 +29,7 @@ async def test_extract_and_merge_and_move_document(memory_db) -> None:
     """History extraction deduplicates and KB chunks move into memory storage."""
     history = PublishHistory()
     await history.add(memory_db, "feishu_bot", "success", "AI News", "published content", {})
-    kb = KBService(memory_db, DocumentProcessor(), None, None, Retriever(memory_db))
+    kb = KBService(memory_db, DocumentProcessor(), None, None)
     category = await kb.create_category("Memory")
     document = await kb.ingest_text(
         text="A knowledge document for memory migration.",

@@ -18,6 +18,7 @@ from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument
 
 DEFAULT_CHUNK_SIZE = 512
 DEFAULT_CHUNK_OVERLAP = 64
+UNKNOWN_PUBLISHED_DATE = "1970-01-01T00:00:00+00:00"
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,7 +108,8 @@ def from_source_data(
     now: datetime | None = None,
 ) -> KnowledgeDocument | None:
     """Map a SourceData row, returning ``None`` when it is outside the window."""
-    if not _within_source_window(row.published_date, window_days, now=now):
+    published_at = _effective_published_at(row)
+    if not _within_source_window(published_at, window_days, now=now):
         return None
     content = _source_content(row)
     return KnowledgeDocument(
@@ -117,7 +119,7 @@ def from_source_data(
         url=row.url or f"source://{row.id}",
         source=row.source or row.adapter_name,
         category=row.category or "uncategorized",
-        published_at=row.published_date or None,
+        published_at=published_at or None,
         user_id=user_id,
         content_hash=_sha256(content),
     )
@@ -233,6 +235,13 @@ def _source_content(row: SourceData) -> str:
     title = row.title.strip()
     description = row.description.strip()
     return "\n\n".join(value for value in (title, description) if value) or row.url
+
+
+def _effective_published_at(row: SourceData) -> str:
+    """Use ingestion time when an adapter could not provide publication time."""
+    if row.published_date and row.published_date != UNKNOWN_PUBLISHED_DATE:
+        return row.published_date
+    return row.fetched_at or row.ingestion_date or row.published_date
 
 
 def _kb_text(document: KBDocument) -> str:

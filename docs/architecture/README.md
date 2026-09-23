@@ -41,8 +41,8 @@
 | `llm/` | Provider 抽象 + 实现 + usage 归一 | `provider.py`、`providers/openai.py`(trust_env=False) | 持有业务状态 |
 | `agents/` | Harness、DAG workflow 引擎、daily_digest pipeline、ContextProvider、curator_judge | `executor.py`、`context.py`、`workflow/`、`pipelines/` | 直接写库(经仓储);绕过 Provider 直连 SDK |
 | `plugins/` | 四类插件(Adapter/Publisher/Storage/Tool)+ 注册发现 + 审批边界 | `base.py`、`registry.py`、`discovery.py`、`builtin/`、`security.py` | custom 插件未审计入主进程 |
-| `knowledge/` | 知识库:摄取(切分/去重)、混合检索(RRF)、VectorStorePort、embedding | `kb_service.py`、`retriever.py`、`vector_store.py`、`embedding_service.py` | 依赖 agents/api/memory(检索协议层保持单向) |
-| `rag/` | P66 统一 RAG 对外契约:KnowledgeDocument/Chunk、RetrievedEvidence、RetrievalScope、RagService Protocol | `models.py`、`ports.py` | P66.1 只定义接口;不得在此放 Haystack、数据库或具体检索实现 |
+| `knowledge/` | 知识库:摄取(切分/去重)、RAG 索引落库、VectorStorePort、embedding | `kb_service.py`、`vector_store.py`、`embedding_service.py` | 依赖 agents/api/memory(检索协议层保持单向);旧 Retriever 已在 P66.6 删除 |
+| `rag/` | P66 统一 RAG 契约与运行时检索:KnowledgeDocument/Chunk、RetrievedEvidence、RetrievalScope、RagService、BM25/向量融合与可选 reranker | `models.py`、`ports.py`、`service.py`、`bm25.py`、`dense.py` | 对外只暴露 RagService;数据库和具体向量方言藏在适配层 |
 | `memory/` | 长期记忆、用户偏好、chat 会话、digest 上下文 | `memory_service.py`、`preference_store.py`、`retriever.py` | — |
 | `services/` | 应用服务:采集编排、candidate_filter、chat_service、interop(对外 API key) | `ingestion.py`、`chat_service.py` | 跳过 domain 模型传裸 dict |
 | `eval/` | 评测体系:curation benchmark(P/R/F1)、四层指标 schema、安全门、trace、ledger、drift、week pipeline | `curation_benchmark.py`、`metrics_schema.py`、`safety_gate.py`、`orchestrator/` | 评测逻辑散落 scripts |
@@ -100,11 +100,11 @@ ingest → dedupe → curate(Loop: 自评收敛) → overview → fanout(飞书 
 ```
 query → [FTS bm25 top-k (kb_chunks_fts / source_data_fts)]
       + [embedding → VectorStorePort.top_k]
-      → RRF(K=60) 融合 → 分类过滤 → 相邻相似去重 → top-n
+      → RRF(K=60) 融合 → 可选 reranker → top-n
 ```
 
 - 向量不可用时自动降级为纯 FTS(`KBCapabilities.degraded`),不报错中断。
-- 已知债务(后续 P66.6 处理):category 为事后过滤伤害召回;旧检索路径仍保留作降级与回滚通道;`agent_id` scope 已在 P66.4 接入。
+- `RetrievalScope` 在 BM25、向量召回和最终证据回表时重复应用 user/agent/doc_type 边界；`SearchSourceDataTool` 和 KB API 均通过 RagService 进入该链路。旧 `knowledge/retriever.py` 与 KBService 内的 RRF 分支已在 P66.6 删除。
 
 ### 4.4 评测链路(P64)
 

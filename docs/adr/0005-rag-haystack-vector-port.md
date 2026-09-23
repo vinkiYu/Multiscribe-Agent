@@ -50,3 +50,10 @@ P66.1 将上述语义冻结为 `KnowledgeDocument`、`KnowledgeChunk`、`Retriev
    MRR 增益至少 `+0.05` 且 p95 延迟增量不超过 `+1500ms`，并由决策者拍板。
 3. 本机离线或模型下载失败时，系统保留 BM25/向量降级路径，不伪造 bge-zh 质量结论；评测报告必须
    将真实模型指标标为 `PENDING`，直到模型可加载并完成冻结集 A/B。
+
+4. PostgreSQL 向量维度迁移说明：P66 默认 `BAAI/bge-small-zh-v1.5` 为 512 维，但存量
+   `chunk_vectors.embedding` 的 bootstrap DDL 仍是 `vector(384)`。SQLite 在 `--full` 重建时会
+   自动重建 `kb_chunks_vec`；PostgreSQL 不能依靠 `CREATE TABLE IF NOT EXISTS` 静默改变既有列，
+   必须由运维先备份 `chunk_vectors`，再按 `RAG_EMBEDDING_DIM` 执行显式列/表迁移，最后运行
+   `scripts/rebuild_rag_index.py --full` 并核对 registry、向量行数和维度。迁移完成前不得声称 PG
+   512 维已验证。

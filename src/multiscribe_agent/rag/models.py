@@ -103,7 +103,14 @@ class RetrievedEvidence(_RagModel):
     chunk: KnowledgeChunk
     document: KnowledgeDocument
     score: float
-    retrieval_source: Literal["bm25", "vector", "hybrid"]
+    retrieval_source: Literal[
+        "bm25",
+        "vector",
+        "hybrid",
+        "bm25:reranked",
+        "vector:reranked",
+        "hybrid:reranked",
+    ]
     scope: RetrievalScope
 
     @field_validator("evidence_id")
