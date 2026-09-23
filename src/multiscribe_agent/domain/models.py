@@ -317,7 +317,17 @@ class KBDocument(_DomainModel):
     chunk_count: int
     created_at: int
     updated_at: int
+    owner_user_id: str = Field(default="admin", min_length=1)
     metadata: JsonObject = Field(default_factory=dict)
+
+    @field_validator("owner_user_id")
+    @classmethod
+    def _normalize_owner_user_id(cls, value: str) -> str:
+        """Keep persisted KB ownership concrete and whitespace-normalized."""
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("owner_user_id must not be empty")
+        return normalized
 
 
 class KBChunk(_DomainModel):

@@ -34,7 +34,7 @@ class RagDocumentAdapter:
     def __init__(
         self,
         *,
-        user_id: str = "default",
+        user_id: str = "admin",
         source_window_days: int = 7,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
@@ -93,7 +93,7 @@ class RagDocumentAdapter:
         return adapt_kb_document(
             document,
             chunks,
-            user_id=self.user_id,
+            user_id=document.owner_user_id,
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
         )

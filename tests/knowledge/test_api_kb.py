@@ -46,6 +46,7 @@ async def test_kb_api_requires_auth_and_supports_core_workflow(tmp_path) -> None
         assert capabilities.status_code == 200
         assert capabilities.json()["fts"] is True
         assert document.status_code == 200
+        assert document.json()["owner_user_id"] == "admin"
         assert search.json()["hits"][0]["content"] == "API knowledge retrieval"
         assert deleted.json() == {"status": "deleted"}
     finally:

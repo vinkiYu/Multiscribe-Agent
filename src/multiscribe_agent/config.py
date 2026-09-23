@@ -374,7 +374,7 @@ class SystemSettings(BaseSettings):
         ),
     )
     rag_default_user_id: str = Field(
-        default="default",
+        default="admin",
         min_length=1,
         validation_alias=AliasChoices("RAG_DEFAULT_USER_ID", "MULTISCRIBE_RAG_DEFAULT_USER_ID"),
     )

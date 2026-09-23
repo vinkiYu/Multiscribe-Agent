@@ -86,7 +86,13 @@ class KBService(DialectRepositoryMixin):
         return category
 
     async def ingest_file(
-        self, *, file_path: Path, category_id: str, name: str, summary: str = ""
+        self,
+        *,
+        file_path: Path,
+        category_id: str,
+        name: str,
+        summary: str = "",
+        owner_user_id: str = "admin",
     ) -> KBDocument:
         """Parse one supported file then store its extracted text."""
         text, _ = await self._processor.process(file_path)
@@ -97,6 +103,7 @@ class KBService(DialectRepositoryMixin):
             summary=summary,
             file_name=file_path.name,
             kind=file_path.suffix,
+            owner_user_id=owner_user_id,
         )
 
     async def ingest_text(
@@ -108,9 +115,10 @@ class KBService(DialectRepositoryMixin):
         summary: str = "",
         file_name: str = "",
         kind: str = "text",
+        owner_user_id: str = "admin",
     ) -> KBDocument:
         """Chunk, deduplicate, optionally vectorize, and persist direct text content."""
-        if not text.strip() or not name.strip():
+        if not text.strip() or not name.strip() or not owner_user_id.strip():
             raise ValueError("document text and name must not be empty")
         await self._require_category(category_id)
         from multiscribe_agent.knowledge.chunking import split_text
@@ -148,6 +156,7 @@ class KBService(DialectRepositoryMixin):
             chunk_count=len(chunks),
             created_at=now,
             updated_at=now,
+            owner_user_id=owner_user_id.strip(),
         )
         await self._execute(
             "INSERT INTO kb_documents(id, category_id, data) VALUES (?, ?, ?)",

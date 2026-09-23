@@ -23,7 +23,7 @@ def _source(published_date: str) -> SourceData:
     )
 
 
-def test_source_data_is_one_chunk_and_uses_default_user() -> None:
+def test_source_data_is_one_chunk_and_allows_explicit_user_override() -> None:
     """A source item remains atomic even when its text is longer than a window."""
     now = datetime(2026, 9, 22, tzinfo=UTC)
     row = _source(now.isoformat())
@@ -58,11 +58,13 @@ def test_kb_uses_sliding_windows_with_character_offsets() -> None:
         chunk_count=0,
         created_at=1,
         updated_at=1,
+        owner_user_id="member-1",
         metadata={"content": "A" * 1_200},
     )
     adapted = RagDocumentAdapter(chunk_size=256, chunk_overlap=32).adapt_kb_document(document)
 
     assert len(adapted.chunks) >= 2
-    assert adapted.document.user_id == "default"
+    assert adapted.document.user_id == "member-1"
+    assert all(chunk.metadata["user_id"] == "member-1" for chunk in adapted.chunks)
     assert all("char_start" in chunk.metadata for chunk in adapted.chunks)
     assert all("char_end" in chunk.metadata for chunk in adapted.chunks)

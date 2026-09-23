@@ -66,6 +66,7 @@ async def list_documents(
 async def ingest_document(
     payload: dict[str, object],
     context: ServiceContext = Depends(get_context),  # noqa: B008
+    user: dict[str, object] = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, object]:
     """Ingest one server-local PDF, DOCX, Markdown, or text file."""
     raw_path = _required_text(payload, "file_path")
@@ -78,6 +79,7 @@ async def ingest_document(
             category_id=_required_text(payload, "category_id"),
             name=_required_text(payload, "name"),
             summary=_optional_text(payload, "summary"),
+            owner_user_id=_owner_user_id(user),
         )
     except (OSError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -88,6 +90,7 @@ async def ingest_document(
 async def ingest_text(
     payload: dict[str, object],
     context: ServiceContext = Depends(get_context),  # noqa: B008
+    user: dict[str, object] = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, object]:
     """Ingest direct text without requiring a temporary upload file."""
     try:
@@ -96,6 +99,7 @@ async def ingest_text(
             category_id=_required_text(payload, "category_id"),
             name=_required_text(payload, "name"),
             summary=_optional_text(payload, "summary"),
+            owner_user_id=_owner_user_id(user),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -165,6 +169,12 @@ def _optional_text(payload: dict[str, object], key: str) -> str:
     if not isinstance(value, str):
         raise HTTPException(status_code=400, detail=f"{key} must be a string")
     return value.strip()
+
+
+def _owner_user_id(user: dict[str, object]) -> str:
+    """Resolve the authenticated subject used for KB and RAG ownership."""
+    subject = user.get("sub")
+    return subject.strip() if isinstance(subject, str) and subject.strip() else "admin"
 
 
 def _category_response(category: KBCategory) -> dict[str, object]:
