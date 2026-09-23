@@ -26,3 +26,34 @@
 - 获得:统一索引入口(SourceData+KB+本地文档)、引用证据对象(RetrievedEvidence)、scope 真正生效、检索可评估可回归。
 - 承担:仓库同时存在 LangChain 与 Haystack 两个框架——以"Haystack 只进 knowledge 边界内、依赖单独 commit"控制;Haystack 组件为同步 `run()`,接入 async 需线程池包装(并发预算按线程池上限压测)。
 - 现存检索债务(事后过滤、搜索期重复 encode、无界 embedding 缓存、`del agent_id`)在 P66 对应子包作为验收项清偿。
+
+## 决策补录(2026-09-22，P66.1)
+
+### D-1 知识库隔离边界
+
+知识库采用 **user 硬隔离 + agent 软过滤**。统一 `RetrievalScope` 必须携带 `user_id`;跨用户的 KB 文档和 chunk 不得被检索或注入。`agent_id` 作为可选过滤维度传入:有值时只筛选该 Agent 的知识,为 `None` 时在当前用户范围内不过滤 Agent。选择该方案是为了保留当前单用户部署的共享语义,同时为多用户隔离提供不可绕过的硬边界;否决 agent 硬隔离作为唯一边界,避免把同一用户的共享知识重复复制到多个 Agent。
+
+### D-2 SourceData 的 RAG 索引策略
+
+SourceData **进入统一 RAG 索引**,但只索引最近 N 天的内容(默认 7 天,由 `RAG_SOURCE_WINDOW_DAYS` 配置),采用增量更新,过期资讯自然滚出索引。`source_data` 表和现有 FTS 路径仍是事实源与降级路径,在 P66.6 的 Recall@K/MRR/引用覆盖率门禁通过前不得删除。选择时间窗而非全量索引,是为了让资讯检索保持时效并控制向量索引规模、重建成本和旧内容噪声。
+
+P66.1 将上述语义冻结为 `KnowledgeDocument`、`KnowledgeChunk`、`RetrievedEvidence`、`RetrievalScope` 和 `RagService` 契约;P66.2 起的 Haystack 适配器不得改变这些边界。
+
+## 决策补录(2026-09-23，P66.5)
+
+1. Embedding 模型通过 `RAG_EMBEDDING_MODEL` / `RAG_EMBEDDING_DIM` 配置，默认使用
+   `BAAI/bge-small-zh-v1.5` 的 512 维空间。SQLite `vec0` 表的维度随配置创建；模型或维度变化
+   时必须先备份数据库，再由重建脚本清理派生索引并全量重建。业务表仍是唯一真相源，数据库备份、
+   向量缓存和评测产物不入库。
+2. Reranker 使用可选的 `BAAI/bge-reranker-v2-m3`，通过 `RAG_RERANKER_ENABLED` 显式开启，
+   默认关闭。它只位于 RRF 融合之后、Evidence 返回之前；是否改为默认开启，必须同时满足
+   MRR 增益至少 `+0.05` 且 p95 延迟增量不超过 `+1500ms`，并由决策者拍板。
+3. 本机离线或模型下载失败时，系统保留 BM25/向量降级路径，不伪造 bge-zh 质量结论；评测报告必须
+   将真实模型指标标为 `PENDING`，直到模型可加载并完成冻结集 A/B。
+
+4. PostgreSQL 向量维度迁移说明：P66 默认 `BAAI/bge-small-zh-v1.5` 为 512 维，但存量
+   `chunk_vectors.embedding` 的 bootstrap DDL 仍是 `vector(384)`。SQLite 在 `--full` 重建时会
+   自动重建 `kb_chunks_vec`；PostgreSQL 不能依靠 `CREATE TABLE IF NOT EXISTS` 静默改变既有列，
+   必须由运维先备份 `chunk_vectors`，再按 `RAG_EMBEDDING_DIM` 执行显式列/表迁移，最后运行
+   `scripts/rebuild_rag_index.py --full` 并核对 registry、向量行数和维度。迁移完成前不得声称 PG
+   512 维已验证。

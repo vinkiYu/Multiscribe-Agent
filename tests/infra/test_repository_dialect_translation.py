@@ -21,7 +21,6 @@ TARGETS = (
     "memory/repositories/memory_categories.py",
     "memory/repositories/memory_entries.py",
     "knowledge/kb_service.py",
-    "knowledge/retriever.py",
     "knowledge/vector_store.py",
 )
 

@@ -13,7 +13,7 @@ class PostgresVectorStore:
 
     __slots__ = ("_db", "_dim")
 
-    def __init__(self, db: DatabaseProtocol, dim: int = 384) -> None:
+    def __init__(self, db: DatabaseProtocol, dim: int = 512) -> None:
         """Create a vector store over a PostgreSQL-compatible database port."""
         if dim <= 0:
             raise ValueError("embedding dimension must be positive")

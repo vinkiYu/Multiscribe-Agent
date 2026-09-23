@@ -174,15 +174,15 @@ class FakeKnowledgeService:
         self.queries.append(query)
         if self._fail:
             raise RuntimeError("kb unavailable")
-        from multiscribe_agent.knowledge.retriever import RetrievalHit
+        from multiscribe_agent.knowledge.kb_service import KBSearchHit
 
         return [
-            RetrievalHit(
+            KBSearchHit(
                 chunk_id=f"chunk-{index}",
                 document_id=f"doc-{query}",
                 content=text,
                 score=1.0 - index * 0.1,
-                source="kb",
+                source=["kb"],
             )
             for index, text in enumerate(self._snippets.get(query, []))
         ]

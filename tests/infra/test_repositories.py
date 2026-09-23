@@ -93,6 +93,25 @@ async def test_source_data_batch_deduplication_filtering_and_fts(db: Database) -
     assert refreshed[0].title == "Artificial intelligence duplicate"
 
 
+async def test_source_data_persists_ingestion_time_for_unknown_publication_date(
+    db: Database,
+) -> None:
+    """A sentinel publication date is normalized at the persistence boundary."""
+    repository = SourceDataRepository(db)
+    item = _item("unknown-date", "Unknown date")
+    item.published_date = "1970-01-01T00:00:00+00:00"
+    item.ingestion_date = "2026-09-23T00:00:00+00:00"
+
+    assert await repository.save_batch([item], "rss-adapter") == 1
+    row = await db.fetchone(
+        "SELECT published_date, ingestion_date FROM source_data WHERE id = ?",
+        ("unknown-date",),
+    )
+
+    assert row is not None
+    assert row["published_date"] == item.ingestion_date
+
+
 async def test_task_log_crud_with_field_whitelist(db: Database) -> None:
     """Task logs persist, update approved fields, and reject unknown ones."""
     repository = TaskLogRepository(db)

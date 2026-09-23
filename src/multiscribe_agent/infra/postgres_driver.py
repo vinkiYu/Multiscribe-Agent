@@ -148,6 +148,17 @@ class PostgresDatabase:
                 if statement:
                     await self.execute(statement)
 
+    async def migrate_rag_index_registry(self) -> None:
+        """Create the PostgreSQL RAG index manifest and its lookup indexes."""
+        from multiscribe_agent.infra.postgres.schema_rag import (
+            RAG_INDEX_REGISTRY_INDEXES,
+            RAG_INDEX_REGISTRY_TABLE,
+        )
+
+        await self.execute(RAG_INDEX_REGISTRY_TABLE)
+        for statement in RAG_INDEX_REGISTRY_INDEXES:
+            await self.execute(statement)
+
     def set_audit_logger(self, audit_logger: object | None) -> None:
         """Keep the protocol-compatible audit sink for later Postgres integration."""
         self._audit_logger = audit_logger

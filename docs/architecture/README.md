@@ -18,7 +18,7 @@
 | LLM | LangChain(`langchain-openai/-anthropic/-google-genai`)+ LangGraph | provider 经中转(base_url)或官方端点 |
 | 数据库 | **双方言**:SQLite + WAL(默认)/ PostgreSQL(`DB_DRIVER=postgres`) | 结构化列 + JSON blob;无正式迁移框架,`CREATE TABLE IF NOT EXISTS` 幂等 |
 | 全文检索 | SQLite FTS5(bm25)/ PostgreSQL tsvector | 方言差异收敛在 `knowledge/fts_query.py` + `infra/dialect.py` |
-| 向量 | **`VectorStorePort` 协议**:SQLite→`sqlite-vec`;PostgreSQL→pgvector | embedding 默认 `sentence-transformers/all-MiniLM-L6-v2`(384 维,惰性加载) |
+| 向量 | **`VectorStorePort` 协议**:SQLite→`sqlite-vec`;PostgreSQL→pgvector | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭 |
 | 工作流 | 自研 DAG(Kahn 拓扑 + 批次并行 + 子工作流嵌套 + Loop 自评) | |
 | Agent 执行 | 自研 Harness(ReAct 循环 + 滑窗上下文 + 工具压缩 + 反思重试) | MCP 经官方 Python SDK 接入 |
 | 模板 | Jinja2 | prompt + 推送渲染 |
@@ -41,7 +41,8 @@
 | `llm/` | Provider 抽象 + 实现 + usage 归一 | `provider.py`、`providers/openai.py`(trust_env=False) | 持有业务状态 |
 | `agents/` | Harness、DAG workflow 引擎、daily_digest pipeline、ContextProvider、curator_judge | `executor.py`、`context.py`、`workflow/`、`pipelines/` | 直接写库(经仓储);绕过 Provider 直连 SDK |
 | `plugins/` | 四类插件(Adapter/Publisher/Storage/Tool)+ 注册发现 + 审批边界 | `base.py`、`registry.py`、`discovery.py`、`builtin/`、`security.py` | custom 插件未审计入主进程 |
-| `knowledge/` | 知识库:摄取(切分/去重)、混合检索(RRF)、VectorStorePort、embedding | `kb_service.py`、`retriever.py`、`vector_store.py`、`embedding_service.py` | 依赖 agents/api/memory(检索协议层保持单向) |
+| `knowledge/` | 知识库:摄取(切分/去重)、RAG 索引落库、VectorStorePort、embedding | `kb_service.py`、`vector_store.py`、`embedding_service.py` | 依赖 agents/api/memory(检索协议层保持单向);旧 Retriever 已在 P66.6 删除 |
+| `rag/` | P66 统一 RAG 契约与运行时检索:KnowledgeDocument/Chunk、RetrievedEvidence、RetrievalScope、RagService、BM25/向量融合与可选 reranker | `models.py`、`ports.py`、`service.py`、`bm25.py`、`dense.py` | 对外只暴露 RagService;数据库和具体向量方言藏在适配层 |
 | `memory/` | 长期记忆、用户偏好、chat 会话、digest 上下文 | `memory_service.py`、`preference_store.py`、`retriever.py` | — |
 | `services/` | 应用服务:采集编排、candidate_filter、chat_service、interop(对外 API key) | `ingestion.py`、`chat_service.py` | 跳过 domain 模型传裸 dict |
 | `eval/` | 评测体系:curation benchmark(P/R/F1)、四层指标 schema、安全门、trace、ledger、drift、week pipeline | `curation_benchmark.py`、`metrics_schema.py`、`safety_gate.py`、`orchestrator/` | 评测逻辑散落 scripts |
@@ -55,6 +56,7 @@
 bootstrap(组合根) → 一切
 api → services → agents/plugins → domain(模型+Protocol)
 agents/plugins → llm / knowledge / memory / infra(经注入)
+rag → (pydantic + stdlib only; P66.2+ 的适配器由 knowledge/infra 实现)
 infra / llm / knowledge / memory → domain
 domain → (pydantic + stdlib only)
 eval → domain / llm(评测独立于生产链路,不反向注入)
@@ -98,11 +100,11 @@ ingest → dedupe → curate(Loop: 自评收敛) → overview → fanout(飞书 
 ```
 query → [FTS bm25 top-k (kb_chunks_fts / source_data_fts)]
       + [embedding → VectorStorePort.top_k]
-      → RRF(K=60) 融合 → 分类过滤 → 相邻相似去重 → top-n
+      → RRF(K=60) 融合 → 可选 reranker → top-n
 ```
 
 - 向量不可用时自动降级为纯 FTS(`KBCapabilities.degraded`),不报错中断。
-- 已知债务(将于 P66 RAG 重构处理):category 为事后过滤伤害召回;搜索期重复 encode 去重;embedding 硬编码英文小模型;`agent_id` 未参与 scope(`context_provider.py` 现直接丢弃)。
+- `RetrievalScope` 在 BM25、向量召回和最终证据回表时重复应用 user/agent/doc_type 边界；`SearchSourceDataTool` 和 KB API 均通过 RagService 进入该链路。旧 `knowledge/retriever.py` 与 KBService 内的 RRF 分支已在 P66.6 删除。
 
 ### 4.4 评测链路(P64)
 

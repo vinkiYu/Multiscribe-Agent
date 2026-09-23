@@ -2,15 +2,10 @@
 
 import pytest
 
-from multiscribe_agent.knowledge.document_processor import DocumentProcessor
-from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.kb_service import KBService
-from multiscribe_agent.knowledge.retriever import RetrievalHit
-
 
 @pytest.mark.asyncio
-async def test_service_ingests_lists_searches_moves_and_deletes(kb_service, kb_db) -> None:
-    """Core CRUD works in dependency-free FTS5 degradation mode."""
+async def test_service_ingests_lists_moves_and_deletes(kb_service, kb_db) -> None:
+    """Core persistence operations work without the optional RAG runtime."""
     category = await kb_service.create_category("Tech")
     document = await kb_service.ingest_text(
         text="Python retrieval uses FTS5. Python retrieval supports ranking.",
@@ -19,7 +14,6 @@ async def test_service_ingests_lists_searches_moves_and_deletes(kb_service, kb_d
     )
 
     assert document.chunk_count == 1
-    assert (await kb_service.search("Python"))[0].document_id == document.id
     document_index = await kb_db.fetchone(
         "SELECT name FROM kb_documents_fts WHERE kb_documents_fts MATCH ?", ("Retrieval",)
     )
@@ -33,8 +27,8 @@ async def test_service_ingests_lists_searches_moves_and_deletes(kb_service, kb_d
 
 
 @pytest.mark.asyncio
-async def test_service_deduplicates_exact_chunks_and_filters_categories(kb_service) -> None:
-    """Exact sha256 duplicate chunks are skipped and category limits retrieval."""
+async def test_service_deduplicates_exact_chunks(kb_service) -> None:
+    """Exact sha256 duplicate chunks are skipped during ingestion."""
     first = await kb_service.create_category("First")
     second = await kb_service.create_category("Second")
     one = await kb_service.ingest_text(
@@ -46,7 +40,6 @@ async def test_service_deduplicates_exact_chunks_and_filters_categories(kb_servi
 
     assert one.chunk_count == 1
     assert two.chunk_count == 0
-    assert await kb_service.search("searchable", category_id=second.id) == []
 
 
 def test_service_reports_fts_only_capabilities_without_optional_components(kb_service) -> None:
@@ -57,28 +50,3 @@ def test_service_reports_fts_only_capabilities_without_optional_components(kb_se
     assert capabilities.vector_enabled is False
     assert capabilities.embedding_enabled is False
     assert capabilities.degraded is True
-
-
-@pytest.mark.asyncio
-async def test_service_similarity_deduplicates_adjacent_document_hits(kb_db) -> None:
-    """Injected identical embeddings collapse matching adjacent chunks in one document."""
-
-    class SameVectorEncoder:
-        """Return the same vector for all content."""
-
-        def encode(self, texts: list[str], *, normalize_embeddings: bool) -> list[list[float]]:
-            """Return normalized duplicate vectors for threshold testing."""
-            del normalize_embeddings
-            return [[1.0, 0.0] for _ in texts]
-
-    service = KBService(
-        kb_db,
-        DocumentProcessor(),
-        EmbeddingService(SameVectorEncoder()),
-        None,
-        None,
-    )
-    first = RetrievalHit("a", "doc", "first", 1.0, ["fts"])
-    second = RetrievalHit("b", "doc", "second", 0.9, ["fts"])
-
-    assert await service._deduplicate_hits([first, second], 0.95) == [first]

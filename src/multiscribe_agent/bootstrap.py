@@ -9,7 +9,12 @@ from datetime import date
 from pathlib import Path
 from typing import cast
 
-from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
+import structlog
+
+from multiscribe_agent.agents.context_provider import (
+    MemoryKnowledgeContextProvider,
+    RagContextProvider,
+)
 from multiscribe_agent.agents.events import AgentEvent
 from multiscribe_agent.agents.executor import AgentExecutor
 from multiscribe_agent.agents.pipelines.daily_digest import (
@@ -53,9 +58,7 @@ from multiscribe_agent.infra.repositories.source_data import SourceDataRepositor
 from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
-from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
@@ -76,6 +79,10 @@ from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTo
 from multiscribe_agent.plugins.builtin.tools.search_source_data import SearchSourceDataTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
+from multiscribe_agent.rag.migrations import migrate_rag_owner, migrate_source_timestamps
+from multiscribe_agent.rag.reranker import CrossEncoderReranker
+from multiscribe_agent.rag.schema import RagChunksStore
+from multiscribe_agent.rag.service import RagService
 from multiscribe_agent.renderers.feishu_card import render_digest_card
 from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
 from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
@@ -100,6 +107,8 @@ from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
 from multiscribe_agent.skills.registry import get_skill_registry
 from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
+
+log = structlog.get_logger(__name__)
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
 DEFAULT_CHAT_AGENT_ID = "default-chat-agent"
@@ -326,6 +335,7 @@ class ServiceContext:
         self.preference_feedback: PreferenceFeedbackService | None = None
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
+        self.rag_service: RagService | None = None
         self.memory_service: MemoryService | None = None
         self.chat_service: object | None = None
         self.skill_service: SkillService | None = None
@@ -388,6 +398,7 @@ class ServiceContext:
         self.config_service = ConfigService(kv, base_settings=self.settings)
         self.settings = await self.config_service.get_settings_with_overrides()
         await self._init_kb()
+        await self._migrate_rag_owner()
         await self._init_memory()
         await self._init_skills()
         scan_and_register()
@@ -398,7 +409,12 @@ class ServiceContext:
         tools.register_tool(ExecuteCommandTool(Path.cwd()))
         tools.register_tool(ReadArtifactTool())
         tools.register_tool(
-            SearchSourceDataTool(source_data, self.memory_service, CandidateFilter(20))
+            SearchSourceDataTool(
+                self.rag_service,
+                self.memory_service,
+                CandidateFilter(20),
+                default_user_id=self.settings.rag_default_user_id,
+            )
         )
         self.tools = tools
         default_provider = self._provider_for_default()
@@ -455,9 +471,16 @@ class ServiceContext:
             self._provider_for_agent,
             tools,
             PromptService(),
-            context_provider=MemoryKnowledgeContextProvider(
-                self.memory_service,
-                self.kb_service,
+            context_provider=(
+                RagContextProvider(
+                    self.rag_service,
+                    default_user_id=self.settings.rag_default_user_id,
+                )
+                if self.rag_service is not None
+                else MemoryKnowledgeContextProvider(
+                    self.memory_service,
+                    self.kb_service,
+                )
             ),
         )
         self.agent_executor = executor
@@ -528,26 +551,76 @@ class ServiceContext:
         if self.db is None:
             raise RuntimeError("knowledge base initialization requires a database")
         backend = "postgres" if _is_postgres_database(self.db) else "sqlite"
-        vector_enabled = await _migrate_kb_for_backend(self.db, backend)
-        embeddings = EmbeddingService() if EmbeddingService.is_available() else None
+        vector_enabled = await _migrate_kb_for_backend(
+            self.db, backend, vector_dim=self.settings.rag_embedding_dim
+        )
+        embeddings = (
+            EmbeddingService(
+                model_name=self.settings.rag_embedding_model,
+                dimension=self.settings.rag_embedding_dim,
+            )
+            if EmbeddingService.is_available()
+            else None
+        )
         vector_store: VectorStorePort | None = None
         if vector_enabled:
             if backend == "postgres":
                 from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
 
-                vector_store = PostgresVectorStore(self.db)
+                vector_store = PostgresVectorStore(self.db, dim=self.settings.rag_embedding_dim)
             else:
-                vector_store = VectorStore(self.db)
-        fts_builder = FtsQueryBuilder(backend)
-        retriever = Retriever(self.db, vector_store, embeddings, fts_builder=fts_builder)
+                vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
+        reranker = (
+            CrossEncoderReranker(model_name=self.settings.rag_reranker_model)
+            if self.settings.rag_reranker_enabled
+            else None
+        )
+        try:
+            await RagChunksStore(self.db).ensure_schema()
+            self.rag_service = RagService(self.db, vector_store, embeddings, reranker=reranker)
+        except Exception as exc:  # RAG enrichment is optional during startup.
+            self.rag_service = None
+            log.warning(
+                "rag_service_init_degraded",
+                error_type=type(exc).__name__,
+            )
         self.kb_service = KBService(
             self.db,
             DocumentProcessor(),
             embeddings,
             cast(VectorStore | None, vector_store),
-            retriever,
+            self.rag_service,
+            default_user_id=self.settings.rag_default_user_id,
         )
         self.kb_capabilities = self.kb_service.capabilities
+
+    async def _migrate_rag_owner(self) -> None:
+        """Apply idempotent RAG ownership and source timestamp repairs."""
+        if self.db is None:
+            return
+        try:
+            timestamp_report = await migrate_source_timestamps(self.db)
+            if timestamp_report.updated:
+                log.info(
+                    "source_timestamps_backfilled",
+                    updated=timestamp_report.updated,
+                )
+            report = await migrate_rag_owner(
+                self.db,
+                owner_user_id=self.settings.rag_default_user_id,
+            )
+            if report.registry_updated or report.chunks_updated:
+                log.info(
+                    "rag_owner_backfilled",
+                    registry_updated=report.registry_updated,
+                    chunks_updated=report.chunks_updated,
+                    already_marked=report.already_marked,
+                )
+        except Exception as exc:  # Backend drivers expose different migration exception types.
+            log.warning(
+                "rag_owner_migration_degraded",
+                error_type=type(exc).__name__,
+            )
 
     async def _init_memory(self) -> None:
         """Initialize P17 repositories against the existing memory tables."""
@@ -872,12 +945,18 @@ def _is_postgres_database(db: Database | DatabaseProtocol) -> bool:
     return getattr(db, "placeholder_style", None) is PlaceholderStyle.DOLLAR
 
 
-async def _migrate_kb_for_backend(db: Database, backend: str) -> bool:
+async def _migrate_kb_for_backend(
+    db: Database, backend: str, *, vector_dim: int = EmbeddingService.DIM
+) -> bool:
     """Apply backend-specific knowledge schema exactly once during bootstrap."""
     if backend == "postgres":
         # PostgreSQL FTS/vector tables are created by init_database().
         return True
-    return await db.migrate_kb()
+    try:
+        return await db.migrate_kb(vector_dim=vector_dim)
+    except TypeError:
+        # Compatibility with lightweight test doubles and older Database ports.
+        return await db.migrate_kb()
 
 
 _context: ServiceContext | None = None
