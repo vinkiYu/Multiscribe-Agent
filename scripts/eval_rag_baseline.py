@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from multiscribe_agent.config import get_settings
 from multiscribe_agent.infra.db import SqliteDatabase, init_db
 from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
@@ -20,6 +21,7 @@ from multiscribe_agent.knowledge.kb_service import KBService
 from multiscribe_agent.knowledge.retriever import Retriever
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.rag.models import RetrievalScope
+from multiscribe_agent.rag.reranker import CrossEncoderReranker
 from multiscribe_agent.rag.service import RagService
 
 ALLOWED_INTENTS = {"exact-term", "semantic", "mixed", "temporal"}
@@ -92,6 +94,11 @@ def _parse_args() -> argparse.Namespace:
             "Attempt the existing sentence-transformer/vector path; disabled by default "
             "to avoid network downloads."
         ),
+    )
+    parser.add_argument(
+        "--enable-reranker",
+        action="store_true",
+        help="Enable the configured cross-encoder reranker for the new path.",
     )
     return parser.parse_args()
 
@@ -445,8 +452,18 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
     try:
         source_count, chunk_count, _, _ = await _validate_references(db, records)
         vector_requested = args.enable_vector and EmbeddingService.is_available()
-        embeddings = EmbeddingService() if vector_requested else None
-        vector_store = VectorStore(db) if embeddings is not None else None
+        settings = get_settings()
+        embeddings = (
+            EmbeddingService(
+                model_name=settings.rag_embedding_model,
+                dimension=settings.rag_embedding_dim,
+            )
+            if vector_requested
+            else None
+        )
+        vector_store = (
+            VectorStore(db, dim=settings.rag_embedding_dim) if embeddings is not None else None
+        )
         results_by_impl: dict[str, list[QueryResult]] = {}
         if args.impl in {"old", "both"}:
             kb_service = KBService(
@@ -457,13 +474,27 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
                 Retriever(db, vector_store, embeddings),
             )
             source_repository = SourceDataRepository(db)
+            if embeddings is not None and records:
+                await embeddings.encode_one(records[0].query)
             results_by_impl["old"] = [
                 await _search_one(record, kb_service, source_repository, args.candidate_k)
                 for record in records
             ]
         if args.impl in {"new", "both"}:
-            rag_service = RagService(db, vector_store, embeddings, candidate_k=args.candidate_k)
+            reranker = (
+                CrossEncoderReranker(model_name=settings.rag_reranker_model)
+                if args.enable_reranker
+                else None
+            )
+            rag_service = RagService(
+                db,
+                vector_store,
+                embeddings,
+                candidate_k=args.candidate_k,
+                reranker=reranker,
+            )
             scope = RetrievalScope(user_id=args.user_id)
+            await rag_service.retrieve(records[0].query, scope, top_k=args.candidate_k)
             results_by_impl["new"] = [
                 await _search_one_new(record, rag_service, scope, args.candidate_k)
                 for record in records
@@ -520,6 +551,7 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
         "source_data_count": source_count,
         "kb_chunk_count": chunk_count,
         "vector_enabled": vector_requested,
+        "reranker_enabled": args.enable_reranker,
         "impl": args.impl,
         "implementations": machine_by_impl,
     }
