@@ -38,3 +38,15 @@
 SourceData **进入统一 RAG 索引**,但只索引最近 N 天的内容(默认 7 天,由 `RAG_SOURCE_WINDOW_DAYS` 配置),采用增量更新,过期资讯自然滚出索引。`source_data` 表和现有 FTS 路径仍是事实源与降级路径,在 P66.6 的 Recall@K/MRR/引用覆盖率门禁通过前不得删除。选择时间窗而非全量索引,是为了让资讯检索保持时效并控制向量索引规模、重建成本和旧内容噪声。
 
 P66.1 将上述语义冻结为 `KnowledgeDocument`、`KnowledgeChunk`、`RetrievedEvidence`、`RetrievalScope` 和 `RagService` 契约;P66.2 起的 Haystack 适配器不得改变这些边界。
+
+## 决策补录(2026-09-23，P66.5)
+
+1. Embedding 模型通过 `RAG_EMBEDDING_MODEL` / `RAG_EMBEDDING_DIM` 配置，默认使用
+   `BAAI/bge-small-zh-v1.5` 的 512 维空间。SQLite `vec0` 表的维度随配置创建；模型或维度变化
+   时必须先备份数据库，再由重建脚本清理派生索引并全量重建。业务表仍是唯一真相源，数据库备份、
+   向量缓存和评测产物不入库。
+2. Reranker 使用可选的 `BAAI/bge-reranker-v2-m3`，通过 `RAG_RERANKER_ENABLED` 显式开启，
+   默认关闭。它只位于 RRF 融合之后、Evidence 返回之前；是否改为默认开启，必须同时满足
+   MRR 增益至少 `+0.05` 且 p95 延迟增量不超过 `+1500ms`，并由决策者拍板。
+3. 本机离线或模型下载失败时，系统保留 BM25/向量降级路径，不伪造 bge-zh 质量结论；评测报告必须
+   将真实模型指标标为 `PENDING`，直到模型可加载并完成冻结集 A/B。

@@ -22,6 +22,7 @@ from multiscribe_agent.rag.models import (
     RetrievedEvidence,
 )
 from multiscribe_agent.rag.ports import RagServiceProtocol
+from multiscribe_agent.rag.reranker import RerankerPort
 from multiscribe_agent.rag.schema import scope_predicate
 
 log = structlog.get_logger(__name__)
@@ -72,6 +73,7 @@ class RagService(RagServiceProtocol):
         bm25_weight: float = 1.0,
         index_document_callback: IndexDocumentCallback | None = None,
         rebuild_index_callback: RebuildIndexCallback | None = None,
+        reranker: RerankerPort | None = None,
     ) -> None:
         """Create an independent service with explicitly injected dependencies."""
         if candidate_k < 1:
@@ -87,6 +89,7 @@ class RagService(RagServiceProtocol):
         self._index_ready = True
         self._index_document_callback = index_document_callback
         self._rebuild_index_callback = rebuild_index_callback
+        self._reranker = reranker
 
     async def retrieve(
         self,
@@ -105,14 +108,17 @@ class RagService(RagServiceProtocol):
         merged = _merge_hits(bm25_hits, dense_hits, self._bm25_weight, self._vector_weight)
         if not merged:
             return []
-        selected = merged[:top_k]
+        selected = merged[:candidate_k]
         rows = await self._fetch_rows([item.chunk_id for item in selected], scope)
         row_by_id = {str(row["chunk_id"]): row for row in rows}
-        return [
+        evidence = [
             _to_evidence(item, row_by_id[item.chunk_id], scope)
             for item in selected
             if item.chunk_id in row_by_id
         ]
+        if self._reranker is not None:
+            return await self._reranker.rerank(query, evidence, top_k=top_k)
+        return evidence[:top_k]
 
     async def index_document(self, doc: KnowledgeDocument) -> int:
         """Delegate indexing to the composition root's P66.2 adapter when supplied."""

@@ -44,10 +44,10 @@ class FakeVectorStore(VectorStorePort):
 
 
 class WideFakeEmbedder:
-    """Fake 384-dimensional encoder for the sqlite-vec smoke test."""
+    """Fake 512-dimensional encoder for the sqlite-vec smoke test."""
 
     async def encode(self, texts: list[str]) -> list[list[float]]:
-        return [[1.0] * 384 for _ in texts]
+        return [[1.0] * 512 for _ in texts]
 
 
 def _adapted(description: str = "first", *, source_id: str = "source-1"):
@@ -151,7 +151,7 @@ async def test_sqlite_vec_receives_indexed_embedding(tmp_path) -> None:
         adapted = _adapted("sqlite vec")
         assert adapted is not None
         pipeline = RagIndexingPipeline(
-            VectorStore(db),
+            VectorStore(db, dim=512),
             RagIndexRegistry(db),
             WideFakeEmbedder(),
         )

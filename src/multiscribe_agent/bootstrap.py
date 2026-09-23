@@ -82,6 +82,7 @@ from multiscribe_agent.plugins.builtin.tools.search_source_data import SearchSou
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
 from multiscribe_agent.rag.migrations import migrate_rag_owner
+from multiscribe_agent.rag.reranker import CrossEncoderReranker
 from multiscribe_agent.rag.schema import RagChunksStore
 from multiscribe_agent.rag.service import RagService
 from multiscribe_agent.renderers.feishu_card import render_digest_card
@@ -576,9 +577,14 @@ class ServiceContext:
             retriever,
         )
         self.kb_capabilities = self.kb_service.capabilities
+        reranker = (
+            CrossEncoderReranker(model_name=self.settings.rag_reranker_model)
+            if self.settings.rag_reranker_enabled
+            else None
+        )
         try:
             await RagChunksStore(self.db).ensure_schema()
-            self.rag_service = RagService(self.db, vector_store, embeddings)
+            self.rag_service = RagService(self.db, vector_store, embeddings, reranker=reranker)
         except Exception as exc:  # RAG enrichment is optional during startup.
             self.rag_service = None
             log.warning(

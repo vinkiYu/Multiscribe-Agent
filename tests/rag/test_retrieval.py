@@ -48,6 +48,19 @@ class BrokenEmbedder:
         raise EmbeddingUnavailableError("offline")
 
 
+class FakeReranker:
+    """Reverse candidates to prove the post-RRF reranker hook is active."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def rerank(self, query, evidence, *, top_k):
+        """Return the last candidate first and record the query."""
+        del query
+        self.calls += 1
+        return list(reversed(evidence))[:top_k]
+
+
 def _document(
     document_id: str,
     *,
@@ -197,6 +210,30 @@ async def test_hybrid_rrf_marks_both_sources(tmp_path) -> None:
 
         assert evidence[0].retrieval_source == "hybrid"
         assert service.capabilities().as_dict()["index_ready"] is True
+    finally:
+        await db.close()
+
+
+@pytest.mark.asyncio
+async def test_reranker_runs_after_rrf_and_respects_top_k(tmp_path) -> None:
+    """Injected rerankers receive fused evidence and control final ordering."""
+    db = await init_db(str(tmp_path / "rag.sqlite"))
+    try:
+        first, first_chunk = _document("source_data:first")
+        second, second_chunk = _document("source_data:second")
+        await _seed(db, (first, first_chunk), (second, second_chunk))
+        reranker = FakeReranker()
+        service = RagService(db, reranker=reranker, candidate_k=5)
+
+        evidence = await service.retrieve(
+            "代理工作流",
+            RetrievalScope(user_id="user-a"),
+            top_k=1,
+        )
+
+        assert reranker.calls == 1
+        assert len(evidence) == 1
+        assert evidence[0].chunk.chunk_id == second_chunk.chunk_id
     finally:
         await db.close()
 

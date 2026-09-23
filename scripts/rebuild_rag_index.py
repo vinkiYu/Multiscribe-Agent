@@ -82,7 +82,7 @@ async def rebuild(args: argparse.Namespace) -> dict[str, int | str]:
                 "sentence-transformers is unavailable; install the runtime before a real rebuild"
             )
         if settings.db_driver == "postgres":
-            vector_store = PostgresVectorStore(database)
+            vector_store = PostgresVectorStore(database, dim=settings.rag_embedding_dim)
         else:
             vector_store = VectorStore(database, dim=settings.rag_embedding_dim)
         registry = RagIndexRegistry(database)
