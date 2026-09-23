@@ -16,7 +16,7 @@ class VectorStoreUnavailable(RuntimeError):
 class VectorStore(DialectRepositoryMixin):
     """Persist and retrieve chunk vectors from an initialized vec0 table."""
 
-    def __init__(self, db: Database, dim: int = 384) -> None:
+    def __init__(self, db: Database, dim: int = 512) -> None:
         self._db = db
         self._dim = dim
 

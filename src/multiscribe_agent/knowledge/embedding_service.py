@@ -7,12 +7,17 @@ import hashlib
 import importlib
 import importlib.util
 import math
+from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from typing import Protocol, cast
 
 
 class EmbeddingUnavailableError(RuntimeError):
     """Raised when the optional embedding runtime cannot be loaded."""
+
+
+class EmbeddingDimensionError(ValueError):
+    """Raised when an encoder returns vectors outside the configured space."""
 
 
 class _Encoder(Protocol):
@@ -24,15 +29,32 @@ class _Encoder(Protocol):
 
 
 class EmbeddingService:
-    """Cache normalized 384-dimensional embeddings behind a lazy optional import."""
+    """Cache normalized embeddings behind a configurable lazy optional import."""
 
-    MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-    DIM = 384
+    MODEL_NAME = "BAAI/bge-small-zh-v1.5"
+    DIM = 512
+    DEFAULT_CACHE_SIZE = 10_000
 
-    def __init__(self, encoder: object | None = None) -> None:
-        """Accept a test encoder or defer optional model loading until encoding."""
+    def __init__(
+        self,
+        encoder: object | None = None,
+        *,
+        model_name: str = MODEL_NAME,
+        dimension: int = DIM,
+        cache_size: int = DEFAULT_CACHE_SIZE,
+    ) -> None:
+        """Accept an injected encoder or defer optional model loading until encoding."""
+        if not model_name.strip():
+            raise ValueError("model_name must not be empty")
+        if dimension <= 0:
+            raise ValueError("embedding dimension must be positive")
+        if cache_size <= 0:
+            raise ValueError("embedding cache size must be positive")
         self._encoder = encoder
-        self._cache: dict[str, list[float]] = {}
+        self.model_name = model_name.strip()
+        self.dimension = dimension
+        self.cache_size = cache_size
+        self._cache: OrderedDict[str, list[float]] = OrderedDict()
 
     @staticmethod
     def is_available() -> bool:
@@ -41,14 +63,27 @@ class EmbeddingService:
 
     async def encode(self, texts: list[str]) -> list[list[float]]:
         """Return normalized vectors in input order, reusing content-hash cache entries."""
-        missing = [
-            text for text in texts if hashlib.sha256(text.encode()).hexdigest() not in self._cache
-        ]
+        missing: list[str] = []
+        missing_hashes: set[str] = set()
+        for text in texts:
+            text_hash = hashlib.sha256(text.encode()).hexdigest()
+            if text_hash not in self._cache and text_hash not in missing_hashes:
+                missing.append(text)
+                missing_hashes.add(text_hash)
         if missing:
             values = await asyncio.to_thread(self._encode_sync, missing)
             for text, vector in zip(missing, values, strict=True):
-                self._cache[hashlib.sha256(text.encode()).hexdigest()] = _normalize(vector)
-        return [self._cache[hashlib.sha256(text.encode()).hexdigest()] for text in texts]
+                text_hash = hashlib.sha256(text.encode()).hexdigest()
+                self._cache[text_hash] = _normalize(vector)
+                self._cache.move_to_end(text_hash)
+                while len(self._cache) > self.cache_size:
+                    self._cache.popitem(last=False)
+        result: list[list[float]] = []
+        for text in texts:
+            text_hash = hashlib.sha256(text.encode()).hexdigest()
+            result.append(self._cache[text_hash])
+            self._cache.move_to_end(text_hash)
+        return result
 
     async def encode_one(self, text: str) -> list[float]:
         """Encode one text item."""
@@ -67,12 +102,19 @@ class EmbeddingService:
                 )
             except ImportError as exc:
                 raise EmbeddingUnavailableError("sentence-transformers is unavailable") from exc
-            self._encoder = encoder_factory(self.MODEL_NAME)
+            self._encoder = encoder_factory(self.model_name)
         if not hasattr(self._encoder, "encode"):
             raise EmbeddingUnavailableError("embedding encoder has no encode method")
         encoder = cast(_Encoder, self._encoder)
         raw = encoder.encode(texts, normalize_embeddings=True)
-        return [[float(value) for value in row] for row in raw]
+        vectors = [[float(value) for value in row] for row in raw]
+        for vector in vectors:
+            if len(vector) != self.dimension:
+                raise EmbeddingDimensionError(
+                    f"embedding model {self.model_name!r} returned {len(vector)} dimensions; "
+                    f"expected {self.dimension}"
+                )
+        return vectors
 
     @staticmethod
     def cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:

@@ -378,6 +378,27 @@ class SystemSettings(BaseSettings):
         min_length=1,
         validation_alias=AliasChoices("RAG_DEFAULT_USER_ID", "MULTISCRIBE_RAG_DEFAULT_USER_ID"),
     )
+    rag_embedding_model: str = Field(
+        default="BAAI/bge-small-zh-v1.5",
+        min_length=1,
+        validation_alias=AliasChoices("RAG_EMBEDDING_MODEL", "MULTISCRIBE_RAG_EMBEDDING_MODEL"),
+    )
+    rag_embedding_dim: int = Field(
+        default=512,
+        gt=0,
+        validation_alias=AliasChoices("RAG_EMBEDDING_DIM", "MULTISCRIBE_RAG_EMBEDDING_DIM"),
+    )
+    rag_reranker_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "RAG_RERANKER_ENABLED", "MULTISCRIBE_RAG_RERANKER_ENABLED"
+        ),
+    )
+    rag_reranker_model: str = Field(
+        default="BAAI/bge-reranker-v2-m3",
+        min_length=1,
+        validation_alias=AliasChoices("RAG_RERANKER_MODEL", "MULTISCRIBE_RAG_RERANKER_MODEL"),
+    )
     http_proxy: str = Field(
         default="",
         validation_alias=AliasChoices("HTTP_PROXY", "MULTISCRIBE_HTTP_PROXY"),

@@ -528,8 +528,10 @@ class SqliteDatabase:
             """
         )
 
-    async def migrate_kb(self) -> bool:
-        """Create durable KB indexes and enable sqlite-vec when its optional extension exists."""
+    async def migrate_kb(self, vector_dim: int = 512) -> bool:
+        """Create durable KB indexes and enable sqlite-vec for the configured dimension."""
+        if vector_dim <= 0:
+            raise ValueError("vector_dim must be positive")
         await self.connection.executescript(
             """
             CREATE VIRTUAL TABLE IF NOT EXISTS kb_documents_fts USING fts5(name, summary, body);
@@ -575,7 +577,7 @@ class SqliteDatabase:
             await self.connection.enable_load_extension(False)
             await self.execute(
                 "CREATE VIRTUAL TABLE IF NOT EXISTS kb_chunks_vec USING vec0("
-                "chunk_id TEXT PRIMARY KEY, embedding float[384])"
+                f"chunk_id TEXT PRIMARY KEY, embedding float[{vector_dim}])"
             )
         except (ImportError, OSError, aiosqlite.Error):
             return False

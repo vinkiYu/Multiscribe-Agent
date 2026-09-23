@@ -547,16 +547,25 @@ class ServiceContext:
         if self.db is None:
             raise RuntimeError("knowledge base initialization requires a database")
         backend = "postgres" if _is_postgres_database(self.db) else "sqlite"
-        vector_enabled = await _migrate_kb_for_backend(self.db, backend)
-        embeddings = EmbeddingService() if EmbeddingService.is_available() else None
+        vector_enabled = await _migrate_kb_for_backend(
+            self.db, backend, vector_dim=self.settings.rag_embedding_dim
+        )
+        embeddings = (
+            EmbeddingService(
+                model_name=self.settings.rag_embedding_model,
+                dimension=self.settings.rag_embedding_dim,
+            )
+            if EmbeddingService.is_available()
+            else None
+        )
         vector_store: VectorStorePort | None = None
         if vector_enabled:
             if backend == "postgres":
                 from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
 
-                vector_store = PostgresVectorStore(self.db)
+                vector_store = PostgresVectorStore(self.db, dim=self.settings.rag_embedding_dim)
             else:
-                vector_store = VectorStore(self.db)
+                vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
         fts_builder = FtsQueryBuilder(backend)
         retriever = Retriever(self.db, vector_store, embeddings, fts_builder=fts_builder)
         self.kb_service = KBService(
@@ -922,12 +931,18 @@ def _is_postgres_database(db: Database | DatabaseProtocol) -> bool:
     return getattr(db, "placeholder_style", None) is PlaceholderStyle.DOLLAR
 
 
-async def _migrate_kb_for_backend(db: Database, backend: str) -> bool:
+async def _migrate_kb_for_backend(
+    db: Database, backend: str, *, vector_dim: int = EmbeddingService.DIM
+) -> bool:
     """Apply backend-specific knowledge schema exactly once during bootstrap."""
     if backend == "postgres":
         # PostgreSQL FTS/vector tables are created by init_database().
         return True
-    return await db.migrate_kb()
+    try:
+        return await db.migrate_kb(vector_dim=vector_dim)
+    except TypeError:
+        # Compatibility with lightweight test doubles and older Database ports.
+        return await db.migrate_kb()
 
 
 _context: ServiceContext | None = None

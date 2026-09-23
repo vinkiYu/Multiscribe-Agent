@@ -103,6 +103,29 @@ def test_default_providers_have_known_model_windows_and_output_limits() -> None:
     assert all(provider.enabled for provider in settings.ai_providers)
 
 
+def test_rag_embedding_and_reranker_defaults_are_explicit() -> None:
+    """RAG model choices are configurable and reranking remains opt-in."""
+    settings = SystemSettings(_env_file=None)
+
+    assert settings.rag_embedding_model == "BAAI/bge-small-zh-v1.5"
+    assert settings.rag_embedding_dim == 512
+    assert settings.rag_reranker_model == "BAAI/bge-reranker-v2-m3"
+    assert settings.rag_reranker_enabled is False
+
+
+def test_rag_model_settings_accept_environment_aliases(monkeypatch) -> None:
+    """RAG settings can be changed without editing the structured defaults."""
+    monkeypatch.setenv("RAG_EMBEDDING_MODEL", "custom/embed")
+    monkeypatch.setenv("RAG_EMBEDDING_DIM", "768")
+    monkeypatch.setenv("RAG_RERANKER_ENABLED", "true")
+
+    settings = SystemSettings(_env_file=None)
+
+    assert settings.rag_embedding_model == "custom/embed"
+    assert settings.rag_embedding_dim == 768
+    assert settings.rag_reranker_enabled is True
+
+
 def test_environment_overrides_provider_model_limits(monkeypatch) -> None:
     """JSON environment mappings override matching configured model limits."""
     monkeypatch.setenv("PROVIDER_CONTEXT_WINDOWS", '{"gpt-4o": 64000}')

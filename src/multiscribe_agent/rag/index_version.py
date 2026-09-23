@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"
 
 
 def make_index_version(

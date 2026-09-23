@@ -3,6 +3,7 @@
 import pytest
 
 from multiscribe_agent.knowledge.embedding_service import (
+    EmbeddingDimensionError,
     EmbeddingService,
     EmbeddingUnavailableError,
 )
@@ -25,7 +26,7 @@ class FakeEncoder:
 async def test_embedding_service_caches_and_normalizes_injected_encoder() -> None:
     """Repeated content does not invoke the injected encoder a second time."""
     encoder = FakeEncoder()
-    service = EmbeddingService(encoder)
+    service = EmbeddingService(encoder, dimension=2)
 
     first = await service.encode_one("alpha")
     second = await service.encode_one("alpha")
@@ -33,6 +34,28 @@ async def test_embedding_service_caches_and_normalizes_injected_encoder() -> Non
     assert first == second
     assert encoder.calls == 1
     assert EmbeddingService.cosine_similarity(first, second) == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_embedding_service_rejects_wrong_dimension() -> None:
+    """A configured embedding space never accepts a silently truncated vector."""
+    with pytest.raises(EmbeddingDimensionError, match="expected 3"):
+        await EmbeddingService(FakeEncoder(), dimension=3).encode_one("alpha")
+
+
+@pytest.mark.asyncio
+async def test_embedding_service_cache_is_bounded() -> None:
+    """The content-hash cache evicts least-recently-used entries at its configured bound."""
+    encoder = FakeEncoder()
+    service = EmbeddingService(encoder, dimension=2, cache_size=2)
+
+    await service.encode(["one", "two"])
+    await service.encode_one("three")
+
+    assert len(service._cache) == 2
+    assert len(service._cache) <= service.cache_size
+    await service.encode_one("one")
+    assert encoder.calls == 3
 
 
 @pytest.mark.asyncio
