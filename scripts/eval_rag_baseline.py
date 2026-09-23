@@ -82,7 +82,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--user-id",
-        default="default",
+        default="admin",
         help="RetrievalScope user_id used by the new RagService path.",
     )
     parser.add_argument(

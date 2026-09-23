@@ -155,13 +155,22 @@ async def test_agent_scope_is_soft_filter(tmp_path) -> None:
         general_doc, general_chunk = _document("source_data:general")
         await _seed(db, (agent_doc, agent_chunk), (general_doc, general_chunk))
 
-        evidence = await RagService(db).retrieve(
+        service = RagService(db)
+        unscoped = await service.retrieve(
+            "代理工作流",
+            RetrievalScope(user_id="user-a"),
+            top_k=5,
+        )
+        evidence = await service.retrieve(
             "代理工作流",
             RetrievalScope(user_id="user-a", agent_id="agent-a"),
             top_k=5,
         )
 
         assert [item.chunk.chunk_id for item in evidence] == [agent_chunk.chunk_id]
+        assert {item.chunk.chunk_id for item in evidence} <= {
+            item.chunk.chunk_id for item in unscoped
+        }
         assert general_chunk.chunk_id not in {item.chunk.chunk_id for item in evidence}
     finally:
         await db.close()
