@@ -78,25 +78,33 @@ def test_checkpoint_retains_goal_decision_and_tool_evidence() -> None:
 
 
 class _ContextProvider:
-    async def retrieve(self, query: str, *, agent_id: str) -> RetrievedContext:
+    def __init__(self) -> None:
+        self.user_ids: list[str | None] = []
+
+    async def retrieve(
+        self, query: str, *, agent_id: str, user_id: str | None = None
+    ) -> RetrievedContext:
         assert query == "question"
         assert agent_id == "test-agent"
+        self.user_ids.append(user_id)
         return RetrievedContext(["memory"], ["knowledge"], ["memory:fts"])
 
 
 @pytest.mark.asyncio
 async def test_executor_automatically_injects_generic_retrieved_context(agent_def) -> None:
     provider = FakeProvider([[AIResponse(content="answer")]])
+    context_provider = _ContextProvider()
     executor = AgentExecutor(
         lambda _: provider,
         None,
         PromptService(),
-        context_provider=_ContextProvider(),
+        context_provider=context_provider,
     )
 
-    await executor.run(agent_def, "question")
+    await executor.run(agent_def, "question", user_id="member-1")
 
     system = provider.stream_inputs[0][0].content
+    assert context_provider.user_ids == ["member-1"]
     assert "[Memory Data]" in system
     assert "memory" in system
     assert "[Knowledge Data]" in system

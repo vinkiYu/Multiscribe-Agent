@@ -70,7 +70,10 @@ async def delete_agent(
 
 @router.post("/{agent_id}/run")
 async def run_agent(
-    agent_id: str, payload: dict[str, object], context: ServiceContext = Depends(get_context)
+    agent_id: str,
+    payload: dict[str, object],
+    context: ServiceContext = Depends(get_context),
+    user: dict[str, object] = Depends(get_current_user),
 ) -> EventSourceResponse:
     """Stream P4 harness events as SSE."""
     if context.entities is None or context.agent_executor is None:
@@ -87,12 +90,15 @@ async def run_agent(
     approval_tokens = [item for item in raw_tokens if isinstance(item, str)][:10]
 
     executor = context.agent_executor
+    subject = user.get("sub")
+    user_id = subject.strip() if isinstance(subject, str) and subject.strip() else None
 
     async def events() -> AsyncIterator[dict[str, str]]:
         async for event in executor.stream(
             AgentDefinition.model_validate(raw),
             user_input,
             approval_tokens=approval_tokens,
+            user_id=user_id,
         ):
             yield {"event": event.type, "data": json.dumps(event.data)}
 

@@ -126,6 +126,7 @@ class AgentExecutor:
         tools_override: ToolsOverride | None = None,
         memory_summaries: list[str] | None = None,
         approval_tokens: Sequence[str] | None = None,
+        user_id: str | None = None,
     ) -> AIResponse:
         """Collect an event stream and return its final provider-neutral response."""
         result = await self.run_result(
@@ -134,6 +135,7 @@ class AgentExecutor:
             tools_override=tools_override,
             memory_summaries=memory_summaries,
             approval_tokens=approval_tokens,
+            user_id=user_id,
         )
         return AIResponse(
             content=result.content,
@@ -149,6 +151,7 @@ class AgentExecutor:
         tools_override: ToolsOverride | None = None,
         memory_summaries: list[str] | None = None,
         approval_tokens: Sequence[str] | None = None,
+        user_id: str | None = None,
     ) -> AgentRunResult:
         """Collect the event stream without discarding structured terminal states."""
         final_content = ""
@@ -164,6 +167,7 @@ class AgentExecutor:
             tools_override=tools_override,
             memory_summaries=memory_summaries,
             approval_tokens=approval_tokens,
+            user_id=user_id,
         ):
             if event.type == "final_content":
                 final_content = str(event.data["content"])
@@ -203,6 +207,7 @@ class AgentExecutor:
         tools_override: ToolsOverride | None = None,
         memory_summaries: list[str] | None = None,
         approval_tokens: Sequence[str] | None = None,
+        user_id: str | None = None,
     ) -> AsyncIterator[AgentEvent]:
         """Yield observable events for a bounded ReAct and reflection loop."""
         trace_id = uuid4().hex
@@ -254,7 +259,11 @@ class AgentExecutor:
             return
         if self._context_provider is not None:
             try:
-                retrieved = await self._context_provider.retrieve(user_input, agent_id=agent_def.id)
+                retrieved = await self._context_provider.retrieve(
+                    user_input,
+                    agent_id=agent_def.id,
+                    user_id=user_id,
+                )
                 for summary in retrieved.memories:
                     context.inject_memory(summary)
                 context.inject_knowledge(retrieved.knowledge)
@@ -278,6 +287,7 @@ class AgentExecutor:
                     {"reasons": ["context_provider:degraded"], "round": 0},
                     trace_id,
                 )
+
         for summary in memory_summaries or []:
             context.inject_memory(summary)
         try:

@@ -9,7 +9,12 @@ from datetime import date
 from pathlib import Path
 from typing import cast
 
-from multiscribe_agent.agents.context_provider import MemoryKnowledgeContextProvider
+import structlog
+
+from multiscribe_agent.agents.context_provider import (
+    MemoryKnowledgeContextProvider,
+    RagContextProvider,
+)
 from multiscribe_agent.agents.events import AgentEvent
 from multiscribe_agent.agents.executor import AgentExecutor
 from multiscribe_agent.agents.pipelines.daily_digest import (
@@ -76,6 +81,9 @@ from multiscribe_agent.plugins.builtin.tools.read_artifact import ReadArtifactTo
 from multiscribe_agent.plugins.builtin.tools.search_source_data import SearchSourceDataTool
 from multiscribe_agent.plugins.discovery import scan_and_register
 from multiscribe_agent.plugins.registry import AdapterRegistry, PublisherRegistry, ToolRegistry
+from multiscribe_agent.rag.migrations import migrate_rag_owner
+from multiscribe_agent.rag.schema import RagChunksStore
+from multiscribe_agent.rag.service import RagService
 from multiscribe_agent.renderers.feishu_card import render_digest_card
 from multiscribe_agent.renderers.wecom_markdown import render_digest_markdown
 from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
@@ -100,6 +108,8 @@ from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
 from multiscribe_agent.skills.registry import get_skill_registry
 from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
+
+log = structlog.get_logger(__name__)
 
 DEFAULT_CURATION_AGENT_ID = "default-curation-agent"
 DEFAULT_CHAT_AGENT_ID = "default-chat-agent"
@@ -326,6 +336,7 @@ class ServiceContext:
         self.preference_feedback: PreferenceFeedbackService | None = None
         self.kb_service: KBService | None = None
         self.kb_capabilities: KBCapabilities | None = None
+        self.rag_service: RagService | None = None
         self.memory_service: MemoryService | None = None
         self.chat_service: object | None = None
         self.skill_service: SkillService | None = None
@@ -388,6 +399,7 @@ class ServiceContext:
         self.config_service = ConfigService(kv, base_settings=self.settings)
         self.settings = await self.config_service.get_settings_with_overrides()
         await self._init_kb()
+        await self._migrate_rag_owner()
         await self._init_memory()
         await self._init_skills()
         scan_and_register()
@@ -455,9 +467,16 @@ class ServiceContext:
             self._provider_for_agent,
             tools,
             PromptService(),
-            context_provider=MemoryKnowledgeContextProvider(
-                self.memory_service,
-                self.kb_service,
+            context_provider=(
+                RagContextProvider(
+                    self.rag_service,
+                    default_user_id=self.settings.rag_default_user_id,
+                )
+                if self.rag_service is not None
+                else MemoryKnowledgeContextProvider(
+                    self.memory_service,
+                    self.kb_service,
+                )
             ),
         )
         self.agent_executor = executor
@@ -548,6 +567,37 @@ class ServiceContext:
             retriever,
         )
         self.kb_capabilities = self.kb_service.capabilities
+        try:
+            await RagChunksStore(self.db).ensure_schema()
+            self.rag_service = RagService(self.db, vector_store, embeddings)
+        except Exception as exc:  # RAG enrichment is optional during startup.
+            self.rag_service = None
+            log.warning(
+                "rag_service_init_degraded",
+                error_type=type(exc).__name__,
+            )
+
+    async def _migrate_rag_owner(self) -> None:
+        """Backfill legacy RAG ownership without making startup fail closed."""
+        if self.db is None:
+            return
+        try:
+            report = await migrate_rag_owner(
+                self.db,
+                owner_user_id=self.settings.rag_default_user_id,
+            )
+            if report.registry_updated or report.chunks_updated:
+                log.info(
+                    "rag_owner_backfilled",
+                    registry_updated=report.registry_updated,
+                    chunks_updated=report.chunks_updated,
+                    already_marked=report.already_marked,
+                )
+        except Exception as exc:  # Backend drivers expose different migration exception types.
+            log.warning(
+                "rag_owner_migration_degraded",
+                error_type=type(exc).__name__,
+            )
 
     async def _init_memory(self) -> None:
         """Initialize P17 repositories against the existing memory tables."""
