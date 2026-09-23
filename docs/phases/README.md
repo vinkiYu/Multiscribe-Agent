@@ -245,3 +245,16 @@ ruff format --check .    235 OK;1 file dirty(白名单外既有脏文件 daily_d
 | 包 | 名称 | 状态 | 通过日期 | 备注 |
 | :--- | :--- | :--- | :--- | :--- |
 | [P63](./P63-Agent配置UI.md) | Agent 配置 UI（CRUD + 全字段表单 + 试运行 SSE）| 🟢 已通过 | 2026-08-14 | **Agent 配置 UI 补齐**(规划 python 19/19 核实)：agentsApi 扩展(save/remove/run 手写stream+AgentDefinition全字段接口)；AgentsConfigPage(ui.tsx:642-842, +98行)：list列表+全字段编辑表单(provider→model级联+tool_ids/skill_ids多选+system_prompt textarea+temperature/max_output_tokens)+试运行SSE(content delta累加+final_content替换)+删除；App.tsx 导航接入(NavKey+workbenchItems+渲染分支)；pages/agents.tsx re-export。build绿(tsc+vite2.04s)+后端19passed回归+零改动。**最初分析"唯一前端缺口"补齐→用户自主链路三方完整(工作流+Skill+Agent配置)** |
+
+## 阶段七（P66 RAG 重构收官）
+
+| 包 | 名称 | 状态 | 通过日期 | 备注 |
+| :--- | :--- | :--- | :--- | :--- |
+| P66.1 | 边界、契约与评估集 | 🟢 已通过 | 2026-09-22 | KnowledgeDocument/Chunk、RetrievedEvidence、RetrievalScope、RagService 契约冻结；40 条冻结集与新旧基线建立 |
+| P66.2 | 索引链路 | 🟢 已通过 | 2026-09-23 | KB + SourceData 统一进入可重建派生索引；Haystack 依赖独立提交；全量重建与版本注册完成 |
+| P66.3 | 检索 Pipeline | 🟢 已通过 | 2026-09-23 | 中文分词、BM25 + 向量召回、RRF 融合、scope 过滤与 RetrievedEvidence 接线 |
+| P66.4 | Scope 与 Context 接入 | 🟢 已通过 | 2026-09-23 | user 硬隔离、agent 软过滤、ContextProvider 改走 RagService |
+| P66.5 | Embedding 与 Reranker | 🟢 已通过 | 2026-09-23 | bge-zh 512 维默认；reranker A/B 未达延迟门禁，保持默认关闭并留显式开关 |
+| P66.6 | 收官与删旧 | 🟢 已通过 | 2026-09-23 | T1 数字门禁通过、用户批准后删除旧 Retriever/RRF 路径；SearchSourceDataTool 改走 RagService；verify 764 passed；待合回 master |
+
+**P66 收官证据**：`codex/reviews/P66-F6-REVIEW.md`；删旧前回滚标签 `p66-pre-deletion`；当前实现分支 `feature/p66-rag-pipeline`。
