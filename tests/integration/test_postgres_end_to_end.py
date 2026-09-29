@@ -103,7 +103,11 @@ async def test_migrate_dry_run(tmp_path: Path) -> None:
 
 def test_migration_guide_sections() -> None:
     """The operator guide documents upgrade, rollback, health, and scope boundaries."""
-    guide = Path("docs/postgres-migration-guide.md").read_text(encoding="utf-8")
+    guide_path = Path("docs/postgres-migration-guide.md")
+    if not guide_path.exists():
+        # docs/* 除 pic/architecture/adr 外均为 local-only (.gitignore), CI 上没有这份文档。
+        pytest.skip("postgres-migration-guide.md is local-only and absent in CI")
+    guide = guide_path.read_text(encoding="utf-8")
     for section in ("## Upgrade Path", "## Rollback Path", "## Health Checks", "## Scope Boundary"):
         assert section in guide
 
