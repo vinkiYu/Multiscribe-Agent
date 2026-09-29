@@ -100,6 +100,11 @@ plugins = ["pydantic.mypy"]
 module = ["anthropic.*", "langchain.*", "langchain_anthropic.*", "langchain_openai.*"]
 follow_imports = "skip"
 
+# jieba 是可选依赖(text extra):CI 只装 dev extra,本地装了也无类型标注。
+[[tool.mypy.overrides]]
+module = ["jieba", "jieba.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
