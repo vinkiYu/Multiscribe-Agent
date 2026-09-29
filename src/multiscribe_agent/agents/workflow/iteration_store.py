@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,7 +21,7 @@ class IterationRecord:
     reason: str
 
 
-class IterationStore(DialectRepositoryMixin):
+class IterationStore(PostgresRepositoryMixin):
     """CRUD wrapper for the ``workflow_iterations`` table."""
 
     def __init__(self, db: DatabaseProtocol) -> None:
@@ -44,7 +43,6 @@ class IterationStore(DialectRepositoryMixin):
             self._upsert_sql(
                 table="workflow_iterations",
                 columns=columns,
-                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
                 conflict_target=("workflow_run_id", "step_id", "round"),
                 update_columns=("output", "score", "feedback", "converged", "reason"),
             ),
@@ -125,7 +123,7 @@ class IterationStore(DialectRepositoryMixin):
 
     @staticmethod
     def _from_row(row: object) -> IterationRecord:
-        """Convert an aiosqlite row into the domain record."""
+        """Convert one PostgreSQL row mapping into the domain record."""
         return IterationRecord(
             workflow_run_id=str(row["workflow_run_id"]),  # type: ignore[index]
             step_id=str(row["step_id"]),  # type: ignore[index]

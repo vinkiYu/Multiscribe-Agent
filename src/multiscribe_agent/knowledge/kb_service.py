@@ -14,7 +14,7 @@ import structlog
 
 from multiscribe_agent.domain.models import KBCategory, KBChunk, KBDocument
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import (
     EmbeddingService,
@@ -52,7 +52,7 @@ class KBCapabilities:
 
     @property
     def degraded(self) -> bool:
-        """Return whether hybrid retrieval is currently reduced to FTS5."""
+        """Return whether hybrid retrieval is currently reduced to keyword search."""
         return not (self.vector_enabled and self.embedding_enabled)
 
     def as_dict(self) -> dict[str, bool]:
@@ -65,7 +65,7 @@ class KBCapabilities:
         }
 
 
-class KBService(DialectRepositoryMixin):
+class KBService(PostgresRepositoryMixin):
     """Coordinate local document parsing, persistence, and the RAG search facade."""
 
     def __init__(
@@ -190,6 +190,14 @@ class KBService(DialectRepositoryMixin):
                 (chunk.id, chunk.document_id, chunk.content, _dump_object(chunk.metadata)),
             )
             await self._execute(
+                """
+                INSERT INTO kb_chunks_fts(chunk_id, content_tsv)
+                VALUES (?, to_tsvector('simple', ?))
+                ON CONFLICT(chunk_id) DO UPDATE SET content_tsv = EXCLUDED.content_tsv
+                """,
+                (chunk.id, chunk.content),
+            )
+            await self._execute(
                 "INSERT INTO kb_chunk_dedup(content_hash, chunk_id, created_at) VALUES (?, ?, ?)",
                 (str(chunk.metadata["sha256"]), chunk.id, datetime.now(UTC).isoformat()),
             )
@@ -224,7 +232,8 @@ class KBService(DialectRepositoryMixin):
         rows = await self._fetchall("SELECT id, data FROM kb_categories ORDER BY id")
         categories: list[KBCategory] = []
         for row in rows:
-            raw = json.loads(str(row["data"]))
+            raw_value = row["data"]
+            raw = raw_value if isinstance(raw_value, dict) else json.loads(str(raw_value))
             count = await self._fetchone(
                 "SELECT COUNT(*) AS count FROM kb_documents WHERE category_id = ?", (row["id"],)
             )
@@ -241,7 +250,12 @@ class KBService(DialectRepositoryMixin):
                 "SELECT data FROM kb_documents WHERE category_id = ? ORDER BY id DESC",
                 (category_id,),
             )
-        return [KBDocument.model_validate(json.loads(str(row["data"]))) for row in rows]
+        return [
+            KBDocument.model_validate(
+                row["data"] if isinstance(row["data"], dict) else json.loads(str(row["data"]))
+            )
+            for row in rows
+        ]
 
     async def delete_document(self, document_id: str) -> None:
         """Delete one document, its chunks, vectors, FTS rows, and exact-dedup records."""
@@ -260,9 +274,8 @@ class KBService(DialectRepositoryMixin):
 
     async def move_to_memory(self, document_id: str, target_memory_category: str) -> int:
         """Copy unique document chunks into P17-compatible memory records."""
-        order_column = "id" if isinstance(self._dialect, PgDialect) else "rowid"
         rows = await self._fetchall(
-            f"SELECT content FROM kb_chunks WHERE document_id = ? ORDER BY {order_column}",  # noqa: S608 - fixed dialect expression.
+            "SELECT content FROM kb_chunks WHERE document_id = ? ORDER BY id",
             (document_id,),
         )
         inserted = 0

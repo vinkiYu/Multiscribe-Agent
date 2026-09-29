@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from multiscribe_agent.core.click_events import ClickEventRepository
-from multiscribe_agent.infra.db import Database
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 from multiscribe_agent.memory.extractor import PreferenceExtractor
 from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
 
@@ -33,11 +33,11 @@ class PreferenceFeedbackService:
         self._window_days = window_days
         self._max_tags = max_tags
 
-    async def apply_click_feedback(self, db: Database) -> set[str]:
+    async def apply_click_feedback(self, db: DatabaseProtocol) -> set[str]:
         """Apply only click-tag feedback; kept for backward-compatible test doubles."""
         return await self._apply_click_feedback(db)
 
-    async def apply_signals_and_history(self, db: Database) -> set[str]:
+    async def apply_signals_and_history(self, db: DatabaseProtocol) -> set[str]:
         """Extract history into memory and merge recent clicks into the durable preference store."""
         added_tags = await self._apply_click_feedback(db)
         if self._extractor is None:
@@ -64,7 +64,7 @@ class PreferenceFeedbackService:
         await MemoryEntryRepository(db).save_batch(entries)
         return added_tags
 
-    async def _apply_click_feedback(self, db: Database) -> set[str]:
+    async def _apply_click_feedback(self, db: DatabaseProtocol) -> set[str]:
         """Load recent clicks, append ranked tags, and return newly added tags."""
         since_date = (datetime.now(UTC).date() - timedelta(days=self._window_days - 1)).isoformat()
         counts = await self._click_repo.tag_click_counts(db, since_date=since_date)

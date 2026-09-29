@@ -21,8 +21,7 @@ from typing import Protocol, cast
 import structlog
 
 from multiscribe_agent.domain.ports import VectorStorePort
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.rag.adapter import AdaptedDocument
 from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument
 from multiscribe_agent.rag.schema import RagChunksStore
@@ -172,7 +171,7 @@ class IndexReport:
     failed_document_ids: tuple[str, ...] = ()
 
 
-class RagIndexRegistry(DialectRepositoryMixin):
+class RagIndexRegistry(PostgresRepositoryMixin):
     """Persist the document-to-vector index manifest in either SQL dialect."""
 
     _db: DatabaseProtocol
@@ -246,7 +245,6 @@ class RagIndexRegistry(DialectRepositoryMixin):
                 "indexed_at",
                 "index_version",
             ),
-            style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
             conflict_target=("chunk_id",),
             update_columns=(
                 "document_id",

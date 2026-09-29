@@ -51,7 +51,7 @@ async def search_entries(
     limit: int = Query(default=20, ge=1, le=50),
     context: ServiceContext = Depends(get_context),  # noqa: B008
 ) -> list[dict[str, object]]:
-    """Search durable memory content through FTS5."""
+    """Search durable memory content through PostgreSQL full-text search."""
     if not q.strip():
         raise HTTPException(status_code=400, detail="q must not be empty")
     return [_entry_response(entry) for entry in await _service(context).search_entries(q, limit)]

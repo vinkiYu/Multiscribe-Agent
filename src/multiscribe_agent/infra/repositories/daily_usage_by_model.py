@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS daily_usage_by_model (
@@ -37,7 +37,7 @@ class DailyUsageByModelRecord:
     llm_calls: int
 
 
-class DailyUsageByModelRepository(DialectRepositoryMixin):
+class DailyUsageByModelRepository(PostgresRepositoryMixin):
     """Persist per-model usage without changing the existing daily aggregate table."""
 
     def __init__(self, db: Database) -> None:
@@ -47,9 +47,7 @@ class DailyUsageByModelRepository(DialectRepositoryMixin):
     async def ensure_schema(self) -> None:
         """Create the table lazily so existing databases need no migration."""
         if not self._schema_ready:
-            await self._execute(
-                _CREATE_TABLE_POSTGRES if isinstance(self._dialect, PgDialect) else _CREATE_TABLE
-            )
+            await self._execute(_CREATE_TABLE_POSTGRES)
             self._schema_ready = True
 
     async def upsert(self, date: str, by_model: Mapping[str, Mapping[str, object]]) -> None:
@@ -74,7 +72,6 @@ class DailyUsageByModelRepository(DialectRepositoryMixin):
                         "total_tokens",
                         "llm_calls",
                     ),
-                    style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
                     conflict_target=("date", "model_name"),
                     update_columns=("input_tokens", "output_tokens", "total_tokens", "llm_calls"),
                     update_expressions={

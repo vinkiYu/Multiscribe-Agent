@@ -6,8 +6,7 @@ from collections.abc import Mapping
 from typing import Any, cast
 
 from multiscribe_agent.domain.models import TaskLog
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 
 _UPDATE_FIELDS = frozenset(
     {
@@ -23,7 +22,7 @@ _UPDATE_FIELDS = frozenset(
 )
 
 
-class TaskLogRepository(DialectRepositoryMixin):
+class TaskLogRepository(PostgresRepositoryMixin):
     """Create, update, and retrieve task lifecycle records."""
 
     def __init__(self, db: DatabaseProtocol) -> None:

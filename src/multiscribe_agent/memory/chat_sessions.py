@@ -9,10 +9,10 @@ from uuid import uuid4
 
 from multiscribe_agent.domain.models import ChatMessage, ChatSession
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
-class ChatSessionRepository(DialectRepositoryMixin):
+class ChatSessionRepository(PostgresRepositoryMixin):
     """CRUD for chat sessions and their messages using backend-neutral SQL."""
 
     def __init__(self, db: Database) -> None:
@@ -134,7 +134,8 @@ class ChatSessionRepository(DialectRepositoryMixin):
 
     @staticmethod
     def _session_from_row(row: object) -> ChatSession:
-        metadata = json.loads(str(row["metadata"]))  # type: ignore[index]
+        raw_metadata = row["metadata"]  # type: ignore[index]
+        metadata = raw_metadata if isinstance(raw_metadata, dict) else json.loads(str(raw_metadata))
         if not isinstance(metadata, dict):
             metadata = {}
         return ChatSession(
@@ -148,7 +149,8 @@ class ChatSessionRepository(DialectRepositoryMixin):
 
     @staticmethod
     def _message_from_row(row: object) -> ChatMessage:
-        metadata = json.loads(str(row["metadata"]))  # type: ignore[index]
+        raw_metadata = row["metadata"]  # type: ignore[index]
+        metadata = raw_metadata if isinstance(raw_metadata, dict) else json.loads(str(raw_metadata))
         if not isinstance(metadata, dict):
             metadata = {}
         return ChatMessage(

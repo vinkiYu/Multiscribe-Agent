@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS curation_evaluations (
@@ -51,7 +51,7 @@ class CurationEvaluationRecord:
     usage: dict[str, int]
 
 
-class CurationEvaluationRepository(DialectRepositoryMixin):
+class CurationEvaluationRepository(PostgresRepositoryMixin):
     """Persist and query curation loop outcomes through the application database."""
 
     def __init__(self, db: Database) -> None:
@@ -61,9 +61,7 @@ class CurationEvaluationRepository(DialectRepositoryMixin):
     async def ensure_schema(self) -> None:
         """Create the bounded evaluation schema for existing SQLite databases."""
         if not self._schema_ready:
-            await self._execute(
-                _CREATE_TABLE_POSTGRES if isinstance(self._dialect, PgDialect) else _CREATE_TABLE
-            )
+            await self._execute(_CREATE_TABLE_POSTGRES)
             await self._execute(_CREATE_DATE_INDEX)
             self._schema_ready = True
 
@@ -86,7 +84,6 @@ class CurationEvaluationRepository(DialectRepositoryMixin):
         sql = self._upsert_sql(
             table="curation_evaluations",
             columns=columns,
-            style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
             conflict_target=("workflow_run_id",),
             update_columns=columns[1:],
         )

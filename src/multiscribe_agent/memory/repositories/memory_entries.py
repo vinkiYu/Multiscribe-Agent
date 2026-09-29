@@ -7,8 +7,7 @@ import json
 from builtins import list as builtin_list
 
 from multiscribe_agent.domain.models import MemoryEntry
-from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
 from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
@@ -17,11 +16,11 @@ class DuplicateEntryError(ValueError):
     """Reserved for callers that need to distinguish duplicate memory input."""
 
 
-class MemoryEntryRepository(DialectRepositoryMixin):
-    """Store validated memories using the existing table and FTS triggers."""
+class MemoryEntryRepository(PostgresRepositoryMixin):
+    """Store validated memories in PostgreSQL JSONB and tsvector tables."""
 
-    def __init__(self, db: Database) -> None:
-        """Bind this repository to an initialized SQLite database."""
+    def __init__(self, db: DatabaseProtocol) -> None:
+        """Bind this repository to an initialized PostgreSQL database."""
         self._db = db
 
     async def save(self, entry: MemoryEntry) -> str:
@@ -51,25 +50,15 @@ class MemoryEntryRepository(DialectRepositoryMixin):
         )
         content_terms = tokenize_for_fts(entry.content)
         tag_terms = tokenize_for_fts(json.dumps(entry.tags))
-        if isinstance(self._dialect, PgDialect):
-            await self._execute(
-                """
-                INSERT INTO agent_memories_fts(row_id, content_tsv, tags_tsv)
-                VALUES (?, to_tsvector('simple', ?), to_tsvector('simple', ?))
-                ON CONFLICT(row_id) DO UPDATE SET
-                    content_tsv = EXCLUDED.content_tsv, tags_tsv = EXCLUDED.tags_tsv
-                """,
-                (entry.id, content_terms, tag_terms),
-            )
-        else:
-            await self._execute(
-                """
-                UPDATE agent_memories_fts
-                SET content = ?, tags = ?
-                WHERE rowid = (SELECT rowid FROM agent_memories WHERE id = ?)
-                """,
-                (content_terms, tag_terms, entry.id),
-            )
+        await self._execute(
+            """
+            INSERT INTO agent_memories_fts(row_id, content_tsv, tags_tsv)
+            VALUES (?, to_tsvector('simple', ?), to_tsvector('simple', ?))
+            ON CONFLICT(row_id) DO UPDATE SET
+                content_tsv = EXCLUDED.content_tsv, tags_tsv = EXCLUDED.tags_tsv
+            """,
+            (entry.id, content_terms, tag_terms),
+        )
         return entry.id
 
     async def save_batch(self, entries: list[MemoryEntry]) -> int:
@@ -96,9 +85,7 @@ class MemoryEntryRepository(DialectRepositoryMixin):
         self, category_id: str | None = None, tag: str | None = None, limit: int = 50
     ) -> builtin_list[MemoryEntry]:
         """List newest memory records filtered by optional category and tag."""
-        statement, parameters = _list_statement(
-            category_id, tag, limit, postgres=isinstance(self._dialect, PgDialect)
-        )
+        statement, parameters = _list_statement(category_id, tag, limit)
         rows = await self._fetchall(statement, parameters)
         return [self._entry_from_row(row) for row in rows]
 
@@ -114,15 +101,13 @@ class MemoryEntryRepository(DialectRepositoryMixin):
         limit: int = 20,
         fts_builder: FtsQueryBuilder | None = None,
     ) -> builtin_list[MemoryEntry]:
-        """Find memories through the existing FTS5 table."""
+        """Find memories through the PostgreSQL tsvector table."""
         if not query.strip():
             return []
-        builder = fts_builder or FtsQueryBuilder(
-            "postgres" if isinstance(self._dialect, PgDialect) else "sqlite"
+        builder = fts_builder or FtsQueryBuilder()
+        statement, parameters = builder.search_memories_sql(
+            query.replace("'", " "), max(1, min(limit, 50))
         )
-        terms = tokenize_for_fts(query.replace("'", " "))
-        search_query = query if builder.backend == "postgres" else terms
-        statement, parameters = builder.search_memories_sql(search_query, max(1, min(limit, 50)))
         rows = await self._fetchall(statement, parameters)
         return [self._entry_from_row(row) for row in rows]
 
@@ -140,10 +125,12 @@ class MemoryEntryRepository(DialectRepositoryMixin):
     @staticmethod
     def _entry_from_row(row: object) -> MemoryEntry:
         value = row
-        data = json.loads(str(value["data"]))  # type: ignore[index]
+        raw_data = value["data"]  # type: ignore[index]
+        data = raw_data if isinstance(raw_data, dict) else json.loads(str(raw_data))
         if not isinstance(data, dict):
             raise ValueError("memory data must be an object")
-        tags = json.loads(str(value["tags"]))  # type: ignore[index]
+        raw_tags = value["tags"]  # type: ignore[index]
+        tags = raw_tags if isinstance(raw_tags, list) else json.loads(str(raw_tags))
         if not isinstance(tags, builtin_list) or not all(isinstance(tag, str) for tag in tags):
             raise ValueError("memory tags must be a string list")
         metadata = data.get("metadata", {})
@@ -161,14 +148,12 @@ class MemoryEntryRepository(DialectRepositoryMixin):
 
 
 def _list_statement(
-    category_id: str | None, tag: str | None, limit: int, *, postgres: bool = False
+    category_id: str | None, tag: str | None, limit: int
 ) -> tuple[str, builtin_list[object]]:
     """Select a static parameterized listing statement for optional filters."""
     bounded_limit = max(1, min(limit, 200))
-    category_expression = (
-        "data->>'category_id'" if postgres else "json_extract(data, '$.category_id')"
-    )
-    order_expression = "id" if postgres else "rowid"
+    category_expression = "data->>'category_id'"
+    order_expression = "id"
     if category_id is not None and tag is not None:
         return (
             f"""

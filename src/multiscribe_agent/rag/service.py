@@ -164,10 +164,10 @@ class RagService(RagServiceProtocol):
         return [dict(row) for row in rows]
 
     def _translate(self, statement: str) -> str:
-        """Translate question-mark SQL through the active repository dialect."""
-        from multiscribe_agent.infra.dialect import dialect_for
+        """Translate one-way repository SQL to PostgreSQL bind syntax."""
+        from multiscribe_agent.infra.placeholder import translate_question_marks
 
-        return dialect_for(self._db).translate(statement)
+        return translate_question_marks(statement, target="dollar")
 
 
 def _merge_hits(

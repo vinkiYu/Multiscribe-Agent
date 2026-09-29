@@ -1,9 +1,7 @@
-"""Derived storage for the P66 hybrid retrieval index.
+"""Derived PostgreSQL storage for the P66 hybrid retrieval index.
 
-The RAG index is rebuildable state.  It intentionally lives beside the P66.2
-manifest instead of changing the legacy ``source_data_fts`` or
-``kb_chunks_fts`` paths.  SQLite stores a jieba-tokenized FTS5 shadow table;
-PostgreSQL stores the same token stream in a ``tsvector`` column.
+The RAG index is rebuildable state. It intentionally lives beside the P66.2
+manifest and stores the token stream in PostgreSQL ``tsvector`` columns.
 """
 
 from __future__ import annotations
@@ -12,8 +10,7 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.infra.text_tokenize import tokenize_for_fts
 from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument, RetrievalScope
 
@@ -77,7 +74,7 @@ def _append_in_filter(
     parameters.extend(values)
 
 
-class RagChunksStore(DialectRepositoryMixin):
+class RagChunksStore(PostgresRepositoryMixin):
     """Persist and query the rebuildable ``rag_chunks`` derived index."""
 
     _db: DatabaseProtocol
@@ -87,21 +84,16 @@ class RagChunksStore(DialectRepositoryMixin):
         self._db = db
 
     async def ensure_schema(self) -> None:
-        """Create the RAG content table and its dialect-specific search index."""
-        content_tsv = (
-            "content_tsv tsvector"
-            if isinstance(self._dialect, PgDialect)
-            else "content_tsv TEXT NOT NULL"
-        )
+        """Create the PostgreSQL RAG content table and GIN index."""
         await self._execute(
-            f"""
+            """
             CREATE TABLE IF NOT EXISTS rag_chunks (
                 chunk_id TEXT PRIMARY KEY,
                 document_id TEXT NOT NULL,
                 doc_type TEXT NOT NULL,
                 user_id TEXT NOT NULL,
                 content TEXT NOT NULL,
-                {content_tsv},
+                content_tsv tsvector NOT NULL,
                 published_at TEXT,
                 category TEXT NOT NULL DEFAULT '',
                 source TEXT NOT NULL DEFAULT '',
@@ -118,15 +110,10 @@ class RagChunksStore(DialectRepositoryMixin):
             "CREATE INDEX IF NOT EXISTS idx_rag_chunks_scope "
             "ON rag_chunks(user_id, doc_type, published_at)"
         )
-        if not isinstance(self._dialect, PgDialect):
-            await self._execute(
-                """
-                CREATE VIRTUAL TABLE IF NOT EXISTS rag_chunks_fts USING fts5(
-                    chunk_id UNINDEXED,
-                    content
-                )
-                """
-            )
+        await self._execute(
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_content_tsv "
+            "ON rag_chunks USING GIN(content_tsv)"
+        )
 
     async def exists(self, chunk_id: str) -> bool:
         """Return whether the derived content row exists."""
@@ -142,7 +129,7 @@ class RagChunksStore(DialectRepositoryMixin):
         *,
         indexed_at: str,
     ) -> None:
-        """Upsert one chunk and keep SQLite's FTS shadow row in sync."""
+        """Upsert one chunk and update its PostgreSQL tsvector."""
         metadata = chunk.metadata
         agent_id = metadata.get("agent_id")
         agent_value = agent_id if isinstance(agent_id, str) and agent_id.strip() else None
@@ -160,69 +147,35 @@ class RagChunksStore(DialectRepositoryMixin):
             "url",
             "agent_id",
         )
-        if isinstance(self._dialect, PgDialect):
-            statement = (
-                "INSERT INTO rag_chunks ("  # noqa: S608
-                + ", ".join(columns)
-                + ") VALUES (?, ?, ?, ?, ?, to_tsvector('simple', ?), ?, ?, ?, ?, ?, ?) "
-                "ON CONFLICT (chunk_id) DO UPDATE SET "
-                "document_id = EXCLUDED.document_id, doc_type = EXCLUDED.doc_type, "
-                "user_id = EXCLUDED.user_id, content = EXCLUDED.content, "
-                "content_tsv = EXCLUDED.content_tsv, published_at = EXCLUDED.published_at, "
-                "category = EXCLUDED.category, source = EXCLUDED.source, "
-                "title = EXCLUDED.title, url = EXCLUDED.url, agent_id = EXCLUDED.agent_id"
-            )
-            parameters: list[Any] = [
-                chunk.chunk_id,
-                document.document_id,
-                document.doc_type,
-                document.user_id,
-                chunk.content,
-                tokenize_rag_text(chunk.content),
-                document.published_at,
-                document.category,
-                document.source,
-                document.title,
-                document.url,
-                agent_value,
-            ]
-            await self._execute(statement, parameters)
-            return
-
-        statement = self._upsert_sql(
-            table="rag_chunks",
-            columns=columns,
-            style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
-            conflict_target=("chunk_id",),
-            update_columns=tuple(column for column in columns if column != "chunk_id"),
+        statement = (
+            "INSERT INTO rag_chunks ("  # noqa: S608
+            + ", ".join(columns)
+            + ") VALUES (?, ?, ?, ?, ?, to_tsvector('simple', ?), ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (chunk_id) DO UPDATE SET "
+            "document_id = EXCLUDED.document_id, doc_type = EXCLUDED.doc_type, "
+            "user_id = EXCLUDED.user_id, content = EXCLUDED.content, "
+            "content_tsv = EXCLUDED.content_tsv, published_at = EXCLUDED.published_at, "
+            "category = EXCLUDED.category, source = EXCLUDED.source, "
+            "title = EXCLUDED.title, url = EXCLUDED.url, agent_id = EXCLUDED.agent_id"
         )
-        await self._execute(
-            statement,
-            [
-                chunk.chunk_id,
-                document.document_id,
-                document.doc_type,
-                document.user_id,
-                chunk.content,
-                tokenize_rag_text(chunk.content),
-                document.published_at,
-                document.category,
-                document.source,
-                document.title,
-                document.url,
-                agent_value,
-            ],
-        )
-        await self._execute("DELETE FROM rag_chunks_fts WHERE chunk_id = ?", (chunk.chunk_id,))
-        await self._execute(
-            "INSERT INTO rag_chunks_fts(chunk_id, content) VALUES (?, ?)",
-            (chunk.chunk_id, tokenize_rag_text(chunk.content)),
-        )
+        parameters: list[Any] = [
+            chunk.chunk_id,
+            document.document_id,
+            document.doc_type,
+            document.user_id,
+            chunk.content,
+            tokenize_rag_text(chunk.content),
+            document.published_at,
+            document.category,
+            document.source,
+            document.title,
+            document.url,
+            agent_value,
+        ]
+        await self._execute(statement, parameters)
 
     async def delete(self, chunk_id: str) -> None:
-        """Delete one chunk from both the content table and its FTS shadow."""
-        if not isinstance(self._dialect, PgDialect):
-            await self._execute("DELETE FROM rag_chunks_fts WHERE chunk_id = ?", (chunk_id,))
+        """Delete one chunk from the PostgreSQL derived index."""
         await self._execute("DELETE FROM rag_chunks WHERE chunk_id = ?", (chunk_id,))
 
     async def get(self, chunk_id: str) -> Mapping[str, Any] | None:

@@ -8,8 +8,7 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 
 _ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
@@ -31,7 +30,7 @@ class AlertRecord:
     metadata: dict[str, object]
 
 
-class AlertHistoryRepository(DialectRepositoryMixin):
+class AlertHistoryRepository(PostgresRepositoryMixin):
     """Persist, query, and acknowledge alert events."""
 
     def __init__(self, db: DatabaseProtocol) -> None:
@@ -111,7 +110,13 @@ def _row_to_alert_record(row: Mapping[str, object]) -> AlertRecord:
     """Convert one database mapping into the typed alert record."""
     raw_metadata = row.get("metadata")
     try:
-        parsed_metadata = json.loads(str(raw_metadata)) if raw_metadata else {}
+        parsed_metadata = (
+            raw_metadata
+            if isinstance(raw_metadata, dict)
+            else json.loads(str(raw_metadata))
+            if raw_metadata
+            else {}
+        )
     except (TypeError, ValueError):
         parsed_metadata = {}
     metadata = parsed_metadata if isinstance(parsed_metadata, dict) else {}

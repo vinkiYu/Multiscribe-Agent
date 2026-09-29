@@ -5,14 +5,14 @@ from __future__ import annotations
 import json
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
-class MemoryCategoryRepository(DialectRepositoryMixin):
+class MemoryCategoryRepository(PostgresRepositoryMixin):
     """Read and write JSON category records without using the generic entity store."""
 
     def __init__(self, db: Database) -> None:
-        """Bind this repository to an initialized SQLite database."""
+        """Bind this repository to an initialized PostgreSQL database."""
         self._db = db
 
     async def get(self, category_id: str) -> dict[str, object] | None:
@@ -22,7 +22,8 @@ class MemoryCategoryRepository(DialectRepositoryMixin):
         )
         if row is None:
             return None
-        value = json.loads(str(row["data"]))
+        raw = row["data"]
+        value = raw if isinstance(raw, dict) else json.loads(str(raw))
         if not isinstance(value, dict):
             raise ValueError("memory category data must be an object")
         return {str(key): item for key, item in value.items()}
@@ -32,8 +33,6 @@ class MemoryCategoryRepository(DialectRepositoryMixin):
         statement = (
             "INSERT INTO memory_categories(id, data) VALUES (?, ?) "
             "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data"
-            if isinstance(self._dialect, PgDialect)
-            else "INSERT OR REPLACE INTO memory_categories(id, data) VALUES (?, ?)"
         )
         await self._execute(
             statement,
@@ -45,7 +44,8 @@ class MemoryCategoryRepository(DialectRepositoryMixin):
         rows = await self._fetchall("SELECT id, data FROM memory_categories ORDER BY id")
         values: list[dict[str, object]] = []
         for row in rows:
-            data = json.loads(str(row["data"]))
+            raw = row["data"]
+            data = raw if isinstance(raw, dict) else json.loads(str(raw))
             if not isinstance(data, dict):
                 raise ValueError("memory category data must be an object")
             values.append({"id": str(row["id"]), **{str(key): item for key, item in data.items()}})

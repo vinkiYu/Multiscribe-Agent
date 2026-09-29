@@ -9,7 +9,7 @@ from datetime import UTC, date, datetime
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
+from multiscribe_agent.infra.db_protocol import ExplicitPostgresRepositoryMixin
 from multiscribe_agent.renderers.models import CuratedDigest
 
 _TABLE_NAME = "daily_digest_archives"
@@ -46,7 +46,7 @@ class ArchivedDigest:
     approval_status: str = "published"
 
 
-class DailyDigestArchive(ExplicitDatabaseDialectMixin):
+class DailyDigestArchive(ExplicitPostgresRepositoryMixin):
     """Upsert and query generated daily digests through the application database."""
 
     async def upsert(
@@ -185,7 +185,8 @@ class DailyDigestArchive(ExplicitDatabaseDialectMixin):
 
 def _record_from_row(row: Mapping[str, Any]) -> ArchivedDigest:
     """Decode one trusted SQLite row into the typed public archive contract."""
-    decoded: object = json.loads(str(row["items"]))
+    raw_items = row["items"]
+    decoded: object = raw_items if isinstance(raw_items, list) else json.loads(str(raw_items))
     if not isinstance(decoded, list):
         raise ValueError("daily digest archive items must be a JSON array")
 

@@ -5,16 +5,16 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from importlib import import_module
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle, SqlParameters
+from multiscribe_agent.infra.db_protocol import SqlParameters
 
 try:
     import_module("asyncpg")
-except ImportError as exc:  # pragma: no cover - exercised when the optional extra is absent.
+except ImportError as exc:  # pragma: no cover - exercised when the runtime is incomplete.
     message = (
         "asyncpg is required for the PostgreSQL backend. "
-        "Install it with: pip install 'multiscribe-agent[postgres]'"
+        "Install the project runtime dependencies before starting the service."
     )
     raise ImportError(message) from exc
 
@@ -91,28 +91,31 @@ class PostgresDatabase:
     by the daily-digest idempotency and workflow-resume paths.
     """
 
-    __slots__ = ("_audit_logger", "_pool")
+    __slots__ = ("_audit_logger", "_enable_sql_audit", "_pool", "_slow_query_threshold")
 
-    def __init__(self, pool: _AsyncpgPool) -> None:
+    def __init__(
+        self,
+        pool: _AsyncpgPool,
+        *,
+        slow_query_threshold: float = 1.0,
+        enable_sql_audit: bool = True,
+    ) -> None:
         """Create a backend wrapper around an initialized asyncpg pool."""
         self._pool = pool
         self._audit_logger: object | None = None
-
-    @property
-    def placeholder_style(self) -> PlaceholderStyle:
-        """PostgreSQL uses numbered ``$1`` placeholders."""
-        return PlaceholderStyle.DOLLAR
+        self._slow_query_threshold = slow_query_threshold
+        self._enable_sql_audit = enable_sql_audit
 
     async def execute(self, statement: str, parameters: SqlParameters = ()) -> int | None:
         """Execute one statement and return its row count or RETURNING value."""
         async with self._pool.acquire() as connection:
             if " RETURNING " in statement.upper():
                 value = await connection.fetchval(statement, *parameters)
-                return int(str(value)) if value is not None else None
+                return cast(int | None, value)
             command_tag = await connection.execute(statement, *parameters)
         return _command_tag_count(command_tag)
 
-    async def executemany(self, statement: str, parameters: list[SqlParameters]) -> int:
+    async def executemany(self, statement: str, parameters: Sequence[SqlParameters]) -> int:
         """Execute one statement for every parameter set and return its batch size."""
         async with self._pool.acquire() as connection:
             await connection.executemany(statement, parameters)

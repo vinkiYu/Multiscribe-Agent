@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import structlog
 
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.rag.models import RetrievalScope
 from multiscribe_agent.rag.schema import scope_predicate, tokenize_rag_query
 
@@ -23,8 +21,8 @@ class Bm25Hit:
     score: float
 
 
-class RagBm25Retriever(DialectRepositoryMixin):
-    """Query the SQLite FTS5 or PostgreSQL tsvector RAG index."""
+class RagBm25Retriever(PostgresRepositoryMixin):
+    """Query the PostgreSQL tsvector RAG index."""
 
     _db: DatabaseProtocol
 
@@ -47,27 +45,14 @@ class RagBm25Retriever(DialectRepositoryMixin):
         terms = raw_terms
         predicate, scope_parameters = scope_predicate(scope)
         try:
-            if isinstance(self._dialect, PgDialect):
-                statement = (
-                    "SELECT rc.chunk_id, "  # noqa: S608
-                    "ts_rank_cd(rc.content_tsv, plainto_tsquery('simple', ?)) AS rank "
-                    "FROM rag_chunks rc "
-                    "WHERE rc.content_tsv @@ plainto_tsquery('simple', ?) "
-                    f"AND {predicate} ORDER BY rank DESC LIMIT ?"
-                )
-                parameters: list[Any] = [terms, terms, *scope_parameters, candidate_k]
-            else:
-                terms = " ".join(
-                    f'"{token.replace(chr(34), chr(34) * 2)}"' for token in raw_terms.split()
-                )
-                statement = (
-                    "SELECT rc.chunk_id, bm25(rag_chunks_fts) AS rank "  # noqa: S608
-                    "FROM rag_chunks_fts "
-                    "JOIN rag_chunks rc ON rc.chunk_id = rag_chunks_fts.chunk_id "
-                    f"WHERE rag_chunks_fts MATCH ? AND {predicate} "
-                    "ORDER BY rank ASC LIMIT ?"
-                )
-                parameters = [terms, *scope_parameters, candidate_k]
+            statement = (
+                "SELECT rc.chunk_id, "  # noqa: S608
+                "ts_rank_cd(rc.content_tsv, plainto_tsquery('simple', ?)) AS rank "
+                "FROM rag_chunks rc "
+                "WHERE rc.content_tsv @@ plainto_tsquery('simple', ?) "
+                f"AND {predicate} ORDER BY rank DESC LIMIT ?"
+            )
+            parameters = [terms, terms, *scope_parameters, candidate_k]
             rows = await self._fetchall(statement, parameters)
         except Exception as exc:  # Backend-specific missing-index errors vary by driver.
             self.index_ready = False

@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect, UpsertStyle
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 _CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS daily_usage (
@@ -37,7 +37,7 @@ class DailyUsageRecord:
     task_count: int
 
 
-class DailyUsageRepository(DialectRepositoryMixin):
+class DailyUsageRepository(PostgresRepositoryMixin):
     """Upsert and query scheduler usage without changing the core DB migration."""
 
     def __init__(self, db: Database) -> None:
@@ -47,9 +47,7 @@ class DailyUsageRepository(DialectRepositoryMixin):
     async def ensure_schema(self) -> None:
         """Create the table lazily and safely for old databases."""
         if not self._schema_ready:
-            await self._execute(
-                _CREATE_TABLE_POSTGRES if isinstance(self._dialect, PgDialect) else _CREATE_TABLE
-            )
+            await self._execute(_CREATE_TABLE_POSTGRES)
             self._schema_ready = True
 
     async def upsert(self, date: str, usage: Mapping[str, object]) -> None:
@@ -71,7 +69,6 @@ class DailyUsageRepository(DialectRepositoryMixin):
             self._upsert_sql(
                 table="daily_usage",
                 columns=columns,
-                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
                 conflict_target=("date",),
                 update_columns=(
                     "input_tokens",

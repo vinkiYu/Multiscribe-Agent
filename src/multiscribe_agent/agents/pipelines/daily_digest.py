@@ -465,7 +465,7 @@ class DailyDigestPipeline:
     ) -> dict[str, object]:
         """Run the entire DAG and return scheduler-friendly result metadata."""
         if self._preference_feedback is not None and self._db is not None:
-            await self._preference_feedback.apply_signals_and_history(self._db)  # type: ignore[arg-type]  # Legacy service annotation still names the SQLite alias.
+            await self._preference_feedback.apply_signals_and_history(self._db)
         # Reset per-run counters so the executor reports fresh values for this run.
         self._blocked_sources_count = 0
         date_value = run_date or datetime.now(UTC).date().isoformat()

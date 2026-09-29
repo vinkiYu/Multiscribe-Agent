@@ -7,10 +7,10 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
-class ApiKeyRepository(DialectRepositoryMixin):
+class ApiKeyRepository(PostgresRepositoryMixin):
     """Persist API key hashes and lifecycle metadata without plaintext secrets."""
 
     def __init__(self, db: Database) -> None:

@@ -6,16 +6,18 @@ import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
+from multiscribe_agent.infra.db_protocol import (
+    DatabaseProtocol,
+    ExplicitPostgresRepositoryMixin,
+)
 
 
-class ClickEventRepository(ExplicitDatabaseDialectMixin):
+class ClickEventRepository(ExplicitPostgresRepositoryMixin):
     """Store click events and aggregate their bounded tag signals."""
 
     async def record(
         self,
-        db: Database,
+        db: DatabaseProtocol,
         *,
         digest_date: str,
         item_url: str,
@@ -47,7 +49,7 @@ class ClickEventRepository(ExplicitDatabaseDialectMixin):
 
     async def tag_click_counts(
         self,
-        db: Database,
+        db: DatabaseProtocol,
         *,
         since_date: str,
         min_clicks: int = 1,

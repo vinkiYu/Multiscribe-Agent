@@ -1,1 +1,1 @@
-"""SQLite repository implementations."""
+"""PostgreSQL repository implementations."""

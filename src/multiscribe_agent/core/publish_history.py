@@ -13,7 +13,7 @@ from uuid import uuid4
 import structlog
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
+from multiscribe_agent.infra.db_protocol import ExplicitPostgresRepositoryMixin
 
 _MAX_PREVIEW_LENGTH = 200
 _TABLE_NAME = "publish_history"
@@ -52,7 +52,7 @@ class PublishRecord:
     content_hash: str | None = None
 
 
-class PublishHistory(ExplicitDatabaseDialectMixin):
+class PublishHistory(ExplicitPostgresRepositoryMixin):
     """Store and query publisher results through an injected application database."""
 
     @staticmethod

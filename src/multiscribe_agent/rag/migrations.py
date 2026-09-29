@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.rag.schema import RagChunksStore
 
 OWNER_MIGRATION_ID = "p66.4-rag-owner-admin-v1"
@@ -30,7 +29,7 @@ class SourceTimestampMigrationReport:
     already_marked: bool = False
 
 
-class RagOwnerMigration(DialectRepositoryMixin):
+class RagOwnerMigration(PostgresRepositoryMixin):
     """Backfill the legacy ``default`` owner without changing source facts."""
 
     _db: DatabaseProtocol

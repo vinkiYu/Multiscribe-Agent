@@ -86,12 +86,10 @@ class InteropService:
 
     async def approve_key(self, key_id: str) -> bool:
         """Mark a pending key as approved."""
-        return (
-            await self._database.execute(
-                "UPDATE interop_keys SET approved = 1 WHERE key_id = ?", (key_id,)
-            )
-            > 0
+        affected = await self._database.execute(
+            "UPDATE interop_keys SET approved = 1 WHERE key_id = ?", (key_id,)
         )
+        return affected is not None and affected > 0
 
     async def touch_usage(self, key_id: str) -> None:
         """Increment usage counters after a successful authentication check."""

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import ExplicitDatabaseDialectMixin
+from multiscribe_agent.infra.db_protocol import ExplicitPostgresRepositoryMixin
 
 _MAX_ERROR_LENGTH = 200
 
@@ -33,7 +33,7 @@ class AdapterHealth:
         return data
 
 
-class AdapterHealthRepository(ExplicitDatabaseDialectMixin):
+class AdapterHealthRepository(ExplicitPostgresRepositoryMixin):
     """Read and atomically update adapter health rows in SQLite."""
 
     def __init__(self, failure_threshold: int = 3) -> None:

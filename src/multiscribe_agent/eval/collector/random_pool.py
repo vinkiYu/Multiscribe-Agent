@@ -1,12 +1,13 @@
-"""Random candidate-pool collector promoted from scripts/sample_curation_dataset.py."""
+"""PostgreSQL-backed random candidate-pool collection for curation Eval."""
 
 from __future__ import annotations
 
 import re
-import sqlite3
-from pathlib import Path
+from collections.abc import Mapping
 from typing import TypedDict
 from urllib.parse import urlparse
+
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 
 
 class SourceRow(TypedDict):
@@ -20,7 +21,6 @@ class SourceRow(TypedDict):
     category: str
 
 
-# 完全排除的源(非 AI 资讯),与 scripts/sample_curation_dataset.py 保持一致。
 EXCLUDED_SOURCES = {"The GitHub Blog", "Artificial Intelligence", "AI"}
 SHORT_DESCRIPTION_SOURCES = (
     "TLDR AI",
@@ -31,43 +31,32 @@ SHORT_DESCRIPTION_SOURCES = (
 
 
 class RandomPoolCollector:
-    """Build candidate pools of ten rows with minimal cross-pool overlap."""
+    """Build candidate pools from the PostgreSQL source_data fact table."""
 
-    def __init__(self, db_path: Path) -> None:
-        self.db_path = db_path
+    def __init__(self, db: DatabaseProtocol) -> None:
+        """Bind the PostgreSQL database used by the Eval collector."""
+        self._db = db
 
-    def load_rows(self) -> list[SourceRow]:
-        """Read eligible rows read-only; short-description feeds are still wanted."""
-        with sqlite3.connect(f"file:{self.db_path.resolve()}?mode=ro", uri=True) as connection:
-            connection.row_factory = sqlite3.Row
-            records = connection.execute(
-                """
-                SELECT id, title, description, url, source, category
-                FROM source_data
-                WHERE source NOT IN ('__EXCLUDED_PLACEHOLDER__')
-                  AND (
-                    (description IS NOT NULL AND length(description) >= 30)
-                    OR source IN (?, ?, ?, ?)
-                  )
-                ORDER BY fetched_at DESC, id ASC
-                """,
-                SHORT_DESCRIPTION_SOURCES,
-            ).fetchall()
-        return [
-            SourceRow(
-                id=str(row["id"]),
-                title=str(row["title"]),
-                description=str(row["description"]),
-                url=str(row["url"]),
-                source=str(row["source"]),
-                category=str(row["category"]),
-            )
-            for row in records
-        ]
+    async def load_rows(self) -> list[SourceRow]:
+        """Read eligible source rows without opening a second database driver."""
+        rows = await self._db.fetchall(
+            """
+            SELECT id, title, description, url, source, category
+            FROM source_data
+            WHERE source <> ALL($1::text[])
+              AND (
+                (description IS NOT NULL AND length(description) >= 30)
+                OR source = ANY($2::text[])
+              )
+            ORDER BY fetched_at DESC, id ASC
+            """,
+            (list(EXCLUDED_SOURCES), list(SHORT_DESCRIPTION_SOURCES)),
+        )
+        return [_source_row(row) for row in rows]
 
-    def collect(self, count: int, balanced_per_source: int = 1) -> list[list[SourceRow]]:
-        """Build ``count`` pools of ten, round-robin across sources."""
-        rows = self.load_rows()
+    async def collect(self, count: int, balanced_per_source: int = 1) -> list[list[SourceRow]]:
+        """Build ``count`` pools of ten using round-robin source balancing."""
+        rows = await self.load_rows()
         return build_pools(rows, count, balanced_per_source=balanced_per_source)
 
     def serialize_pool(self, sample_id: str, rows: list[SourceRow]) -> list[dict[str, str]]:
@@ -84,10 +73,22 @@ class RandomPoolCollector:
         ]
 
 
+def _source_row(row: Mapping[str, object]) -> SourceRow:
+    """Convert one asyncpg row mapping to the collector projection."""
+    return SourceRow(
+        id=str(row["id"]),
+        title=str(row["title"]),
+        description=str(row["description"]),
+        url=str(row["url"]),
+        source=str(row["source"]),
+        category=str(row["category"]),
+    )
+
+
 def build_pools(
     rows: list[SourceRow], count: int, balanced_per_source: int = 1
 ) -> list[list[SourceRow]]:
-    """Group rows into ``count`` pools of ten with per-source caps (P64.2 default 1)."""
+    """Group rows into ``count`` pools of ten with per-source caps."""
     if count < 1:
         raise ValueError("count must be positive")
     if len(rows) < 10:
@@ -95,7 +96,7 @@ def build_pools(
     by_source: dict[str, list[SourceRow]] = {}
     for row in rows:
         by_source.setdefault(row["source"], []).append(row)
-    source_order = sorted(s for s in by_source if s not in EXCLUDED_SOURCES)
+    source_order = sorted(source for source in by_source if source not in EXCLUDED_SOURCES)
     cap_per_source = max(balanced_per_source, 1)
     cursors: dict[str, int] = dict.fromkeys(source_order, 0)
     pools: list[list[SourceRow]] = []
@@ -121,11 +122,10 @@ def build_pools(
             for row in rows:
                 if len(selected) >= 10:
                     break
-                if row["source"] in EXCLUDED_SOURCES:
+                if row["source"] in EXCLUDED_SOURCES or row["id"] in seen:
                     continue
-                if row["id"] not in seen:
-                    selected.append(row)
-                    seen.add(row["id"])
+                selected.append(row)
+                seen.add(row["id"])
         if len(selected) < 10:
             raise ValueError("source_data cannot produce a ten-candidate pool")
         pools.append(selected[:10])

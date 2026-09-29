@@ -146,7 +146,7 @@ class StorageConfig(BaseModel):
 class DatabaseConfig(BaseModel):
     """Database observability and audit settings."""
 
-    path: str = "data/database.sqlite"
+    url: str = ""
     slow_query_threshold_seconds: float = Field(default=1.0, gt=0)
     enable_sql_audit: bool = True
 
@@ -328,17 +328,10 @@ class SystemSettings(BaseSettings):
             "SCHEDULER_LOCK_STRICT_MODE", "MULTISCRIBE_SCHEDULER_LOCK_STRICT_MODE"
         ),
     )
-    db_path: str = "data/database.sqlite"
-    db_driver: Literal["sqlite", "postgres"] = Field(
-        default="sqlite",
-        validation_alias=AliasChoices("DB_DRIVER", "MULTISCRIBE_DB_DRIVER"),
-    )
-    db_dsn: str = Field(
+    database_url: str = Field(
         default="",
         validation_alias=AliasChoices(
-            "DB_DSN",
             "DATABASE_URL",
-            "MULTISCRIBE_DB_DSN",
             "MULTISCRIBE_DATABASE_URL",
         ),
     )

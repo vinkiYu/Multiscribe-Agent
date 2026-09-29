@@ -7,10 +7,10 @@ import time
 from typing import cast
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, UpsertStyle
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
-class KvRepository(DialectRepositoryMixin):
+class KvRepository(PostgresRepositoryMixin):
     """Persist JSON-compatible values by key in SQLite."""
 
     def __init__(self, db: Database) -> None:
@@ -45,7 +45,6 @@ class KvRepository(DialectRepositoryMixin):
             self._upsert_sql(
                 table="kv",
                 columns=columns,
-                style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
                 conflict_target=("key",),
                 update_columns=("value", "expires_at"),
             ),

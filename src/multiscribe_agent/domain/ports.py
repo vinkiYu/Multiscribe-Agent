@@ -18,7 +18,7 @@ class DatabaseProtocol(Protocol):
         ...
 
     async def executemany(
-        self, statement: str, parameters: list[tuple[Any, ...] | list[Any]]
+        self, statement: str, parameters: Sequence[tuple[Any, ...] | list[Any]]
     ) -> int:
         """Execute one statement for a batch of parameter sets."""
         ...
@@ -37,6 +37,10 @@ class DatabaseProtocol(Protocol):
 
     async def close(self) -> None:
         """Close the database connection or pool."""
+        ...
+
+    def set_audit_logger(self, audit_logger: object | None) -> None:
+        """Attach an optional write-audit sink."""
         ...
 
 

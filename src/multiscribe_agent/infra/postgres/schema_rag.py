@@ -42,3 +42,27 @@ RAG_CHUNKS_INDEXES = (
     "ON rag_chunks(user_id, doc_type, published_at)",
     "CREATE INDEX IF NOT EXISTS idx_rag_chunks_content_tsv ON rag_chunks USING GIN(content_tsv)",
 )
+
+RAG_CHUNKS_TABLE = """
+CREATE TABLE IF NOT EXISTS rag_chunks (
+    chunk_id TEXT PRIMARY KEY,
+    document_id TEXT NOT NULL,
+    doc_type TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    content_tsv tsvector NOT NULL,
+    published_at TEXT,
+    category TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    agent_id TEXT
+)
+"""
+
+RAG_CHUNKS_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_document ON rag_chunks(document_id)",
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_scope "
+    "ON rag_chunks(user_id, doc_type, published_at)",
+    "CREATE INDEX IF NOT EXISTS idx_rag_chunks_content_tsv ON rag_chunks USING GIN(content_tsv)",
+)

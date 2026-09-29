@@ -1,1 +1,1 @@
-"""SQLite persistence implementations for MultiscribeAgent."""
+"""PostgreSQL persistence implementations for MultiscribeAgent."""

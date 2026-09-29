@@ -215,6 +215,27 @@ CREATE TABLE IF NOT EXISTS adapter_health (
 );
 """
 
+ALERT_HISTORY_TABLE = """
+CREATE TABLE IF NOT EXISTS alert_history (
+    id TEXT PRIMARY KEY,
+    rule_name TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    threshold DOUBLE PRECISION NOT NULL,
+    value DOUBLE PRECISION NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    fired_at BIGINT NOT NULL,
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    acknowledged_by TEXT,
+    acknowledged_at BIGINT,
+    metadata TEXT NOT NULL DEFAULT '{}'
+);
+"""
+
+ALERT_HISTORY_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_alert_history_fired_at ON alert_history(fired_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_alert_history_rule ON alert_history(rule_name)",
+)
+
 
 ALL_BUSINESS_TABLES = (
     KV_TABLE,
@@ -236,5 +257,7 @@ ALL_BUSINESS_TABLES = (
     CLICK_EVENTS_TABLE,
     DAILY_DIGEST_ARCHIVES_TABLE,
     ADAPTER_HEALTH_TABLE,
+    ALERT_HISTORY_TABLE,
+    *ALERT_HISTORY_INDEXES,
 )
 """Sequence of CREATE TABLE / CREATE INDEX statements for Postgres business tables."""

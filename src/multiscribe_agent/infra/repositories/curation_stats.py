@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +23,7 @@ class DailyCurationStat:
     rounds: int
 
 
-class CurationStatsRepository(DialectRepositoryMixin):
+class CurationStatsRepository(PostgresRepositoryMixin):
     """Aggregate existing evaluation and archive rows without changing their schemas."""
 
     def __init__(self, db: Database) -> None:

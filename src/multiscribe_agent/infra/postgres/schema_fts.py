@@ -7,7 +7,7 @@ PGVECTOR_EXTENSION = "CREATE EXTENSION IF NOT EXISTS vector"
 CHUNK_VECTORS_TABLE = """
 CREATE TABLE IF NOT EXISTS chunk_vectors (
     chunk_id TEXT PRIMARY KEY,
-    embedding vector(384)
+    embedding vector(512)
 )
 """
 

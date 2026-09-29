@@ -8,8 +8,7 @@ from typing import Protocol
 import structlog
 
 from multiscribe_agent.domain.ports import VectorStorePort
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresRepositoryMixin
 from multiscribe_agent.knowledge.embedding_service import EmbeddingUnavailableError
 from multiscribe_agent.knowledge.vector_store import VectorStoreUnavailable
 from multiscribe_agent.rag.models import RetrievalScope
@@ -34,7 +33,7 @@ class DenseHit:
     distance: float
 
 
-class RagDenseRetriever(DialectRepositoryMixin):
+class RagDenseRetriever(PostgresRepositoryMixin):
     """Encode a query, ask the vector port for candidates, then enforce scope in SQL."""
 
     _db: DatabaseProtocol

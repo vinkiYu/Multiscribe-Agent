@@ -6,38 +6,43 @@ import json
 from typing import Any, cast
 
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 _TABLE_STATEMENTS = {
     "agents": (
         "SELECT data FROM agents WHERE id = ?",
-        "INSERT OR REPLACE INTO agents(id, data) VALUES (?, ?)",
+        "INSERT INTO agents(id, data) VALUES (?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data",
         "SELECT data FROM agents ORDER BY id",
         "DELETE FROM agents WHERE id = ?",
     ),
     "skills": (
         "SELECT data FROM skills WHERE id = ?",
-        "INSERT OR REPLACE INTO skills(id, data) VALUES (?, ?)",
+        "INSERT INTO skills(id, data) VALUES (?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data",
         "SELECT data FROM skills ORDER BY id",
         "DELETE FROM skills WHERE id = ?",
     ),
     "workflows": (
         "SELECT data FROM workflows WHERE id = ?",
-        "INSERT OR REPLACE INTO workflows(id, data) VALUES (?, ?)",
+        "INSERT INTO workflows(id, data) VALUES (?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data",
         "SELECT data FROM workflows ORDER BY id",
         "DELETE FROM workflows WHERE id = ?",
     ),
     "mcp_configs": (
         "SELECT data FROM mcp_configs WHERE id = ?",
-        "INSERT OR REPLACE INTO mcp_configs(id, data) VALUES (?, ?)",
+        "INSERT INTO mcp_configs(id, data) VALUES (?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data",
         "SELECT data FROM mcp_configs ORDER BY id",
         "DELETE FROM mcp_configs WHERE id = ?",
     ),
     "schedules": (
         "SELECT data FROM schedules WHERE id = ?",
         """
-        INSERT OR REPLACE INTO schedules(id, data, updated_at)
-        VALUES (?, ?, datetime('now'))
+        INSERT INTO schedules(id, data, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
         """,
         "SELECT data FROM schedules ORDER BY id",
         "DELETE FROM schedules WHERE id = ?",
@@ -45,7 +50,7 @@ _TABLE_STATEMENTS = {
 }
 
 
-class EntityJsonRepository(DialectRepositoryMixin):
+class EntityJsonRepository(PostgresRepositoryMixin):
     """Store JSON documents in a fixed set of entity tables."""
 
     def __init__(self, db: Database) -> None:
@@ -61,14 +66,12 @@ class EntityJsonRepository(DialectRepositoryMixin):
         )
         if row is None:
             return None
-        return self._decode_object(str(row["data"]))
+        return self._decode_object(row["data"])
 
     async def save(self, table: str, entity_id: str, data: dict[str, Any]) -> None:
         """Insert or replace a JSON entity in an allowed table."""
-        statements = self._statements_for(table)
-        statement = statements[1]
-        if isinstance(self._dialect, PgDialect):
-            statement = _postgres_upsert(table)
+        self._statements_for(table)
+        statement = _postgres_upsert(table)
         await self._execute(
             statement,
             (entity_id, json.dumps(data)),
@@ -78,7 +81,7 @@ class EntityJsonRepository(DialectRepositoryMixin):
         """Return all JSON entities from an allowed table."""
         statements = self._statements_for(table)
         rows = await self._fetchall(statements[2])
-        return [self._decode_object(str(row["data"])) for row in rows]
+        return [self._decode_object(row["data"]) for row in rows]
 
     async def delete(self, table: str, entity_id: str) -> None:
         """Delete an entity from an allowed table."""
@@ -94,9 +97,9 @@ class EntityJsonRepository(DialectRepositoryMixin):
         return statements
 
     @staticmethod
-    def _decode_object(raw_value: str) -> dict[str, Any]:
+    def _decode_object(raw_value: object) -> dict[str, Any]:
         """Decode a persisted JSON object and reject non-object values."""
-        value = json.loads(raw_value)
+        value = raw_value if isinstance(raw_value, dict) else json.loads(str(raw_value))
         if not isinstance(value, dict):
             raise ValueError("stored entity data must be a JSON object")
         return cast(dict[str, Any], value)

@@ -43,7 +43,6 @@ from multiscribe_agent.domain.models import (
     TokenUsage,
 )
 from multiscribe_agent.infra.db import Database, init_database
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PlaceholderStyle
 from multiscribe_agent.infra.redis_client import close_redis
 from multiscribe_agent.infra.repositories.curation_evaluations import (
     CurationEvaluationRepository,
@@ -356,9 +355,7 @@ class ServiceContext:
         if self._initialized:
             return
         self.db = await init_database(
-            db_driver=self.settings.db_driver,
-            sqlite_path=self.settings.db_path,
-            postgres_dsn=self.settings.db_dsn,
+            self.settings.database_url,
             pool_size=self.settings.db_pool_size,
             pool_timeout=self.settings.db_pool_timeout,
             slow_query_threshold=self.settings.slow_query_threshold_seconds,
@@ -547,13 +544,10 @@ class ServiceContext:
         self._initialized = False
 
     async def _init_kb(self) -> None:
-        """Initialize knowledge services using the selected database dialect."""
+        """Initialize knowledge services on the PostgreSQL RAG backend."""
         if self.db is None:
             raise RuntimeError("knowledge base initialization requires a database")
-        backend = "postgres" if _is_postgres_database(self.db) else "sqlite"
-        vector_enabled = await _migrate_kb_for_backend(
-            self.db, backend, vector_dim=self.settings.rag_embedding_dim
-        )
+        vector_enabled = True
         embeddings = (
             EmbeddingService(
                 model_name=self.settings.rag_embedding_model,
@@ -564,12 +558,7 @@ class ServiceContext:
         )
         vector_store: VectorStorePort | None = None
         if vector_enabled:
-            if backend == "postgres":
-                from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
-
-                vector_store = PostgresVectorStore(self.db, dim=self.settings.rag_embedding_dim)
-            else:
-                vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
+            vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
         reranker = (
             CrossEncoderReranker(model_name=self.settings.rag_reranker_model)
             if self.settings.rag_reranker_enabled
@@ -938,25 +927,6 @@ class ServiceContext:
         """Raise an explicit runtime error when context users skipped initialization."""
         if not self._initialized:
             raise RuntimeError("service context is not initialized")
-
-
-def _is_postgres_database(db: Database | DatabaseProtocol) -> bool:
-    """Detect the PostgreSQL backend through the shared protocol dialect marker."""
-    return getattr(db, "placeholder_style", None) is PlaceholderStyle.DOLLAR
-
-
-async def _migrate_kb_for_backend(
-    db: Database, backend: str, *, vector_dim: int = EmbeddingService.DIM
-) -> bool:
-    """Apply backend-specific knowledge schema exactly once during bootstrap."""
-    if backend == "postgres":
-        # PostgreSQL FTS/vector tables are created by init_database().
-        return True
-    try:
-        return await db.migrate_kb(vector_dim=vector_dim)
-    except TypeError:
-        # Compatibility with lightweight test doubles and older Database ports.
-        return await db.migrate_kb()
 
 
 _context: ServiceContext | None = None

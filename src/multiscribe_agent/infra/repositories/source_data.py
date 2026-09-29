@@ -9,7 +9,7 @@ from typing import Any, cast
 
 from multiscribe_agent.domain.models import SourceData, UnifiedData
 from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.dialect import DialectRepositoryMixin, PgDialect
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 from multiscribe_agent.knowledge.fts_query import FtsQueryBuilder
 
 UNKNOWN_PUBLISHED_DATE = "1970-01-01T00:00:00+00:00"
@@ -83,7 +83,7 @@ _FILTER_STATEMENTS = {
 }
 
 
-class SourceDataRepository(DialectRepositoryMixin):
+class SourceDataRepository(PostgresRepositoryMixin):
     """Persist normalized content, structured filters, and FTS queries."""
 
     def __init__(self, db: Database) -> None:
@@ -156,6 +156,26 @@ class SourceDataRepository(DialectRepositoryMixin):
                 status = excluded.status
             """,
             rows,
+        )
+        await self._executemany(
+            """
+            INSERT INTO source_data_fts(row_id, title_tsv, description_tsv, ai_summary_tsv)
+            VALUES (?, to_tsvector('simple', ?), to_tsvector('simple', ?),
+                    to_tsvector('simple', ?))
+            ON CONFLICT(row_id) DO UPDATE SET
+                title_tsv = EXCLUDED.title_tsv,
+                description_tsv = EXCLUDED.description_tsv,
+                ai_summary_tsv = EXCLUDED.ai_summary_tsv
+            """,
+            [
+                (
+                    item.id,
+                    item.title,
+                    item.description,
+                    str(item.metadata.get("ai_summary", "")),
+                )
+                for item in items
+            ],
         )
         return len(item_ids - existing_ids)
 
@@ -230,9 +250,7 @@ class SourceDataRepository(DialectRepositoryMixin):
         self, query: str, limit: int, fts_builder: FtsQueryBuilder | None = None
     ) -> list[SourceData]:
         """Search the FTS index and return content with highlighted descriptions."""
-        builder = fts_builder or FtsQueryBuilder(
-            "postgres" if isinstance(self._dialect, PgDialect) else "sqlite"
-        )
+        builder = fts_builder or FtsQueryBuilder()
         statement, parameters = builder.search_source_data_sql(query, max(limit, 0))
         rows = await self._fetchall(statement, parameters)
         return [self._to_source_data(row, highlight=str(row["highlight"])) for row in rows]
@@ -257,17 +275,17 @@ class SourceDataRepository(DialectRepositoryMixin):
 
     @staticmethod
     def _to_source_data(row: Mapping[str, Any], highlight: str | None = None) -> SourceData:
-        """Convert a SQLite row into a validated SourceData model."""
+        """Convert a PostgreSQL row into a validated SourceData model."""
         data = dict(row)
-        data["metadata"] = SourceDataRepository._decode_metadata(str(data["metadata"]))
+        data["metadata"] = SourceDataRepository._decode_metadata(data["metadata"])
         if highlight is not None:
             data["description"] = highlight
         return SourceData.model_validate(data)
 
     @staticmethod
-    def _decode_metadata(raw_value: str) -> dict[str, Any]:
+    def _decode_metadata(raw_value: object) -> dict[str, Any]:
         """Decode a metadata JSON object stored by this repository."""
-        value = json.loads(raw_value)
+        value = raw_value if isinstance(raw_value, dict) else json.loads(str(raw_value))
         if not isinstance(value, dict):
             raise ValueError("source metadata must be a JSON object")
         return cast(dict[str, Any], value)
