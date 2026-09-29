@@ -98,7 +98,7 @@ async def test_extract_from_conversation_parses_valid_json_delta() -> None:
     delta = await extractor.extract_from_conversation(
         [
             AIMessage(role="user", content="我想看 Agent 框架"),
-            AIMessage(role="assistant", content="好的，我会重点关注"),
+            AIMessage(role="assistant", content="好的，我会重点关注"),  # noqa: RUF001
         ]
     )
     assert delta == {

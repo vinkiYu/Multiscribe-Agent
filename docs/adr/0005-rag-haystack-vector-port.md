@@ -1,6 +1,6 @@
 # ADR-0005 RAG 子系统选型:Haystack 管 RAG,向量库沿用存量 Port,Qdrant 仅可选适配
 
-- 状态:已采纳(P66 总览批准时生效)
+- 状态:已采纳(P66 总览批准时生效);P66.5 增补 reranker 数字门禁(未达,默认关);**P67 增补:pgvector 随 ADR-0006 转正为唯一向量存储**(sqlite-vec 随 SQLite 移除退场,Qdrant 适配器接口保留)
 - 日期:2026-09-22
 - 关联:`docs/phases/P66-RAG-重构总览.md`、`knowledge/vector_protocol.py`、`knowledge/vector_store.py`、`agents/context_provider.py`
 

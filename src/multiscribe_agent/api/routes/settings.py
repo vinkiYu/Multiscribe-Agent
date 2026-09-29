@@ -63,7 +63,11 @@ async def save_settings(
         )
     merged = {**current, **previous, **overrides}
     try:
-        validated = SystemSettings.model_validate(merged)
+        # Do not call BaseSettings.model_validate here: it re-reads the
+        # process dotenv layer and can overwrite a just-saved console value.
+        # Explicitly disabling dotenv makes this a pure validation of the
+        # merged runtime + persistent override payload.
+        validated = SystemSettings(_env_file=None, **merged)
     except ValidationError as exc:
         raise HTTPException(status_code=400, detail=exc.errors()) from exc
     await context.config_service.save_settings(overrides)

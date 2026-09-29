@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.bootstrap import (
+    _LEGACY_DAILY_AI_NEWS_RSS_URLS,
     DEFAULT_CURATION_AGENT_ID,
     DEFAULT_DAILY_AI_NEWS_TASK_ID,
-    _LEGACY_DAILY_AI_NEWS_RSS_URLS,
     ServiceContext,
 )
 from multiscribe_agent.config import ProviderConfig, SystemSettings

@@ -105,17 +105,10 @@ async def test_init_database_postgres_requires_asyncpg_extra(
     surface.
     """
     monkeypatch.delitem(sys.modules, "multiscribe_agent.infra.postgres_driver", raising=False)
-    monkeypatch.delitem(sys.modules, "asyncpg", raising=False)
+    monkeypatch.setitem(sys.modules, "asyncpg", None)
 
-    try:
+    with pytest.raises(ImportError, match="asyncpg is required"):
         await db_module.init_database("postgres", postgres_dsn="postgresql://localhost/test")
-    except ImportError as exc:
-        assert "asyncpg is required" in str(exc)
-    except Exception:
-        # asyncpg is installed in this environment; the connection attempt
-        # to a non-existent localhost is allowed to fail. The InstallError
-        # guard simply must not be raised.
-        return
 
 
 @pytest.mark.asyncio

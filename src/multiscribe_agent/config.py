@@ -263,6 +263,10 @@ class SystemSettings(BaseSettings):
         env_prefix="MULTISCRIBE_",
         env_file=".env",
         extra="allow",
+        # Persistent settings are serialized with Python field names.  Keep
+        # accepting those names when rebuilding a settings object, while the
+        # validation aliases above remain the public environment contract.
+        populate_by_name=True,
     )
 
     system_password: str = ""

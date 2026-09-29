@@ -101,7 +101,8 @@ async def test_chat_session_repository_round_trip_on_postgres(postgres_database)
 
     user = await repo.append_message(session.id, "user", "你好")
     assistant = await repo.append_message(session.id, "assistant", "世界")
-    assert user is not None and assistant is not None
+    assert user is not None
+    assert assistant is not None
     assert user.role == "user"
     assert assistant.role == "assistant"
 

@@ -44,7 +44,11 @@ async def test_append_message_increments_count_and_updates_timestamp() -> None:
         assert first.role == "user"
         assert first.content == "你好"
 
-        second = await repo.append_message(session.id, "assistant", "你好，我能帮什么？")
+        second = await repo.append_message(
+            session.id,
+            "assistant",
+            "你好，我能帮什么？",  # noqa: RUF001
+        )
         assert second is not None
         loaded = await repo.get_session(session.id)
         assert loaded is not None

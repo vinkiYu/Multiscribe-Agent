@@ -103,17 +103,14 @@ def test_postgres_driver_missing_optional_dependency_has_install_hint(
 ) -> None:
     """An absent asyncpg package raises a controlled ImportError at import time.
 
-    When the test environment already has asyncpg installed (because the
-    project's dev extras pull it in), the install-hint path is bypassed and
-    the module imports cleanly. We accept either outcome so the suite stays
-    useful in both setups.
+    A blocked sys.modules entry simulates the missing optional dependency
+    deterministically, even when another extra installed asyncpg.
     """
     monkeypatch.delitem(sys.modules, MODULE_NAME, raising=False)
-    monkeypatch.delitem(sys.modules, "asyncpg", raising=False)
-    try:
+    monkeypatch.setitem(sys.modules, "asyncpg", None)
+
+    with pytest.raises(ImportError, match="asyncpg is required"):
         importlib.import_module(MODULE_NAME)
-    except ImportError as exc:
-        assert "asyncpg is required" in str(exc)
 
 
 @pytest.mark.asyncio
