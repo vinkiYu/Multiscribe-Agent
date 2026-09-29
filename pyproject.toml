@@ -103,6 +103,9 @@ follow_imports = "skip"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# tests/api 等子目录无 __init__.py,pytest prepend 模式只会把子目录加入 sys.path;
+# 测试里的 `from tests.api.conftest import ...` 需要仓库根在 sys.path 上。
+pythonpath = ["."]
 markers = [
     "e2e: real external dependency tests (skipped by default)",
     "benchmark: performance benchmark test (requires pytest-benchmark)",
