@@ -11,13 +11,14 @@ from multiscribe_agent.agents.workflow.iteration_store import IterationRecord
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 async def _app_with_iterations(
     tmp_path: Path,
 ) -> tuple[httpx.AsyncClient, ServiceContext]:
     """Create an initialized test app with two persisted run histories."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "workflow.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     assert context.iteration_store is not None

@@ -1,19 +1,29 @@
-"""Optional PostgreSQL smoke coverage for the dialect-enabled repository path."""
+"""Explicit PostgreSQL-only integration checks."""
 
 from __future__ import annotations
 
-import os
-
 import pytest
 
-from multiscribe_agent.infra.dialect import PgDialect
+from multiscribe_agent.infra.db import init_database
+from tests.db import get_test_database_url
 
 
 @pytest.mark.e2e
 @pytest.mark.asyncio
-async def test_postgres_dialect_smoke(postgres_container) -> None:
-    """The Docker-backed hook is opt-in and always exercises PostgreSQL bind syntax."""
-    if os.getenv("INTEGRATION") != "1":
-        pytest.skip("set INTEGRATION=1 to run Docker-backed PostgreSQL tests")
-    assert postgres_container.get_connection_url()
-    assert PgDialect().translate("SELECT ?") == "SELECT $1"
+async def test_postgres_schema_exposes_pgvector_and_tsvector() -> None:
+    """The production schema uses PostgreSQL vector and full-text primitives."""
+    database = await init_database(get_test_database_url())
+    try:
+        vector = await database.fetchone(
+            "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = $1) AS enabled",
+            ("vector",),
+        )
+        table = await database.fetchone(
+            "SELECT to_regclass($1) AS name", ("public.source_data_fts",)
+        )
+        assert vector is not None
+        assert vector["enabled"] is True
+        assert table is not None
+        assert table["name"] == "source_data_fts"
+    finally:
+        await database.close()

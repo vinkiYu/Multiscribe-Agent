@@ -3,10 +3,11 @@ from fastapi.testclient import TestClient
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 def test_execute_authenticates_and_dispatches_tool(tmp_path) -> None:
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "api.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         issued = client.post("/api/ai/v1/register", json={}).json()
@@ -20,7 +21,7 @@ def test_execute_authenticates_and_dispatches_tool(tmp_path) -> None:
 
 
 def test_execute_rejects_missing_or_unknown_key(tmp_path) -> None:
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "api.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         assert client.post("/api/ai/v1/execute", json={}).status_code == 401

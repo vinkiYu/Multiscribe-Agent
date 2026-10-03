@@ -8,11 +8,12 @@ import pytest
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 @pytest.mark.asyncio
 async def test_alert_history_route_lists_persisted_records(tmp_path) -> None:
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "alerts.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

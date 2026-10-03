@@ -11,11 +11,11 @@ import pytest
 
 from multiscribe_agent.core.adapter_health import AdapterHealth, AdapterHealthRepository
 from multiscribe_agent.domain.models import PluginMetadata, TaskLog, UnifiedData
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.plugins.base import BaseAdapter
 from multiscribe_agent.plugins.registry import AdapterRegistry
 from multiscribe_agent.services.adapter_health_alerter import AdapterHealthAlerter
 from multiscribe_agent.services.ingestion import IngestionService
+from tests.db import init_test_database
 
 
 def item(item_id: str) -> UnifiedData:
@@ -359,7 +359,7 @@ async def test_run_all_skips_disabled_adapter_before_scheduling() -> None:
 @pytest.mark.asyncio
 async def test_health_threshold_disables_adapter_and_run_all_skips_it() -> None:
     """Three failures persist a disabled state, alert once, and prevent later callbacks."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         registry = AdapterRegistry.get_instance()
         registry.clear()
@@ -399,7 +399,7 @@ async def test_health_threshold_disables_adapter_and_run_all_skips_it() -> None:
 @pytest.mark.asyncio
 async def test_health_alert_failure_does_not_break_ingestion() -> None:
     """A publisher outage cannot turn the adapter health side effect into a crash."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         registry = AdapterRegistry.get_instance()
         registry.clear()

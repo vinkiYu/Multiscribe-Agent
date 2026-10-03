@@ -17,7 +17,7 @@ from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.publish_history import PublishHistory
-from multiscribe_agent.infra.db import SqliteDatabase, init_db
+from tests.db import get_test_database_url, init_test_database
 
 
 class FakePublishingService:
@@ -39,7 +39,7 @@ class FakePublishingService:
 @pytest.mark.asyncio
 async def test_add_and_query_round_trip_redacts_preview() -> None:
     """Stored records preserve result JSON while excluding credentials from previews."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         record_id = await history.add(
@@ -83,14 +83,14 @@ def test_sanitize_redacts_webhooks_keys_and_truncates_content() -> None:
 @pytest.mark.asyncio
 async def test_query_filters_by_publisher_date_range_and_limit() -> None:
     """Query bounds and publisher filters operate on persisted rows."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         older_id = await history.add(db, "wecom_bot", "success", "Older", "content", {"ok": True})
         newest_id = await history.add(db, "feishu_bot", "error", "Newest", "content", {"ok": False})
         now = datetime.now(UTC)
         await db.execute(
-            "UPDATE publish_history SET published_at = ? WHERE id = ?",
+            "UPDATE publish_history SET published_at = $1 WHERE id = $2",
             ((now - timedelta(days=3)).isoformat(), older_id),
         )
 
@@ -106,7 +106,7 @@ async def test_query_filters_by_publisher_date_range_and_limit() -> None:
 @pytest.mark.asyncio
 async def test_query_clamps_out_of_range_limits() -> None:
     """History queries keep direct callers within the documented safe limit."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         await history.add(db, "feishu_bot", "success", "Only", "content", {})
@@ -120,7 +120,7 @@ async def test_query_clamps_out_of_range_limits() -> None:
 @pytest.mark.asyncio
 async def test_add_with_digest_date_is_idempotent_per_publisher_and_day() -> None:
     """Retries for one publisher/day keep one durable history row."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         first = await history.add(
@@ -152,7 +152,7 @@ async def test_add_with_digest_date_is_idempotent_per_publisher_and_day() -> Non
 @pytest.mark.asyncio
 async def test_query_by_digest_date() -> None:
     """History can be narrowed to one digest date independently of timestamps."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         await history.add(
@@ -184,7 +184,7 @@ async def test_query_by_digest_date() -> None:
 @pytest.mark.asyncio
 async def test_recent_content_hashes_reads_successful_scalar_and_json_values() -> None:
     """Cross-day fallback accepts one-item and compact multi-item history values."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         scalar = digest_content_hash("One", "Summary")
@@ -228,97 +228,12 @@ async def test_recent_content_hashes_reads_successful_scalar_and_json_values() -
 @pytest.mark.asyncio
 async def test_database_initialization_creates_publish_history_table() -> None:
     """The migration is part of normal database initialization and is idempotent."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
-        row = await db.fetchone(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'publish_history'"
-        )
+        row = await db.fetchone("SELECT to_regclass($1) AS name", ("public.publish_history",))
 
         assert row is not None
-        await db.migrate_publish_history()
-    finally:
-        await db.close()
-
-
-@pytest.mark.asyncio
-async def test_existing_publish_history_table_is_upgraded_with_digest_date() -> None:
-    """Legacy databases gain the idempotency column without losing old rows."""
-    db = await SqliteDatabase.open(":memory:")
-    try:
-        await db.execute(
-            """
-            CREATE TABLE publish_history (
-                id TEXT PRIMARY KEY,
-                publisher_id TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
-                title TEXT NOT NULL,
-                content_preview TEXT NOT NULL,
-                result_data TEXT NOT NULL DEFAULT '{}',
-                error_message TEXT,
-                published_at TEXT NOT NULL,
-                adapter_name TEXT
-            )
-            """
-        )
-        await db.execute(
-            """
-            INSERT INTO publish_history
-                (id, publisher_id, status, title, content_preview, result_data,
-                 published_at, adapter_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            ("legacy", "feishu_bot", "success", "Legacy", "content", "{}", "2026-07-29", None),
-        )
-
-        await db.migrate_publish_history()
-        history = PublishHistory()
-        record_id = await history.add(
-            db,
-            "feishu_bot",
-            "success",
-            "Today",
-            "content",
-            {},
-            digest_date="2026-07-29",
-        )
-
-        records = await history.query(db, digest_date="2026-07-29")
-        assert record_id != "legacy"
-        assert records[0].digest_date == "2026-07-29"
-    finally:
-        await db.close()
-
-
-@pytest.mark.asyncio
-async def test_existing_publish_history_table_is_upgraded_with_content_hash() -> None:
-    """Legacy history rows gain the nullable fingerprint column without data loss."""
-    db = await SqliteDatabase.open(":memory:")
-    try:
-        await db.execute(
-            """
-            CREATE TABLE publish_history (
-                id TEXT PRIMARY KEY,
-                publisher_id TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
-                title TEXT NOT NULL,
-                content_preview TEXT NOT NULL,
-                result_data TEXT NOT NULL DEFAULT '{}',
-                error_message TEXT,
-                published_at TEXT NOT NULL,
-                adapter_name TEXT,
-                digest_date TEXT
-            )
-            """
-        )
-        await db.migrate_publish_history()
-        columns = await db.fetchall("PRAGMA table_info(publish_history)")
-        assert any(str(column["name"]) == "content_hash" for column in columns)
-        assert (
-            await db.fetchone(
-                "SELECT name FROM sqlite_master WHERE name = 'idx_publish_history_content_hash'"
-            )
-            is not None
-        )
+        assert row["name"] == "publish_history"
     finally:
         await db.close()
 
@@ -326,7 +241,7 @@ async def test_existing_publish_history_table_is_upgraded_with_content_hash() ->
 @pytest.mark.asyncio
 async def test_pipeline_fanout_persists_each_target_outcome() -> None:
     """Pipeline fan-out writes independent success and error delivery rows."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         config = DailyDigestConfig(
@@ -370,7 +285,7 @@ async def test_pipeline_fanout_persists_each_target_outcome() -> None:
 @pytest.mark.asyncio
 async def test_api_returns_authenticated_history_records(tmp_path) -> None:
     """Registered API route returns the context-injected service's stored rows."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "history.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:
@@ -404,7 +319,7 @@ async def test_api_returns_authenticated_history_records(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_api_rejects_unauthenticated_history_requests(tmp_path) -> None:
     """History records remain behind the project's existing JWT requirement."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "history.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

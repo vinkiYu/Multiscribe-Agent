@@ -10,7 +10,7 @@ import pytest
 from multiscribe_agent.agents.workflow.engine import WorkflowEngine
 from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
 from multiscribe_agent.domain.models import WorkflowDefinition, WorkflowStep
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 class MemoryWorkflowStore:
@@ -73,7 +73,7 @@ def _loop_step(max_iterations: int) -> WorkflowStep:
 @pytest.mark.asyncio
 async def test_engine_persists_loop_rounds_and_same_run_resumes() -> None:
     """The engine forwards its run trace to Loop persistence and resumes it."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         workflow_store = MemoryWorkflowStore(_workflow(1))
@@ -122,7 +122,7 @@ async def test_engine_stream_falls_back_to_uuid_when_no_run_id() -> None:
 @pytest.mark.asyncio
 async def test_deterministic_run_id_resumes_across_invocations() -> None:
     """Two engine invocations with one run ID continue the persisted loop rounds."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         run_id = "daily:2026-07-30"
@@ -169,7 +169,7 @@ async def test_deterministic_run_id_resumes_across_invocations() -> None:
 @pytest.mark.asyncio
 async def test_engine_without_iteration_store_keeps_existing_behavior() -> None:
     """The optional store remains a no-op for existing engine callers."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         workflow = _workflow(1)
         engine = WorkflowEngine(SequenceExecutor(["output"]), MemoryWorkflowStore(workflow))
@@ -185,7 +185,7 @@ async def test_engine_without_iteration_store_keeps_existing_behavior() -> None:
 @pytest.mark.asyncio
 async def test_iteration_store_list_recent_is_bounded_and_newest_first() -> None:
     """Recent iteration reads span runs and honor the requested limit."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         for index in range(3):
@@ -202,7 +202,7 @@ async def test_iteration_store_list_recent_is_bounded_and_newest_first() -> None
                 )
             )
             await db.execute(
-                "UPDATE workflow_iterations SET recorded_at = ? WHERE workflow_run_id = ?",
+                "UPDATE workflow_iterations SET recorded_at = $1 WHERE workflow_run_id = $2",
                 (index + 1, f"run-{index}"),
             )
         recent = await store.list_recent(limit=2)

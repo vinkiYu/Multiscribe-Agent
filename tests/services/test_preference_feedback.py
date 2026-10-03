@@ -7,9 +7,10 @@ from dataclasses import dataclass
 import pytest
 
 from multiscribe_agent.core.click_events import ClickEventRepository
-from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.services.preference_feedback import PreferenceFeedbackService
+from tests.db import init_test_database
 
 
 @dataclass
@@ -41,7 +42,7 @@ async def _add_clicks(db: Database, repo: ClickEventRepository) -> None:
 @pytest.mark.asyncio
 async def test_click_feedback_preserves_manual_fields_and_orders_tags() -> None:
     """Manual tags stay first while click tags append by descending frequency."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ClickEventRepository()
         store = FakePreferenceStore(UserPreferences(["manual"], ["blocked"], "08:30", 7, ["topic"]))
@@ -61,7 +62,7 @@ async def test_click_feedback_preserves_manual_fields_and_orders_tags() -> None:
 @pytest.mark.asyncio
 async def test_click_feedback_is_bounded_and_skips_unchanged_save() -> None:
     """The max-tag cap applies and a second identical fold is a no-op."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ClickEventRepository()
         store = FakePreferenceStore(UserPreferences(["manual", "python"], [], "09:00", 5))

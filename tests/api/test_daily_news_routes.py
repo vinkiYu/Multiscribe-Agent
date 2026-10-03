@@ -10,9 +10,9 @@ from fastapi import HTTPException
 
 from multiscribe_agent.api.routes.daily_news import read_daily_news
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from tests.db import init_test_database
 
 
 def _digest(digest_date: str) -> CuratedDigest:
@@ -37,7 +37,7 @@ def _digest(digest_date: str) -> CuratedDigest:
 @pytest.mark.asyncio
 async def test_public_daily_news_excludes_pending_and_rejected_archives() -> None:
     """Public navigation and date lookup expose only approved publication states."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest("2026-07-26"), approval_status="pending")

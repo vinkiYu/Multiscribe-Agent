@@ -3,10 +3,11 @@ from fastapi.testclient import TestClient
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 def test_register_returns_one_time_key(tmp_path) -> None:
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "api.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.post("/api/ai/v1/register", json={"description": "test"})
@@ -17,7 +18,7 @@ def test_register_returns_one_time_key(tmp_path) -> None:
 
 
 def test_approval_mode_can_be_approved(tmp_path) -> None:
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "api.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.post("/api/ai/v1/register", json={"auto_approve": False})

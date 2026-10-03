@@ -7,23 +7,29 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from multiscribe_agent.core.click_events import ClickEventRepository
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_record_persists_json_tags_and_metadata() -> None:
     """A click stores normalized tags and request metadata."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
-        columns = await db.fetchall("PRAGMA table_info(click_events)")
-        assert {str(column["name"]) for column in columns} >= {
+        columns = await db.fetchall(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'click_events'"
+        )
+        assert {str(column["column_name"]) for column in columns} >= {
             "digest_date",
             "item_url",
             "item_tags",
             "clicked_at",
         }
-        indexes = await db.fetchall("PRAGMA index_list(click_events)")
-        assert {str(index["name"]) for index in indexes} >= {
+        indexes = await db.fetchall(
+            "SELECT indexname FROM pg_indexes "
+            "WHERE schemaname = 'public' AND tablename = 'click_events'"
+        )
+        assert {str(index["indexname"]) for index in indexes} >= {
             "idx_click_events_clicked_at",
             "idx_click_events_item_url",
         }
@@ -48,7 +54,7 @@ async def test_record_persists_json_tags_and_metadata() -> None:
 @pytest.mark.asyncio
 async def test_tag_click_counts_filters_window_and_minimum() -> None:
     """Only clicks in the inclusive date window contribute to filtered counts."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ClickEventRepository()
         await repo.record(
@@ -73,7 +79,7 @@ async def test_tag_click_counts_filters_window_and_minimum() -> None:
             item_tags=["agent"],
         )
         await db.execute(
-            "UPDATE click_events SET clicked_at = ? WHERE item_url = ?",
+            "UPDATE click_events SET clicked_at = $1 WHERE item_url = $2",
             ((datetime.now(UTC) - timedelta(days=10)).isoformat(), "https://example.test/old"),
         )
         since_date = (datetime.now(UTC).date() - timedelta(days=1)).isoformat()
@@ -90,19 +96,19 @@ async def test_tag_click_counts_filters_window_and_minimum() -> None:
 @pytest.mark.asyncio
 async def test_tag_click_counts_ignores_invalid_json_and_empty_tags() -> None:
     """Malformed legacy rows cannot break feedback aggregation."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         await db.execute(
             """
             INSERT INTO click_events(digest_date, item_url, item_tags, clicked_at)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
             """,
             ("2026-07-29", "https://example.test/item", "not-json", "2026-07-29T00:00:00Z"),
         )
         await db.execute(
             """
             INSERT INTO click_events(digest_date, item_url, item_tags, clicked_at)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
             """,
             ("2026-07-29", "https://example.test/item", '["", "  "]', "2026-07-29T00:00:00Z"),
         )

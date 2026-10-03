@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.domain.models import UnifiedData
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.memory.memory_service import MemoryService
 from multiscribe_agent.memory.preference_store import (
     DEFAULT_PREFERENCES,
@@ -21,6 +20,7 @@ from multiscribe_agent.rag.models import (
     RetrievedEvidence,
 )
 from multiscribe_agent.services.candidate_filter import CandidateFilter
+from tests.db import init_test_database
 
 
 def _item(
@@ -47,7 +47,7 @@ def _item(
 
 async def _build_memory_with_preferences(preferences: UserPreferences) -> MemoryService:
     """Return a MemoryService backed by an in-memory preference store."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     await store.save(preferences)

@@ -3,29 +3,37 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import AbstractAsyncContextManager
 
 import pytest
 
 from multiscribe_agent.infra.db import Database
 
 
-class _Cursor:
-    rowcount = 1
-
-    async def close(self) -> None:
-        return
-
-
 class _SlowConnection:
-    total_changes = 0
-
-    async def execute(self, statement: str, parameters: tuple[object, ...]) -> _Cursor:
+    async def execute(self, statement: str, *parameters: object) -> str:
         del statement, parameters
         await asyncio.sleep(0.01)
-        return _Cursor()
+        return "UPDATE 1"
 
-    async def commit(self) -> None:
-        return
+
+class _SlowAcquire:
+    def __init__(self, connection: _SlowConnection) -> None:
+        self._connection = connection
+
+    async def __aenter__(self) -> _SlowConnection:
+        return self._connection
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        return None
+
+
+class _SlowPool:
+    def __init__(self, connection: _SlowConnection) -> None:
+        self._connection = connection
+
+    def acquire(self) -> AbstractAsyncContextManager[_SlowConnection]:
+        return _SlowAcquire(self._connection)
 
 
 class _Metrics:
@@ -39,14 +47,15 @@ class _Metrics:
 @pytest.mark.asyncio
 async def test_slow_query_logs_warning_and_records_metric(monkeypatch) -> None:
     """Queries exceeding the configured threshold emit one warning and one metric."""
-    connection = _SlowConnection()
-    database = Database(connection, slow_query_threshold=0.001, enable_sql_audit=False)
+    database = Database(
+        _SlowPool(_SlowConnection()), slow_query_threshold=0.001, enable_sql_audit=False
+    )
     metrics = _Metrics()
     monkeypatch.setattr(
         "multiscribe_agent.observability.meter.get_metrics_registry", lambda: metrics
     )
 
-    await database.execute("UPDATE things SET value = ?", ("x",))
+    await database.execute("UPDATE things SET value = $1", ("x",))
 
     assert metrics.durations
     assert metrics.durations[0] >= 0.001

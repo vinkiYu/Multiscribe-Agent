@@ -1,16 +1,16 @@
 """Tests for default, environment, and persistent settings layers."""
 
-from multiscribe_agent.config import ConfigService, ProviderConfig, SystemSettings, get_settings
+from multiscribe_agent.config import ConfigService, ProviderConfig, SystemSettings
 
 
 def test_get_settings_defaults(monkeypatch) -> None:
     """Default settings contain the expected baseline values and plugins."""
     monkeypatch.delenv("MULTISCRIBE_LOG_LEVEL", raising=False)
-    monkeypatch.delenv("MULTISCRIBE_DB_PATH", raising=False)
+    monkeypatch.delenv("MULTISCRIBE_DATABASE_URL", raising=False)
 
-    settings = get_settings()
+    settings = SystemSettings(_env_file=None)
 
-    assert settings.db_path == "data/database.sqlite"
+    assert settings.database_url == ""
     assert settings.log_level == "INFO"
     assert settings.selection_fetch_days == 2
     assert settings.selection_query_field == "ingestion_date"
@@ -53,13 +53,13 @@ def test_default_plugin_identifiers() -> None:
 def test_environment_overrides_settings(monkeypatch) -> None:
     """MULTISCRIBE-prefixed process variables override defaults."""
     monkeypatch.setenv("MULTISCRIBE_LOG_LEVEL", "DEBUG")
-    monkeypatch.setenv("MULTISCRIBE_DB_PATH", "data/test.sqlite")
+    monkeypatch.setenv("MULTISCRIBE_DATABASE_URL", "postgresql://localhost/test")
     monkeypatch.setenv("MULTISCRIBE_SELECTION_FETCH_DAYS", "7")
 
-    settings = get_settings()
+    settings = SystemSettings(_env_file=None)
 
     assert settings.log_level == "DEBUG"
-    assert settings.db_path == "data/test.sqlite"
+    assert settings.database_url == "postgresql://localhost/test"
     assert settings.selection_fetch_days == 7
 
 

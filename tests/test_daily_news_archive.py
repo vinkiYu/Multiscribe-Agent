@@ -9,9 +9,9 @@ from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from tests.db import get_test_database_url, init_test_database
 
 
 def _digest(digest_date: str, title: str = "AI News") -> CuratedDigest:
@@ -40,7 +40,7 @@ def _digest(digest_date: str, title: str = "AI News") -> CuratedDigest:
 @pytest.mark.asyncio
 async def test_archive_upsert_replaces_same_date_and_lists_newest_first() -> None:
     """A rerun updates one date atomically without creating duplicate navigation rows."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest("2026-07-23", "Older"))
@@ -65,11 +65,9 @@ async def test_archive_upsert_replaces_same_date_and_lists_newest_first() -> Non
 @pytest.mark.asyncio
 async def test_database_initialization_creates_daily_digest_archive_table() -> None:
     """Normal database startup idempotently provisions the archive table."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
-        row = await db.fetchone(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'daily_digest_archives'"
-        )
+        row = await db.fetchone("SELECT to_regclass('public.daily_digest_archives') AS name")
 
         assert row is not None
         await db.migrate_daily_digest_archives()
@@ -80,7 +78,7 @@ async def test_database_initialization_creates_daily_digest_archive_table() -> N
 @pytest.mark.asyncio
 async def test_public_api_returns_latest_and_requested_daily_news(tmp_path) -> None:
     """The website can read safe archive data without a workbench JWT."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "daily-news.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

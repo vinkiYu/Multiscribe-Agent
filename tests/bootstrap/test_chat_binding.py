@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,6 +13,7 @@ from multiscribe_agent.bootstrap import (
 )
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.services.chat_service import ChatService
+from tests.db import get_test_database_url
 
 
 def _runner(context: ServiceContext) -> object:
@@ -26,21 +26,18 @@ def _agent_def(context: ServiceContext) -> object:
     return context.chat_service._agent_def
 
 
-async def _build_context() -> tuple[ServiceContext, Path]:
-    """Build a fresh ServiceContext backed by a per-test SQLite database."""
-    tmp_root = Path(".pytest-tmp") / "p59-chat-binding"
-    tmp_root.mkdir(parents=True, exist_ok=True)
-    db_path = tmp_root / "chat_binding.sqlite"
-    settings = SystemSettings(_env_file=None, db_path=str(db_path))
+async def _build_context() -> ServiceContext:
+    """Build a fresh ServiceContext backed by the PostgreSQL test database."""
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
-    return context, db_path
+    return context
 
 
 @pytest.mark.asyncio
 async def test_init_binds_chat_runner_and_default_definition() -> None:
     """init() must wire the chat executor to a default-chat-agent definition."""
-    context, db_path = await _build_context()
+    context = await _build_context()
     try:
         assert isinstance(context.chat_service, ChatService)
         assert isinstance(_runner(context), _ChatAgentRunner)
@@ -52,13 +49,12 @@ async def test_init_binds_chat_runner_and_default_definition() -> None:
         assert raw["id"] == DEFAULT_CHAT_AGENT_ID
     finally:
         await context.close()
-        db_path.unlink(missing_ok=True)
 
 
 @pytest.mark.asyncio
 async def test_init_is_idempotent_for_chat_agent() -> None:
     """Re-running init() must not duplicate the default-chat-agent row."""
-    context, db_path = await _build_context()
+    context = await _build_context()
     try:
         first_raw: dict[str, Any] | None = await context.entities.get(  # type: ignore[union-attr]
             "agents", DEFAULT_CHAT_AGENT_ID
@@ -74,4 +70,3 @@ async def test_init_is_idempotent_for_chat_agent() -> None:
         assert _runner(context) is first_runner
     finally:
         await context.close()
-        db_path.unlink(missing_ok=True)

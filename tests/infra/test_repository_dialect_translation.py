@@ -1,4 +1,4 @@
-"""Static guardrails ensuring repository SQL goes through dialect helpers."""
+"""Static guardrails ensuring repository SQL goes through PostgreSQL helpers."""
 
 from __future__ import annotations
 
@@ -25,11 +25,11 @@ TARGETS = (
 )
 
 
-def test_repository_calls_do_not_bypass_dialect_helpers() -> None:
+def test_repository_calls_do_not_bypass_postgres_helpers() -> None:
     """No whitelisted business module may call the database object directly."""
     for relative_path in TARGETS:
         source = (ROOT / relative_path).read_text(encoding="utf-8")
-        assert "DialectMixin" in source or "DialectRepositoryMixin" in source
+        assert "PostgresRepositoryMixin" in source, relative_path
         for method in ("execute", "executemany", "fetchone", "fetchall"):
             assert f"self._db.{method}(" not in source, relative_path
             assert f"db.{method}(" not in source, relative_path
@@ -45,5 +45,5 @@ def test_explicit_db_services_use_explicit_helper_calls() -> None:
         "core/pushed_content.py",
     ):
         source = (ROOT / relative_path).read_text(encoding="utf-8")
-        assert "ExplicitDatabaseDialectMixin" in source
-        assert "self._execute(" in source or "self._fetchall(" in source
+        assert "ExplicitPostgresRepositoryMixin" in source, relative_path
+        assert "self._execute(" in source or "self._fetchall(" in source, relative_path

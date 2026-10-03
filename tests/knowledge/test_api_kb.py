@@ -8,12 +8,13 @@ import pytest
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 @pytest.mark.asyncio
 async def test_kb_api_requires_auth_and_supports_core_workflow(tmp_path) -> None:
     """JWT-protected endpoints expose degraded capabilities and FTS CRUD."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "kb.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

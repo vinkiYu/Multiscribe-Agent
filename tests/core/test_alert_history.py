@@ -5,12 +5,12 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.core.alert_history import AlertHistoryRepository
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_alert_history_records_queries_and_acknowledges() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = AlertHistoryRepository(db)
         first_id = await repository.record(
@@ -50,7 +50,7 @@ async def test_alert_history_records_queries_and_acknowledges() -> None:
 
 @pytest.mark.asyncio
 async def test_alert_history_query_limit_is_bounded() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = AlertHistoryRepository(db)
         for index in range(3):

@@ -5,13 +5,10 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle
 
 
 class _PostgresCapture:
     """Capture translated SQL without requiring a live PostgreSQL server."""
-
-    placeholder_style = PlaceholderStyle.DOLLAR
 
     def __init__(self) -> None:
         self.executed: list[tuple[str, tuple[object, ...]]] = []
@@ -61,8 +58,8 @@ async def test_append_translates_to_postgres_upsert_with_triple_conflict_target(
     upsert_sql = database.executed[0][0]
     assert "ON CONFLICT (workflow_run_id, step_id, round) DO UPDATE" in upsert_sql
     assert all(f"${index}" in upsert_sql for index in range(1, 9))
-    assert "output = excluded.output" in upsert_sql
-    assert "reason = excluded.reason" in upsert_sql
+    assert "output = EXCLUDED.output" in upsert_sql
+    assert "reason = EXCLUDED.reason" in upsert_sql
 
 
 @pytest.mark.asyncio

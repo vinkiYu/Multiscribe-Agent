@@ -35,7 +35,7 @@ async def test_kv_crud_and_expired_value_is_deleted(db: Database) -> None:
     await repository.set("expired", "old", ttl_seconds=-1)
 
     assert await repository.get("expired") is None
-    assert await db.fetchone("SELECT key FROM kv WHERE key = ?", ("expired",)) is None
+    assert await db.fetchone("SELECT key FROM kv WHERE key = $1", ("expired",)) is None
 
     await repository.delete("settings")
     assert await repository.get("settings") is None
@@ -67,7 +67,7 @@ async def test_source_data_batch_deduplication_filtering_and_fts(db: Database) -
     assert await repository.save_batch([first, second], "rss-adapter") == 2
     assert await repository.save_batch([duplicate], "rss-adapter") == 0
     await db.execute(
-        "UPDATE source_data SET fetched_at = ? WHERE id = ?",
+        "UPDATE source_data SET fetched_at = $1 WHERE id = $2",
         ("2026-07-16T12:00:00+00:00", "item-1"),
     )
 
@@ -104,7 +104,7 @@ async def test_source_data_persists_ingestion_time_for_unknown_publication_date(
 
     assert await repository.save_batch([item], "rss-adapter") == 1
     row = await db.fetchone(
-        "SELECT published_date, ingestion_date FROM source_data WHERE id = ?",
+        "SELECT published_date, ingestion_date FROM source_data WHERE id = $1",
         ("unknown-date",),
     )
 

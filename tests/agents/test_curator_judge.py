@@ -8,8 +8,8 @@ import pytest
 from multiscribe_agent.agents.curator_judge import CuratorJudge, CuratorJudgeConfig
 from multiscribe_agent.agents.pipelines.daily_digest import DailyDigestConfig, DailyDigestPipeline
 from multiscribe_agent.domain.models import AIResponse, SourceData
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.infra.repositories.curation_evaluations import CurationEvaluationRepository
+from tests.db import init_test_database
 
 
 class _Provider:
@@ -117,7 +117,7 @@ async def test_daily_digest_returns_loop_summary_and_workflow_run_id() -> None:
 
 @pytest.mark.asyncio
 async def test_daily_digest_persists_one_evaluation_per_workflow_run() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         evaluations = CurationEvaluationRepository(db)
         pipeline = DailyDigestPipeline(

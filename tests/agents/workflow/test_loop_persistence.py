@@ -7,7 +7,7 @@ import pytest
 from multiscribe_agent.agents.workflow.iteration_store import IterationStore
 from multiscribe_agent.agents.workflow.loop_node import execute_loop_step
 from multiscribe_agent.domain.models import WorkflowStep
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 class SequenceExecutor:
@@ -34,7 +34,7 @@ def _loop(max_iterations: int = 3) -> WorkflowStep:
 @pytest.mark.asyncio
 async def test_loop_iterations_persist_and_resume_from_latest_round() -> None:
     """A second process can continue after the first round checkpoint."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         first_output, first_history = await execute_loop_step(

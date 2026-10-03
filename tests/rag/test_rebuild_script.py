@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
 from scripts.rebuild_rag_index import (
     _existing_index_versions,
     _read_cursor,
@@ -12,6 +11,7 @@ from scripts.rebuild_rag_index import (
     _write_cursor,
     build_parser,
 )
+from tests.db import init_test_database
 
 
 def test_rebuild_defaults_to_incremental_and_cursor_round_trip(tmp_path) -> None:
@@ -34,23 +34,22 @@ def test_malformed_cursor_starts_from_beginning(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_model_change_resets_sqlite_derived_index_to_configured_dimension(tmp_path) -> None:
-    """A model switch clears stale manifests and recreates the sqlite-vec dimension."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+async def test_model_change_resets_postgres_derived_index() -> None:
+    """A model switch clears stale manifests and PostgreSQL vector rows."""
+    db = await init_test_database()
     try:
         await db.execute(
             """INSERT INTO rag_index_registry(
                 chunk_id, document_id, doc_type, content_hash, user_id, indexed_at, index_version
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)""",
             ("chunk-1", "doc-1", "kb", "hash", "admin", "now", "20260922-old-model"),
         )
         assert await _existing_index_versions(db) == {"20260922-old-model"}
 
-        await _reset_derived_index(db, "sqlite", 512)
+        await _reset_derived_index(db, 512)
 
         assert await db.fetchall("SELECT * FROM rag_index_registry") == []
-        schema = await db.fetchone("SELECT sql FROM sqlite_master WHERE name = 'kb_chunks_vec'")
-        assert schema is not None
-        assert "float[512]" in str(schema["sql"])
+        assert await db.fetchall("SELECT * FROM rag_chunks") == []
+        assert await db.fetchall("SELECT * FROM chunk_vectors") == []
     finally:
         await db.close()

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.memory.chat_sessions import ChatSessionRepository
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_create_get_list_delete_session_lifecycle() -> None:
     """Create, list, and delete a chat session; cascade removes its messages."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ChatSessionRepository(db)
         session = await repo.create_session("AI 笔记")
@@ -35,7 +35,7 @@ async def test_create_get_list_delete_session_lifecycle() -> None:
 @pytest.mark.asyncio
 async def test_append_message_increments_count_and_updates_timestamp() -> None:
     """Adding a user message bumps message_count and the session updated_at timer."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ChatSessionRepository(db)
         session = await repo.create_session()
@@ -61,7 +61,7 @@ async def test_append_message_increments_count_and_updates_timestamp() -> None:
 @pytest.mark.asyncio
 async def test_append_message_returns_none_for_missing_session() -> None:
     """append_message against a non-existent session returns None instead of raising."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ChatSessionRepository(db)
         result = await repo.append_message("missing-id", "user", "hi")
@@ -73,7 +73,7 @@ async def test_append_message_returns_none_for_missing_session() -> None:
 @pytest.mark.asyncio
 async def test_append_message_rejects_invalid_role_or_empty_content() -> None:
     """Bad role and empty content are rejected before hitting storage."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ChatSessionRepository(db)
         session = await repo.create_session()
@@ -88,7 +88,7 @@ async def test_append_message_rejects_invalid_role_or_empty_content() -> None:
 @pytest.mark.asyncio
 async def test_list_messages_returns_chronological_order() -> None:
     """Messages for a session are returned in ascending created_at order."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = ChatSessionRepository(db)
         session = await repo.create_session()

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.infra.repositories.curation_evaluations import (
     CurationEvaluationRecord,
     CurationEvaluationRepository,
 )
+from tests.db import init_test_database
 
 
 def _record(
@@ -36,7 +36,7 @@ def _record(
 
 @pytest.mark.asyncio
 async def test_upsert_is_idempotent_per_workflow_run() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = CurationEvaluationRepository(db)
         await repository.upsert(_record())
@@ -51,7 +51,7 @@ async def test_upsert_is_idempotent_per_workflow_run() -> None:
 
 @pytest.mark.asyncio
 async def test_query_filters_by_date_and_orders_newest_first() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = CurationEvaluationRepository(db)
         await repository.upsert(_record("old", "2026-07-27", 100))
@@ -64,7 +64,7 @@ async def test_query_filters_by_date_and_orders_newest_first() -> None:
 
 @pytest.mark.asyncio
 async def test_summary_returns_quality_convergence_and_exit_reason_metrics() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = CurationEvaluationRepository(db)
         await repository.upsert(_record("good"))

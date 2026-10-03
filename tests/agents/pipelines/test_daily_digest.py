@@ -36,12 +36,13 @@ from multiscribe_agent.domain.models import (
     TokenUsage,
     UnifiedData,
 )
-from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.memory.preference_store import UserPreferences
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.publishing import PublishingService
 from multiscribe_agent.services.scheduler import TaskExecutorRegistry
+from tests.db import init_test_database
 
 
 class FakeIngestionService:
@@ -471,7 +472,7 @@ def test_explicit_empty_targets_disable_default_publishers() -> None:
 @pytest.mark.asyncio
 async def test_dedupe_uses_publish_history_when_pushed_content_is_empty() -> None:
     """Successful history fingerprints remain a cross-day dedup fallback."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         description = "A durable article description"
@@ -814,7 +815,7 @@ async def test_daily_digest_runs_end_to_end_with_dedupe_top_n_loop_and_fanout() 
 @pytest.mark.asyncio
 async def test_daily_digest_preview_first_only_publishes_review_targets() -> None:
     """Preview mode persists pending content and withholds final destinations."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         pushed = FakePushedContentRepository()
@@ -1213,7 +1214,7 @@ async def test_registered_scheduler_callback_runs_daily_digest_task() -> None:
 @pytest.mark.asyncio
 async def test_daily_digest_excludes_recent_pushed_hash_and_url_and_keeps_new_candidate() -> None:
     """Cross-day dedupe removes both identity forms while retaining unrelated content."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = FakePushedContentRepository(
             [
@@ -1249,7 +1250,7 @@ async def test_daily_digest_excludes_recent_pushed_hash_and_url_and_keeps_new_ca
 @pytest.mark.asyncio
 async def test_daily_digest_fetch_days_controls_cross_day_exclusion_window() -> None:
     """A record outside fetch_days remains eligible for the current digest."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = FakePushedContentRepository(
             [
@@ -1297,7 +1298,7 @@ async def test_daily_digest_fallback_candidates_are_sorted_newest_first() -> Non
 @pytest.mark.asyncio
 async def test_daily_digest_records_all_items_after_one_successful_publisher() -> None:
     """A partial fan-out success records every selected item for future dedupe."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = PushedContentRepository()
         pipeline, _, _ = _pipeline(
@@ -1319,7 +1320,7 @@ async def test_daily_digest_records_all_items_after_one_successful_publisher() -
 @pytest.mark.asyncio
 async def test_daily_digest_does_not_record_items_when_all_publishers_fail() -> None:
     """A fully failed fan-out must not poison the next day's exclusion set."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = PushedContentRepository()
         pipeline, _, _ = _pipeline(
@@ -1341,7 +1342,7 @@ async def test_daily_digest_does_not_record_items_when_all_publishers_fail() -> 
 @pytest.mark.asyncio
 async def test_fanout_skips_already_succeeded_target_on_rerun() -> None:
     """A successful same-day target is filtered before the publisher is called."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         history = PublishHistory()
         await history.add(
@@ -1373,7 +1374,7 @@ async def test_fanout_skips_already_succeeded_target_on_rerun() -> None:
 @pytest.mark.asyncio
 async def test_fanout_retries_failed_target_on_rerun() -> None:
     """A same-day error record does not block a retry for that target."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         history = PublishHistory()
         await history.add(

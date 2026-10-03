@@ -8,6 +8,7 @@ from multiscribe_agent.bootstrap import DEFAULT_CURATION_AGENT_ID, ServiceContex
 from multiscribe_agent.cli import _resolve_adapter_ids, _resolve_targets
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.domain.models import ScheduleTask
+from tests.db import get_test_database_url
 
 RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
@@ -27,7 +28,7 @@ def test_cli_defaults_resolve_p0_5_alias_and_configured_target(
 @pytest.mark.asyncio
 async def test_real_daily_digest_delivers_to_configured_targets(tmp_path) -> None:
     """Fetch RSS, call the configured LLM, publish, and record a completed task log."""
-    settings = SystemSettings(db_path=str(tmp_path / "e2e.sqlite"))
+    settings = SystemSettings(database_url=get_test_database_url())
     provider = next(
         (
             item
@@ -74,7 +75,7 @@ async def test_real_daily_digest_delivers_to_configured_targets(tmp_path) -> Non
         await context.scheduler.execute_task(task, execute)
         if result is None:
             failed_task_log = await context.db.fetchone(
-                "SELECT message FROM task_logs WHERE task_id = ? ORDER BY id DESC LIMIT 1",
+                "SELECT message FROM task_logs WHERE task_id = $1 ORDER BY id DESC LIMIT 1",
                 (task.id,),
             )
             assert failed_task_log is not None
@@ -86,7 +87,7 @@ async def test_real_daily_digest_delivers_to_configured_targets(tmp_path) -> Non
             for outcome in outcomes.values()
         )
         task_log = await context.db.fetchone(
-            "SELECT status FROM task_logs WHERE task_id = ? ORDER BY id DESC LIMIT 1",
+            "SELECT status FROM task_logs WHERE task_id = $1 ORDER BY id DESC LIMIT 1",
             (task.id,),
         )
         assert task_log is not None

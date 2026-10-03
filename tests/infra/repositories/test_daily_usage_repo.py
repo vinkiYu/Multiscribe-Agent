@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_daily_usage_lazily_creates_and_accumulates() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = DailyUsageRepository(db)
-        assert (
-            await db.fetchone("SELECT name FROM sqlite_master WHERE name = 'daily_usage'") is None
-        )
+        # The shared test database persists tables across tests; drop first so the
+        # lazy-create probe observes the same pre-existence state as a fresh database.
+        await db.execute("DROP TABLE IF EXISTS daily_usage")
+        probe = await db.fetchone("SELECT to_regclass('public.daily_usage') AS name")
+        assert probe is not None
+        assert probe["name"] is None
         await repository.upsert(
             "2026-07-29",
             {"input_tokens": 10, "output_tokens": 4, "total_tokens": 14, "llm_calls": 1},
@@ -34,7 +37,7 @@ async def test_daily_usage_lazily_creates_and_accumulates() -> None:
 
 @pytest.mark.asyncio
 async def test_daily_usage_query_is_inclusive_and_sorted() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = DailyUsageRepository(db)
         for date in ("2026-07-27", "2026-07-28", "2026-07-29"):

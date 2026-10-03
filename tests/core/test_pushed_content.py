@@ -1,15 +1,18 @@
 """Tests for cross-day digest content identity persistence."""
 
+from __future__ import annotations
+
 import pytest_asyncio
 
 from multiscribe_agent.core.pushed_content import PushedContentRepository
-from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.db import Database
+from tests.db import init_test_database
 
 
 @pytest_asyncio.fixture
 async def db() -> Database:
     """Provide a temporary initialized database for repository tests."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         yield database
     finally:
@@ -18,13 +21,26 @@ async def db() -> Database:
 
 async def test_pushed_content_schema_has_composite_primary_key_and_index(db: Database) -> None:
     """Initialization creates the table with the documented key and lookup index."""
-    columns = await db.fetchall("PRAGMA table_info(pushed_content)")
-    primary_key = {str(row["name"]): int(row["pk"]) for row in columns}
-    assert primary_key["content_hash"] == 1
-    assert primary_key["digest_date"] == 2
+    columns = await db.fetchall(
+        "SELECT attribute.attname AS name, "
+        "key.position AS position "
+        "FROM pg_index AS index "
+        "CROSS JOIN LATERAL unnest(index.indkey) WITH ORDINALITY "
+        "AS key(attnum, position) "
+        "JOIN pg_attribute AS attribute "
+        "ON attribute.attrelid = index.indrelid "
+        "AND attribute.attnum = key.attnum "
+        "WHERE index.indrelid = 'public.pushed_content'::regclass "
+        "AND index.indisprimary"
+    )
+    primary_key = {str(row["name"]): int(row["position"]) for row in columns}
+    assert primary_key == {"content_hash": 1, "digest_date": 2}
 
-    indexes = await db.fetchall("PRAGMA index_list(pushed_content)")
-    assert any(str(row["name"]) == "idx_pushed_content_pushed_at" for row in indexes)
+    indexes = await db.fetchall(
+        "SELECT indexname FROM pg_indexes "
+        "WHERE schemaname = 'public' AND tablename = 'pushed_content'"
+    )
+    assert any(str(row["indexname"]) == "idx_pushed_content_pushed_at" for row in indexes)
 
 
 async def test_add_is_idempotent_for_same_hash_and_digest_date(db: Database) -> None:

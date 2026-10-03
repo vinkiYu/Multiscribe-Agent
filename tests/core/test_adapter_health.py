@@ -4,7 +4,7 @@ import pytest
 
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.adapter_health import AdapterHealthRepository
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 def test_adapter_health_settings_accept_prefixed_environment(
@@ -23,10 +23,13 @@ def test_adapter_health_settings_accept_prefixed_environment(
 @pytest.mark.asyncio
 async def test_adapter_health_schema_and_success_reset() -> None:
     """Health rows persist the required fields and successful runs reset failures."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
-        columns = await database.fetchall("PRAGMA table_info(adapter_health)")
-        assert {str(column["name"]) for column in columns} == {
+        columns = await database.fetchall(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'adapter_health'"
+        )
+        assert {str(column["column_name"]) for column in columns} == {
             "adapter_id",
             "consecutive_failures",
             "disabled",
@@ -49,7 +52,7 @@ async def test_adapter_health_schema_and_success_reset() -> None:
 @pytest.mark.asyncio
 async def test_adapter_health_disables_at_threshold_and_only_alerts_once() -> None:
     """The threshold crossing is marked once and later failures stay disabled."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = AdapterHealthRepository(failure_threshold=3)
         first = await repository.record_result(
@@ -87,7 +90,7 @@ async def test_adapter_health_disables_at_threshold_and_only_alerts_once() -> No
 @pytest.mark.asyncio
 async def test_adapter_health_manual_disable_creates_queryable_row() -> None:
     """Operators can disable an adapter before its first scheduled run."""
-    database = await init_db(":memory:")
+    database = await init_test_database()
     try:
         repository = AdapterHealthRepository()
         await repository.set_disabled(database, adapter_id="new-source", disabled=True)

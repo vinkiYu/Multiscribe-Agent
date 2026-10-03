@@ -9,12 +9,13 @@ from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.mcp.server import build_tool_registry
+from tests.db import get_test_database_url
 
 
 @pytest.mark.asyncio
 async def test_server_builds_all_five_documented_tools() -> None:
     """Assembly binds all documented MCP names to the initialized context."""
-    context = ServiceContext(SystemSettings(_env_file=None, db_path=":memory:"))
+    context = ServiceContext(SystemSettings(_env_file=None, database_url=get_test_database_url()))
     await context.init()
     try:
         names = [tool.name for tool in build_tool_registry(context, context.settings).list_tools()]
@@ -32,7 +33,7 @@ async def test_server_builds_all_five_documented_tools() -> None:
 @pytest.mark.asyncio
 async def test_mcp_rest_api_requires_jwt_and_lists_and_calls_tools() -> None:
     """REST mirror exposes discovery and authenticated invocation."""
-    settings = SystemSettings(_env_file=None, db_path=":memory:")
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

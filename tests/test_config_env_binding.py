@@ -11,6 +11,7 @@ from multiscribe_agent.bootstrap import (
     ServiceContext,
 )
 from multiscribe_agent.config import ProviderConfig, SystemSettings
+from tests.db import get_test_database_url
 
 
 def _clear_mvp_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -124,7 +125,7 @@ def test_daily_ai_news_rss_urls_accept_csv_environment(monkeypatch: pytest.Monke
 @pytest.mark.asyncio
 async def test_bootstrap_persists_default_curation_agent(tmp_path) -> None:
     """A new service database receives the default curator exactly once at startup."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "mvp.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:
@@ -141,7 +142,7 @@ async def test_bootstrap_persists_default_curation_agent(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_bootstrap_persists_ai_news_schedule_once_without_external_targets(tmp_path) -> None:
     """Fresh installations receive one archive-only, multi-source daily AI-news task."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "daily-news.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:
@@ -170,7 +171,7 @@ async def test_bootstrap_persists_ai_news_schedule_once_without_external_targets
 @pytest.mark.asyncio
 async def test_bootstrap_replaces_only_the_legacy_default_rss_list(tmp_path) -> None:
     """Existing built-in schedules receive new defaults without overwriting custom lists."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "rss-upgrade.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:
@@ -198,7 +199,7 @@ async def test_bootstrap_upgrades_only_the_legacy_daily_news_top_n(
 ) -> None:
     """The historical built-in limit upgrades without changing user choices."""
     _clear_mvp_environment(monkeypatch)
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "top-n-upgrade.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:
@@ -236,7 +237,7 @@ async def test_bootstrap_upgrades_only_the_legacy_daily_news_top_n(
 @pytest.mark.asyncio
 async def test_bootstrap_adds_feishu_to_existing_default_ai_news_schedule(tmp_path) -> None:
     """A configured Feishu webhook upgrades the built-in task without dropping other targets."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "feishu-news.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     feishu = next(publisher for publisher in settings.publishers if publisher.id == "feishu_bot")
     feishu.enabled = True
     feishu.config = {"webhook": "https://feishu.example.test/hook"}

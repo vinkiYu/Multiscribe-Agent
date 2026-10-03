@@ -13,7 +13,7 @@ def postgres_container():
     if os.getenv("INTEGRATION") != "1":
         pytest.skip("set INTEGRATION=1 to run Docker-backed PostgreSQL tests")
     try:
-        from testcontainers.postgres import PostgresContainer
+        from testcontainers.community.postgres import PostgresContainer
     except ImportError as exc:
         pytest.skip(f"testcontainers is unavailable: {exc}")
 

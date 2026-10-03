@@ -12,8 +12,7 @@ from typing import Any
 import pytest
 
 from multiscribe_agent.domain.models import TaskLog
-from multiscribe_agent.infra.db import Database
-from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PlaceholderStyle
+from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 from multiscribe_agent.infra.repositories.task_log import TaskLogRepository
 
 MODULE_NAME = "multiscribe_agent.infra.postgres_driver"
@@ -123,7 +122,6 @@ async def test_postgres_database_implements_protocol_with_fake_asyncpg(
     database = module.PostgresDatabase(pool)
 
     assert isinstance(database, DatabaseProtocol)
-    assert database.placeholder_style is PlaceholderStyle.DOLLAR
     assert await database.execute("INSERT INTO records(value) VALUES ($1)", ("value",)) == 1
     assert pool.connection.calls[-1] == ("INSERT INTO records(value) VALUES ($1)", ("value",))
 
@@ -160,24 +158,6 @@ async def test_postgres_database_migrates_daily_digest_tables(
     assert any(
         "CREATE TABLE IF NOT EXISTS workflow_iterations" in statement for statement in statements
     )
-
-
-@pytest.mark.asyncio
-async def test_sqlite_execute_with_returning(db: Database) -> None:
-    """SQLite extracts an inserted id from a RETURNING clause."""
-    await db.execute("CREATE TABLE returning_records (id INTEGER PRIMARY KEY AUTOINCREMENT)")
-    row_id = await db.execute("INSERT INTO returning_records DEFAULT VALUES RETURNING id")
-
-    assert row_id == 1
-
-
-@pytest.mark.asyncio
-async def test_sqlite_execute_without_returning(db: Database) -> None:
-    """SQLite retains affected-row semantics for ordinary DML."""
-    await db.execute("CREATE TABLE rowcount_records (id INTEGER PRIMARY KEY, value TEXT)")
-    affected = await db.execute("INSERT INTO rowcount_records(id, value) VALUES (?, ?)", (1, "one"))
-
-    assert affected == 1
 
 
 @pytest.mark.asyncio

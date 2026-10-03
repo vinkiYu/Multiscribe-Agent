@@ -7,12 +7,12 @@ from collections.abc import Sequence
 import pytest
 
 from multiscribe_agent.domain.ports import VectorStorePort
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.knowledge.embedding_service import EmbeddingUnavailableError
 from multiscribe_agent.rag.indexing import RagIndexRegistry
 from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument, RetrievalScope
 from multiscribe_agent.rag.schema import RagChunksStore
 from multiscribe_agent.rag.service import RagService
+from tests.db import init_test_database
 
 
 class FakeVectorStore(VectorStorePort):
@@ -117,7 +117,7 @@ async def _seed(db: object, *pairs: tuple[KnowledgeDocument, KnowledgeChunk]) ->
 @pytest.mark.asyncio
 async def test_chinese_bm25_and_evidence_metadata(tmp_path) -> None:
     """The tokenized RAG FTS path retrieves Chinese content with provenance."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         document, chunk = _document("source_data:zh")
         await _seed(db, (document, chunk))
@@ -141,7 +141,7 @@ async def test_chinese_bm25_and_evidence_metadata(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_user_scope_is_hard_isolation(tmp_path) -> None:
     """A user cannot receive another user's indexed chunk."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         first, first_chunk = _document("source_data:a", user_id="user-a")
         second, second_chunk = _document("source_data:b", user_id="user-b")
@@ -162,7 +162,7 @@ async def test_user_scope_is_hard_isolation(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_agent_scope_is_soft_filter(tmp_path) -> None:
     """An agent scope only narrows a user's visible rows."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         agent_doc, agent_chunk = _document("source_data:agent", agent_id="agent-a")
         general_doc, general_chunk = _document("source_data:general")
@@ -192,7 +192,7 @@ async def test_agent_scope_is_soft_filter(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_hybrid_rrf_marks_both_sources(tmp_path) -> None:
     """A candidate present in both ranked lists is labelled hybrid."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         document, chunk = _document("source_data:hybrid")
         await _seed(db, (document, chunk))
@@ -217,7 +217,7 @@ async def test_hybrid_rrf_marks_both_sources(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_reranker_runs_after_rrf_and_respects_top_k(tmp_path) -> None:
     """Injected rerankers receive fused evidence and control final ordering."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         first, first_chunk = _document("source_data:first")
         second, second_chunk = _document("source_data:second")
@@ -241,7 +241,7 @@ async def test_reranker_runs_after_rrf_and_respects_top_k(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_vector_failure_degrades_to_bm25(tmp_path) -> None:
     """Embedding failure leaves keyword retrieval available and marks degraded."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         document, chunk = _document("source_data:degraded")
         await _seed(db, (document, chunk))
@@ -267,7 +267,7 @@ async def test_vector_failure_degrades_to_bm25(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_category_source_time_and_doc_type_filters(tmp_path) -> None:
     """All optional scope filters are enforced before evidence assembly."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         kept, kept_chunk = _document(
             "kb:kept",
@@ -305,7 +305,7 @@ async def test_category_source_time_and_doc_type_filters(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_vector_only_path_returns_vector_source(tmp_path) -> None:
     """A vector hit remains usable when BM25 has no matching terms."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         document, chunk = _document("source_data:vector-only")
         await _seed(db, (document, chunk))
@@ -329,12 +329,17 @@ async def test_vector_only_path_returns_vector_source(tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_missing_fts_reports_index_not_ready(tmp_path) -> None:
-    """A missing RAG FTS table returns a capability signal instead of raising."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    """A missing BM25 content index returns a capability signal instead of raising.
+
+    PostgreSQL stores the derived FTS index as the ``content_tsv`` column on
+    ``rag_chunks`` (P67 collapse), so dropping the derived table is the
+    backend-equivalent of the legacy missing-FTS-table failure.
+    """
+    db = await init_test_database()
     try:
         document, chunk = _document("source_data:missing-fts")
         await _seed(db, (document, chunk))
-        await db.execute("DROP TABLE rag_chunks_fts")
+        await db.execute("DROP TABLE rag_chunks")
         service = RagService(db)
 
         assert await service.retrieve("代理工作流", RetrievalScope(user_id="user-a")) == []

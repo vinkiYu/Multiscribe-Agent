@@ -1,80 +1,48 @@
-"""Tests for backend-neutral SQL placeholder helpers."""
+"""Tests for the PostgreSQL placeholder conversion helper."""
 
 from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import SqliteDatabase
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle
 from multiscribe_agent.infra.placeholder import (
     DOLLAR,
-    PERCENT,
-    QUESTION_MARK,
     PlaceholderGenerator,
     translate_question_marks,
 )
 
 
-def test_sqlite_database_declares_question_mark_placeholders() -> None:
-    """SQLite advertises its native parameter dialect without changing behavior."""
-    database = SqliteDatabase(connection=object())  # type: ignore[arg-type]
-
-    assert database.placeholder_style is PlaceholderStyle.QUESTION_MARK
-
-
-@pytest.mark.parametrize(
-    ("generator", "count", "expected"),
-    [
-        (DOLLAR, 3, "$1, $2, $3"),
-        (QUESTION_MARK, 3, "?, ?, ?"),
-        (PERCENT, 1, "%s"),
-    ],
-)
-def test_placeholder_generator_builds_dialect_specific_sequences(
-    generator: PlaceholderGenerator, count: int, expected: str
-) -> None:
-    """Generators preserve dialect-specific parameter notation and order."""
-    assert generator.for_count(count) == expected
-    if count == 1:
-        assert generator.for_one() == expected
+def test_dollar_placeholder_generator_builds_numbered_sequence() -> None:
+    """PostgreSQL binds are numbered and preserve parameter order."""
+    assert DOLLAR.for_count(3) == "$1, $2, $3"
+    assert DOLLAR.for_one() == "$1"
 
 
-@pytest.mark.parametrize("count", [-1])
-def test_placeholder_generator_rejects_negative_counts(count: int) -> None:
-    """A placeholder list cannot have a negative number of parameters."""
+def test_placeholder_generator_rejects_negative_counts() -> None:
     with pytest.raises(ValueError, match="cannot be negative"):
-        DOLLAR.for_count(count)
+        DOLLAR.for_count(-1)
 
 
 def test_placeholder_generator_rejects_unknown_style() -> None:
-    """Unknown backends fail explicitly instead of generating invalid SQL."""
-    generator = PlaceholderGenerator("unknown")
-
     with pytest.raises(ValueError, match="Unknown placeholder style"):
-        generator.for_one()
+        PlaceholderGenerator("unknown").for_one()
 
 
 @pytest.mark.parametrize(
-    ("sql", "target", "expected"),
+    ("sql", "expected"),
     [
-        ("", "dollar", ""),
-        ("SELECT ?", "dollar", "SELECT $1"),
-        ("SELECT ? FROM items WHERE id = ?", "dollar", "SELECT $1 FROM items WHERE id = $2"),
-        ("SELECT '?' AS literal, ?", "dollar", "SELECT '?' AS literal, $1"),
-        ('SELECT "?" AS identifier, ?', "dollar", 'SELECT "?" AS identifier, $1'),
-        ("SELECT 'it''s ?' AS literal, ?", "percent", "SELECT 'it''s ?' AS literal, %s"),
-        ("SELECT ?", "question_mark", "SELECT ?"),
+        ("", ""),
+        ("SELECT ?", "SELECT $1"),
+        ("SELECT ? FROM items WHERE id = ?", "SELECT $1 FROM items WHERE id = $2"),
+        ("SELECT '?' AS literal, ?", "SELECT '?' AS literal, $1"),
+        ('SELECT "?" AS identifier, ?', 'SELECT "?" AS identifier, $1'),
     ],
 )
-def test_translate_question_marks_respects_quoted_literals(
-    sql: str, target: str, expected: str
-) -> None:
-    """Only real bind placeholders participate in translation."""
-    assert translate_question_marks(sql, target) == expected
+def test_translate_question_marks_respects_quoted_literals(sql: str, expected: str) -> None:
+    """Only actual binds are translated to PostgreSQL numbered placeholders."""
+    assert translate_question_marks(sql, "dollar") == expected
 
 
 def test_translate_question_marks_rejects_invalid_input() -> None:
-    """Unsupported targets and malformed literal boundaries fail explicitly."""
     with pytest.raises(ValueError, match="Unsupported target dialect"):
         translate_question_marks("SELECT ?", "colon")
     with pytest.raises(ValueError, match="unclosed quoted literal"):

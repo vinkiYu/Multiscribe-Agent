@@ -5,11 +5,12 @@ from fastapi.testclient import TestClient
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url
 
 
 def test_frontend_index_is_served_at_root(tmp_path) -> None:
     """The production marketing site remains available from the API origin."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.get("/")
@@ -22,7 +23,7 @@ def test_frontend_index_is_served_at_root(tmp_path) -> None:
 
 def test_frontend_console_is_served_as_a_second_entry(tmp_path) -> None:
     """The built React console is reachable without replacing the marketing home page."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-console.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.get("/console.html")
@@ -34,7 +35,7 @@ def test_frontend_console_is_served_as_a_second_entry(tmp_path) -> None:
 
 def test_frontend_login_is_served_before_console_access(tmp_path) -> None:
     """The login page is available as the public authentication entry."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-login.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.get("/login.html")
@@ -46,7 +47,7 @@ def test_frontend_login_is_served_before_console_access(tmp_path) -> None:
 
 def test_frontend_assets_do_not_override_api_routes(tmp_path) -> None:
     """Static mounting must not shadow the health endpoint."""
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-api.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     with TestClient(create_app(settings, context)) as client:
         response = client.get("/healthz")
@@ -59,7 +60,7 @@ def test_frontend_css_uses_browser_compatible_content_type(tmp_path) -> None:
     """Windows MIME defaults must not cause Chromium to reject the stylesheet."""
     assets_dir = Path(__file__).resolve().parents[2] / "frontend" / "dist" / "assets"
     css_path = next(assets_dir.glob("*.css"))
-    settings = SystemSettings(_env_file=None, db_path=str(tmp_path / "frontend-css.sqlite"))
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
 
     with TestClient(create_app(settings, context)) as client:

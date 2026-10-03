@@ -8,14 +8,19 @@ import pytest
 from multiscribe_agent.app import create_app
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
+from tests.db import get_test_database_url, truncate_all_tables
 
 
 @pytest.mark.asyncio
 async def test_memory_api_crud_search_preferences_and_extract() -> None:
     """All documented memory endpoints require JWT and perform core operations."""
-    settings = SystemSettings(_env_file=None, db_path=":memory:")
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
+    if context.db is not None:
+        # The shared test database persists rows across tests; extraction counts
+        # history, so stale publish-history rows would leak into this assertion.
+        await truncate_all_tables(context.db)
     try:
         app = create_app(settings, context)
         async with httpx.AsyncClient(

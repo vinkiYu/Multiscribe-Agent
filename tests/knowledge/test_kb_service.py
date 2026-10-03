@@ -14,11 +14,17 @@ async def test_service_ingests_lists_moves_and_deletes(kb_service, kb_db) -> Non
     )
 
     assert document.chunk_count == 1
+    chunk = await kb_db.fetchone(
+        "SELECT id FROM kb_chunks WHERE document_id = $1 ORDER BY id LIMIT 1", (document.id,)
+    )
+    assert chunk is not None
     document_index = await kb_db.fetchone(
-        "SELECT name FROM kb_documents_fts WHERE kb_documents_fts MATCH ?", ("Retrieval",)
+        "SELECT chunk_id, content_tsv::text AS content_tsv FROM kb_chunks_fts WHERE chunk_id = $1",
+        (chunk["id"],),
     )
     assert document_index is not None
-    assert document_index["name"] == "Retrieval notes"
+    assert document_index["chunk_id"] == chunk["id"]
+    assert "retriev" in str(document_index["content_tsv"])
     assert (await kb_service.list_categories())[0].document_count == 1
     assert await kb_service.move_to_memory(document.id, "research") == 1
     assert (await kb_db.fetchone("SELECT COUNT(*) AS count FROM agent_memories"))["count"] == 1

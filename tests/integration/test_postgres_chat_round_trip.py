@@ -17,16 +17,14 @@ required by the FTS/vector bundle can be installed.
 
 from __future__ import annotations
 
-import os
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from pathlib import Path
 
 import pytest
 
 from multiscribe_agent.infra.db import init_database
 from multiscribe_agent.memory.chat_sessions import ChatSessionRepository
+from tests.db import get_test_database_url
 
 pytestmark = [
     pytest.mark.e2e,
@@ -36,44 +34,18 @@ pytestmark = [
 POSTGRES_IMAGE = "pgvector/pgvector:pg16"
 
 
-def _require_integration() -> None:
-    if os.getenv("INTEGRATION") != "1":
-        pytest.skip("set INTEGRATION=1 to run Docker-backed PostgreSQL tests")
-
-
-@asynccontextmanager
-async def _postgres_database() -> AsyncIterator[tuple[object, str]]:
-    """Spin up a Postgres testcontainer, run the bootstrap, and yield the open DB."""
-    _require_integration()
-    try:
-        from testcontainers.postgres import PostgresContainer
-    except ImportError as exc:
-        pytest.skip(f"testcontainers is unavailable: {exc}")
-    try:
-        with PostgresContainer(POSTGRES_IMAGE) as container:
-            dsn = container.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
-            database = await init_database(
-                "postgres",
-                postgres_dsn=dsn,
-                pool_size=2,
-                pool_timeout=10.0,
-            )
-            try:
-                yield database, dsn
-            finally:
-                await database.close()
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL container is unavailable: {exc}")
-
-
 @pytest.fixture
 async def postgres_database() -> AsyncIterator[tuple[object, str]]:
-    async with _postgres_database() as value:
-        yield value
+    dsn = get_test_database_url()
+    database = await init_database(dsn, pool_size=2, pool_timeout=10.0)
+    try:
+        yield database, dsn
+    finally:
+        await database.close()
 
 
 async def test_postgres_bootstrap_creates_chat_tables(postgres_database) -> None:
-    """init_database(db_driver='postgres') creates the chat and business tables."""
+    """init_database creates the chat and business tables on PostgreSQL."""
     database, _dsn = postgres_database
     chat_sessions = await database.fetchall("SELECT to_regclass('public.chat_sessions') AS name")
     chat_messages = await database.fetchall("SELECT to_regclass('public.chat_messages') AS name")
@@ -155,35 +127,17 @@ async def test_chat_session_rejects_bad_role_on_postgres(postgres_database) -> N
 
 async def test_postgres_bootstrap_via_service_context() -> None:
     """ServiceContext.init() succeeds against a fresh testcontainer with the PG driver."""
-    _require_integration()
-    try:
-        from testcontainers.postgres import PostgresContainer
-    except ImportError as exc:
-        pytest.skip(f"testcontainers is unavailable: {exc}")
-    try:
-        with PostgresContainer(POSTGRES_IMAGE) as container:
-            dsn = container.get_connection_url().replace("postgresql+psycopg2://", "postgresql://")
-            import tempfile
+    from multiscribe_agent.bootstrap import ServiceContext
+    from multiscribe_agent.config import SystemSettings
 
-            from multiscribe_agent.bootstrap import ServiceContext
-            from multiscribe_agent.config import SystemSettings
-
-            with tempfile.TemporaryDirectory(prefix="ms-pg-") as tmp:
-                settings = SystemSettings(
-                    _env_file=None,
-                    db_driver="postgres",
-                    db_dsn=dsn,
-                    db_path=str(Path(tmp) / "unused.sqlite"),
-                )
-                context = ServiceContext(settings)
-                try:
-                    await context.init()
-                    assert context.chat_service is not None
-                    session = await context.chat_service.create_session("boot")
-                    await context.chat_service.send_message(session.id, "hi")
-                    fetched = await context.chat_service.list_messages(session.id)
-                    assert [message.role for message in fetched] == ["user", "assistant"]
-                finally:
-                    await context.close()
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL container is unavailable: {exc}")
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
+    context = ServiceContext(settings)
+    try:
+        await context.init()
+        assert context.chat_service is not None
+        session = await context.chat_service.create_session("boot")
+        await context.chat_service.send_message(session.id, "hi")
+        fetched = await context.chat_service.list_messages(session.id)
+        assert [message.role for message in fetched] == ["user", "assistant"]
+    finally:
+        await context.close()

@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_list_recent_orders_by_epoch_timestamp_newest_first() -> None:
-    """Equal-width epoch strings retain numeric newest-first ordering in SQLite."""
-    db = await init_db(":memory:")
+    """Equal-width epoch values retain numeric newest-first ordering."""
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         for index, timestamp in enumerate(("1722681600", "1722681601", "1722681602")):
@@ -27,11 +27,11 @@ async def test_list_recent_orders_by_epoch_timestamp_newest_first() -> None:
                     reason="max_rounds",
                 )
             )
-            # Legacy rows may carry epoch text; current INTEGER affinity stores the
-            # same values numerically while preserving the ordering contract.
+            # Legacy rows may carry epoch text; PostgreSQL stores timestamps as
+            # BIGINT, so the numeric value preserves the ordering contract.
             await db.execute(
-                "UPDATE workflow_iterations SET recorded_at = ? WHERE workflow_run_id = ?",
-                (timestamp, f"run-{index}"),
+                "UPDATE workflow_iterations SET recorded_at = $1 WHERE workflow_run_id = $2",
+                (int(timestamp), f"run-{index}"),
             )
 
         recent = await store.list_recent(limit=3)

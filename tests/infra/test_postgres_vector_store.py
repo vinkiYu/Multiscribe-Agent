@@ -53,7 +53,7 @@ async def test_postgres_vector_store_upsert_and_top_k() -> None:
 
 def test_postgres_vector_store_json_format() -> None:
     """The schema and adapter use pgvector's JSON-compatible vector input."""
-    assert "vector(384)" in CHUNK_VECTORS_TABLE
+    assert "vector(512)" in CHUNK_VECTORS_TABLE
     assert PGVECTOR_EXTENSION == "CREATE EXTENSION IF NOT EXISTS vector"
     assert "REFERENCES agent_memories(id)" in AGENT_MEMORIES_FTS_TABLE
 

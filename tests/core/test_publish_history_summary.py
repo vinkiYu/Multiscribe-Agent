@@ -3,12 +3,12 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.core.publish_history import PublishHistory
-from multiscribe_agent.infra.db import init_db
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_summary_groups_delivery_status_and_empty_is_zero() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         assert await history.summary(db) == {"total": 0, "success": 0, "error": 0}

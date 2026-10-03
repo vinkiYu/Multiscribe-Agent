@@ -1,135 +1,40 @@
-"""Regression tests for the cross-dialect upsert abstraction."""
+"""Regression tests for PostgreSQL upsert SQL generation."""
 
 from __future__ import annotations
 
 from dataclasses import replace
-from types import SimpleNamespace
 
 import pytest
 
 from multiscribe_agent.agents.workflow.iteration_store import IterationRecord, IterationStore
-from multiscribe_agent.infra.db import init_db
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle
-from multiscribe_agent.infra.dialect import (
-    DialectRepositoryMixin,
-    PgDialect,
-    SqlDialect,
-    UpsertStyle,
-    upsert_clause,
-)
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 from multiscribe_agent.infra.repositories.curation_evaluations import (
     CurationEvaluationRecord,
     CurationEvaluationRepository,
 )
+from tests.db import init_test_database
 
 
-class _Repository(DialectRepositoryMixin):
-    """Small repository shell used to exercise SQL generation in isolation."""
-
-    def __init__(self, style: PlaceholderStyle) -> None:
-        self._db = SimpleNamespace(placeholder_style=style)
-
-
-def test_upsert_clause_supports_targeted_and_primary_key_conflicts() -> None:
-    assert (
-        upsert_clause(
-            UpsertStyle.ON_CONFLICT_DO_UPDATE,
-            conflict_target=("id",),
-            update_columns=("name", "value"),
-        )
-        == " ON CONFLICT (id) DO UPDATE SET name = excluded.name, value = excluded.value"
-    )
-    assert (
-        upsert_clause(
-            UpsertStyle.ON_CONFLICT_DO_NOTHING,
-            conflict_target=("id",),
-        )
-        == " ON CONFLICT (id) DO NOTHING"
-    )
-    assert (
-        upsert_clause(
-            UpsertStyle.ON_CONFLICT_DO_NOTHING,
-        )
-        == " ON CONFLICT DO NOTHING"
-    )
-
-
-def test_upsert_clause_rejects_empty_update_set() -> None:
-    with pytest.raises(ValueError, match="at least one update column"):
-        upsert_clause(UpsertStyle.ON_CONFLICT_DO_UPDATE, conflict_target=("id",))
-
-
-@pytest.mark.parametrize(
-    ("style", "expected"),
-    [
-        (UpsertStyle.ON_CONFLICT_DO_UPDATE, " ON CONFLICT (id) DO UPDATE SET name = excluded.name"),
-        (UpsertStyle.ON_CONFLICT_DO_NOTHING, " ON CONFLICT (id) DO NOTHING"),
-        (UpsertStyle.INSERT_OR_REPLACE, " OR REPLACE"),
-        (UpsertStyle.INSERT_OR_IGNORE, " OR IGNORE"),
-    ],
-)
-def test_sqlite_render_upsert_supports_all_styles(style: UpsertStyle, expected: str) -> None:
-    assert (
-        SqlDialect.render_upsert(
-            style,
-            columns=("id", "name"),
-            conflict_target=("id",),
-            update_columns=("name",),
-        )
-        == expected
-    )
-
-
-def test_sqlite_render_upsert_derives_update_columns() -> None:
-    assert (
-        SqlDialect.render_upsert(
-            UpsertStyle.ON_CONFLICT_DO_UPDATE,
-            columns=("id", "name", "value"),
-            conflict_target=("id",),
-        )
-        == " ON CONFLICT (id) DO UPDATE SET name = excluded.name, value = excluded.value"
-    )
-
-
-@pytest.mark.parametrize(
-    "style",
-    [UpsertStyle.ON_CONFLICT_DO_UPDATE, UpsertStyle.ON_CONFLICT_DO_NOTHING],
-)
-def test_postgres_render_upsert_supports_on_conflict_styles(style: UpsertStyle) -> None:
-    result = PgDialect.render_upsert(
-        style,
-        columns=("id", "name"),
-        conflict_target=("id",),
-        update_columns=("name",),
-    )
-    assert result.startswith(" ON CONFLICT (id)")
-
-
-@pytest.mark.parametrize("style", [UpsertStyle.INSERT_OR_REPLACE, UpsertStyle.INSERT_OR_IGNORE])
-def test_postgres_render_upsert_rejects_sqlite_only_styles(style: UpsertStyle) -> None:
-    with pytest.raises(NotImplementedError, match=style.value):
-        PgDialect.render_upsert(style, columns=("id",))
-
-
-def test_repository_upsert_sql_is_ready_for_placeholder_translation() -> None:
-    repository = _Repository(PlaceholderStyle.DOLLAR)
-    sql = repository._upsert_sql(
-        table="settings",
-        columns=("key", "value"),
-        style=UpsertStyle.ON_CONFLICT_DO_UPDATE,
-        conflict_target=("key",),
-        update_columns=("value",),
+def test_postgres_upsert_sql_derives_update_columns() -> None:
+    sql = PostgresRepositoryMixin._upsert_sql(
+        table="settings", columns=("key", "value"), conflict_target=("key",)
     )
     assert sql == (
-        "INSERT INTO settings (key, value) VALUES (?, ?)"
-        " ON CONFLICT (key) DO UPDATE SET value = excluded.value"
+        "INSERT INTO settings (key, value) VALUES ($1, $2) "
+        "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
     )
-    assert repository._dialect.translate(sql).count("$") == 2
+
+
+def test_postgres_upsert_sql_rejects_empty_update_set() -> None:
+    with pytest.raises(ValueError, match="requires update columns"):
+        PostgresRepositoryMixin._upsert_sql(
+            table="settings", columns=("key",), conflict_target=("key",)
+        )
 
 
 @pytest.mark.asyncio
 async def test_curation_evaluation_upsert_is_idempotent() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = CurationEvaluationRepository(db)
         record = CurationEvaluationRecord(
@@ -156,7 +61,7 @@ async def test_curation_evaluation_upsert_is_idempotent() -> None:
 
 @pytest.mark.asyncio
 async def test_iteration_store_upsert_is_idempotent() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         store = IterationStore(db)
         await store.append(

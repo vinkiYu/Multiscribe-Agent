@@ -12,12 +12,13 @@ from multiscribe_agent.skills.frontmatter_parser import parse_frontmatter
 from multiscribe_agent.skills.registry import SkillRegistry
 from multiscribe_agent.skills.scanner import SkillScanner
 from multiscribe_agent.skills.service import SkillService
+from tests.db import get_test_database_url
 
 
 @pytest.mark.asyncio
 async def test_skill_api_crud_and_reload(tmp_path) -> None:
     """JWT routes create, list, get, reload, and delete isolated custom skills."""
-    settings = SystemSettings(_env_file=None, db_path=":memory:")
+    settings = SystemSettings(_env_file=None, database_url=get_test_database_url())
     context = ServiceContext(settings)
     await context.init()
     try:

@@ -7,13 +7,13 @@ import asyncio
 import pytest
 
 from multiscribe_agent.core.alert_history import AlertHistoryRepository
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.observability.alerts import AlertEngine, AlertRule
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_alert_engine_persists_once_during_rule_cooldown() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = AlertHistoryRepository(db)
         engine = AlertEngine([AlertRule("latency", "llm_latency", "threshold", 1.0)])

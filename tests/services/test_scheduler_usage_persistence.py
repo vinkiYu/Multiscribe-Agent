@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.domain.models import ScheduleTask, TaskLog
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.infra.repositories.daily_usage import DailyUsageRepository
 from multiscribe_agent.services.scheduler import SchedulerService
+from tests.db import init_test_database
 
 
 class _Logs:
@@ -32,7 +32,7 @@ class _Schedules:
 
 @pytest.mark.asyncio
 async def test_scheduler_persists_usage_and_keeps_legacy_results_compatible() -> None:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         usage = DailyUsageRepository(db)
         scheduler = SchedulerService(_Logs(), _Schedules(), daily_usage_repo=usage)

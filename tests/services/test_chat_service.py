@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 
 from multiscribe_agent.core.errors import ProviderError
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.memory.chat_sessions import ChatSessionRepository
 from multiscribe_agent.memory.preference_store import PreferenceStore, UserPreferences
 from multiscribe_agent.memory.repositories.memory_categories import MemoryCategoryRepository
 from multiscribe_agent.services.chat_service import _UNBOUND_PLACEHOLDER, ChatService
+from tests.db import init_test_database
 
 
 @dataclass
@@ -61,7 +61,7 @@ async def _build_service(
     delta: dict[str, object] | None,
     reply: str = "ack",
 ) -> tuple[ChatService, PreferenceStore, Any, Any]:
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -182,7 +182,7 @@ async def test_delete_session_removes_messages() -> None:
 
 async def _build_unbound_service() -> tuple[ChatService, Any]:
     """Build a ChatService that has not yet received an agent binding."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -211,7 +211,7 @@ async def test_send_message_returns_placeholder_when_unbound() -> None:
 @pytest.mark.asyncio
 async def test_send_message_invokes_bound_runner_and_persists_reply() -> None:
     """After bind_agent every send_message call drives the configured runner once."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -234,7 +234,7 @@ async def test_send_message_invokes_bound_runner_and_persists_reply() -> None:
 @pytest.mark.asyncio
 async def test_bind_agent_overrides_constructor_default() -> None:
     """bind_agent switches the runner used by later send_message calls."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -257,7 +257,7 @@ async def test_bind_agent_overrides_constructor_default() -> None:
 @pytest.mark.asyncio
 async def test_send_message_defer_preference_extraction_returns_after_bind() -> None:
     """Bound send_message still schedules the async extraction task without raising."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -325,7 +325,7 @@ class _StubEvent:
 
 async def test_stream_message_yields_events_and_persists_assistant() -> None:
     """Streaming runs the bound runner's stream and writes both user and assistant rows."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -355,7 +355,7 @@ async def test_stream_message_yields_events_and_persists_assistant() -> None:
 
 async def test_stream_message_falls_back_when_runner_has_no_stream() -> None:
     """A runner without stream() routes through the synchronous path."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)
@@ -378,7 +378,7 @@ async def test_stream_message_falls_back_when_runner_has_no_stream() -> None:
 
 async def test_stream_message_yields_error_when_runner_stream_raises() -> None:
     """An exception inside the runner stream is caught and surfaced as an error event."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     category_repo = MemoryCategoryRepository(db)
     store = PreferenceStore(category_repo)
     sessions = ChatSessionRepository(db)

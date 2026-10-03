@@ -15,10 +15,11 @@ from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
 from multiscribe_agent.core.publish_history import PublishHistory
 from multiscribe_agent.domain.models import AgentDefinition, ScheduleTask
-from multiscribe_agent.infra.db import Database, init_db
+from multiscribe_agent.infra.db import Database
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
 from multiscribe_agent.services.scheduler_lock import AcquireResult
+from tests.db import init_test_database
 
 
 class FakePublishing:
@@ -140,7 +141,7 @@ def _digest() -> CuratedDigest:
 @pytest.mark.asyncio
 async def test_approve_rebuilds_digest_excludes_preview_and_records_pushed_content() -> None:
     """Approval sends only final targets, marks approved, and writes P35 identities."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")
@@ -269,7 +270,7 @@ async def test_direct_daily_digest_task_uses_valid_payload_date_for_run_id(
 @pytest.mark.asyncio
 async def test_reject_marks_pending_digest_without_fanout() -> None:
     """Reject is a terminal state and never calls the publisher service."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")
@@ -288,7 +289,7 @@ async def test_reject_marks_pending_digest_without_fanout() -> None:
 @pytest.mark.asyncio
 async def test_approve_missing_or_non_pending_digest_returns_http_error() -> None:
     """Approval rejects missing dates and already terminal states explicitly."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         publishing = FakePublishing()
         context = _context(db, publishing, FakeEntities({"targets": ["wecom_bot"]}))
@@ -308,7 +309,7 @@ async def test_approve_missing_or_non_pending_digest_returns_http_error() -> Non
 @pytest.mark.asyncio
 async def test_approve_uses_date_scoped_lock_and_releases_owner_token() -> None:
     """Approval holds a five-minute lease for the digest date and releases it."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")
@@ -326,7 +327,7 @@ async def test_approve_uses_date_scoped_lock_and_releases_owner_token() -> None:
 @pytest.mark.asyncio
 async def test_approve_rejects_when_lock_is_held_or_unavailable_in_strict_mode() -> None:
     """A held or unavailable strict lock prevents fan-out before archive inspection."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")
@@ -352,7 +353,7 @@ async def test_approve_rejects_when_lock_is_held_or_unavailable_in_strict_mode()
 @pytest.mark.asyncio
 async def test_approve_allows_lock_unavailable_when_configured_for_relaxed_mode() -> None:
     """A relaxed lock result preserves the configured availability degradation."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")

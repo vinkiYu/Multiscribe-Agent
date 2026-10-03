@@ -1,40 +1,19 @@
-"""Repository dialect routing and JSON expression coverage."""
+"""Regression tests for the PostgreSQL repository helper."""
 
 from __future__ import annotations
 
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle
-from multiscribe_agent.infra.dialect import (
-    DialectRepositoryMixin,
-    PgDialect,
-    SqlDialect,
-    dialect_for,
-)
+from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
 
 
-class _SqliteBackend:
-    placeholder_style = PlaceholderStyle.QUESTION_MARK
+class _Repository(PostgresRepositoryMixin):
+    _db = object()
 
 
-class _PostgresBackend:
-    placeholder_style = PlaceholderStyle.DOLLAR
+def test_repository_sql_translates_to_postgres_binds() -> None:
+    """Repositories expose one-way PostgreSQL bind translation only."""
+    assert _Repository._sql("SELECT '?' AS literal, ?") == "SELECT '?' AS literal, $1"
 
 
-class _Repository(DialectRepositoryMixin):
-    def __init__(self, database: object) -> None:
-        self._db = database
-
-
-def test_dialect_passthrough_and_selection() -> None:
-    """SQLite keeps question marks while PostgreSQL receives numbered binds."""
-    assert isinstance(dialect_for(_SqliteBackend()), SqlDialect)
-    assert isinstance(dialect_for(_PostgresBackend()), PgDialect)
-    assert SqlDialect().translate("SELECT ?") == "SELECT ?"
-    assert PgDialect().translate("SELECT '?' AS literal, ?") == "SELECT '?' AS literal, $1"
-
-
-def test_json_expression_follows_database_dialect() -> None:
-    """Trusted JSON scalar extraction uses equivalent backend syntax."""
-    sqlite = _Repository(_SqliteBackend())
-    postgres = _Repository(_PostgresBackend())
-    assert sqlite._json_extract("data", "sha256") == "json_extract(data, '$.sha256')"
-    assert postgres._json_extract("data", "sha256") == "data->>'sha256'"
+def test_json_expression_uses_postgres_jsonb_operator() -> None:
+    """Trusted JSON scalar extraction uses PostgreSQL's JSONB operator."""
+    assert _Repository._json_extract("data", "sha256") == "data->>'sha256'"

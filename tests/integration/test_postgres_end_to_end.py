@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
-import aiosqlite
 import pytest
 
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.domain import ports
-from multiscribe_agent.infra.dialect import PgDialect, SqlDialect, dialect_for
+from multiscribe_agent.infra.placeholder import translate_question_marks
 from scripts import migrate_sqlite_to_postgres as migration
 
 
@@ -29,24 +29,8 @@ def test_ports_includes_new_repositories() -> None:
 
 
 def test_dialect_translation() -> None:
-    """SQLite passes through while PostgreSQL translates only bind placeholders."""
-    sqlite = SqlDialect()
-    postgres = PgDialect()
-
-    assert sqlite.translate("SELECT '?' AS literal, ?") == "SELECT '?' AS literal, ?"
-    assert postgres.translate("SELECT '?' AS literal, ?") == "SELECT '?' AS literal, $1"
-    assert (
-        dialect_for(type("Sqlite", (), {"placeholder_style": "question_mark"})()).translate(
-            "SELECT ?"
-        )
-        == "SELECT ?"
-    )
-    postgres_backend = type(
-        "Postgres",
-        (),
-        {"placeholder_style": type("Style", (), {"value": "dollar"})()},
-    )()
-    assert dialect_for(postgres_backend).translate("SELECT ?") == "SELECT $1"
+    """The single supported SQL path translates binds to PostgreSQL numbering."""
+    assert translate_question_marks("SELECT '?' AS literal, ?") == "SELECT '?' AS literal, $1"
 
 
 def test_migrate_script_cli_args() -> None:
@@ -76,12 +60,12 @@ def test_migrate_script_cli_args() -> None:
 async def test_migrate_dry_run(tmp_path: Path) -> None:
     """Dry-run reports source rows without importing asyncpg or touching a target."""
     source = tmp_path / "source.sqlite"
-    async with aiosqlite.connect(source) as connection:
-        await connection.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT)")
-        await connection.executemany(
+    with sqlite3.connect(source) as connection:
+        connection.execute("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT)")
+        connection.executemany(
             "INSERT INTO agents(id, data) VALUES (?, ?)", [("a", "one"), ("b", "two")]
         )
-        await connection.commit()
+        connection.commit()
 
     report = await migration.run_migration(
         source,
@@ -121,12 +105,7 @@ async def test_postgres_end_to_end_pipeline(postgres_container, tmp_path: Path) 
     this test is the manual integration hook that exposes any remaining dialect
     incompatibility during a controlled migration run.
     """
-    settings = SystemSettings(
-        _env_file=None,
-        db_driver="postgres",
-        db_dsn=postgres_container.get_connection_url(),
-        db_path=str(tmp_path / "unused.sqlite"),
-    )
+    settings = SystemSettings(_env_file=None, database_url=postgres_container.get_connection_url())
     from multiscribe_agent.bootstrap import ServiceContext
 
     context = ServiceContext(settings)

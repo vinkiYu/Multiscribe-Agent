@@ -7,10 +7,10 @@ from collections.abc import Sequence
 import pytest
 
 from multiscribe_agent.domain.ports import VectorStorePort
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.rag.adapter import RagDocumentAdapter
 from multiscribe_agent.rag.indexing import RagIndexingPipeline, RagIndexRegistry
+from tests.db import init_test_database
 
 
 class FakeEmbedder:
@@ -44,7 +44,7 @@ class FakeVectorStore(VectorStorePort):
 
 
 class WideFakeEmbedder:
-    """Fake 512-dimensional encoder for the sqlite-vec smoke test."""
+    """Fake 512-dimensional encoder for the pgvector smoke test."""
 
     async def encode(self, texts: list[str]) -> list[list[float]]:
         return [[1.0] * 512 for _ in texts]
@@ -76,7 +76,7 @@ def _adapted(description: str = "first", *, source_id: str = "source-1"):
 @pytest.mark.asyncio
 async def test_registry_and_incremental_indexing(tmp_path) -> None:
     """New, unchanged, and changed content follow the hash-based policy."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         vector_store = FakeVectorStore()
         registry = RagIndexRegistry(db)
@@ -96,7 +96,7 @@ async def test_registry_and_incremental_indexing(tmp_path) -> None:
         assert len(changed.indexed_chunk_ids) == 1
         assert len(await registry.get_by_document(first.document.document_id)) == 1
         rag_chunk = await db.fetchone(
-            "SELECT chunk_id FROM rag_chunks WHERE chunk_id = ?",
+            "SELECT chunk_id FROM rag_chunks WHERE chunk_id = $1",
             (first.chunks[0].chunk_id,),
         )
         assert rag_chunk is not None
@@ -109,7 +109,7 @@ async def test_registry_and_incremental_indexing(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_embedding_failure_isolated_to_one_document(tmp_path) -> None:
     """A failed source document does not block another document in the batch."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         first = _adapted("good")
         second = _adapted("bad")
@@ -144,11 +144,11 @@ async def test_embedding_failure_isolated_to_one_document(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_sqlite_vec_receives_indexed_embedding(tmp_path) -> None:
+async def test_pgvector_receives_indexed_embedding(tmp_path) -> None:
     """The production VectorStorePort receives vectors, not only registry rows."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
-        adapted = _adapted("sqlite vec")
+        adapted = _adapted("pgvector")
         assert adapted is not None
         pipeline = RagIndexingPipeline(
             VectorStore(db, dim=512),
@@ -159,7 +159,7 @@ async def test_sqlite_vec_receives_indexed_embedding(tmp_path) -> None:
 
         assert report.indexed_chunk_ids == (adapted.chunks[0].chunk_id,)
         row = await db.fetchone(
-            "SELECT chunk_id FROM kb_chunks_vec WHERE chunk_id = ?",
+            "SELECT chunk_id FROM chunk_vectors WHERE chunk_id = $1",
             (adapted.chunks[0].chunk_id,),
         )
         assert row is not None
@@ -170,7 +170,7 @@ async def test_sqlite_vec_receives_indexed_embedding(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_prune_source_documents_deletes_vector_and_registry_rows(tmp_path) -> None:
     """SourceData outside the active window is removed from both stores."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         first = _adapted("keep", source_id="source-1")
         second = _adapted("remove", source_id="source-2")
@@ -188,7 +188,7 @@ async def test_prune_source_documents_deletes_vector_and_registry_rows(tmp_path)
         assert await registry.get_by_document(second.document.document_id) == []
         assert (
             await db.fetchone(
-                "SELECT chunk_id FROM rag_chunks WHERE chunk_id = ?",
+                "SELECT chunk_id FROM rag_chunks WHERE chunk_id = $1",
                 (second.chunks[0].chunk_id,),
             )
             is None

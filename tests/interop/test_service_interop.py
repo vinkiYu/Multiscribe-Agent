@@ -2,18 +2,18 @@ import hashlib
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.services.interop import InteropError, InteropService, hash_api_key
+from tests.db import init_test_database
 
 
 @pytest.mark.asyncio
 async def test_key_is_hashed_and_verified(tmp_path) -> None:
-    database = await init_db(str(tmp_path / "interop.sqlite"))
+    database = await init_test_database()
     service = InteropService(database)
     issued = await service.generate_key("test")
     assert issued.api_key.startswith("sk_")
     row = await database.fetchone(
-        "SELECT key_hash FROM interop_keys WHERE key_id = ?", (issued.key_id,)
+        "SELECT key_hash FROM interop_keys WHERE key_id = $1", (issued.key_id,)
     )
     assert row is not None
     assert row["key_hash"] == hashlib.sha256(issued.api_key.encode()).hexdigest()
@@ -23,7 +23,7 @@ async def test_key_is_hashed_and_verified(tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_pending_key_requires_approval(tmp_path) -> None:
-    database = await init_db(str(tmp_path / "interop.sqlite"))
+    database = await init_test_database()
     service = InteropService(database)
     issued = await service.generate_key("test", mode="approval")
     with pytest.raises(InteropError, match="not yet approved"):

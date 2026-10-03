@@ -10,12 +10,12 @@ import multiscribe_agent.bootstrap as bootstrap_module
 from multiscribe_agent.bootstrap import ServiceContext
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.domain.models import KBDocument
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.kb_service import KBService
 from multiscribe_agent.rag.indexing import RagIndexRegistry
 from multiscribe_agent.rag.migrations import migrate_rag_owner, migrate_source_timestamps
 from multiscribe_agent.rag.schema import RagChunksStore
+from tests.db import init_test_database
 
 
 def test_rag_default_user_is_admin(monkeypatch) -> None:
@@ -49,7 +49,7 @@ def test_legacy_kb_json_gets_admin_owner_by_default() -> None:
 @pytest.mark.asyncio
 async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
     """Only legacy default rows change, and the second run is a no-op."""
-    db = await init_db(str(tmp_path / "rag.sqlite"))
+    db = await init_test_database()
     try:
         registry = RagIndexRegistry(db)
         chunks = RagChunksStore(db)
@@ -59,7 +59,7 @@ async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
             """
             INSERT INTO rag_index_registry(
                 chunk_id, document_id, doc_type, content_hash, user_id, indexed_at, index_version
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             """,
             ("c-1", "d-1", "kb", "hash", "default", "now", "test"),
         )
@@ -67,7 +67,7 @@ async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
             """
             INSERT INTO rag_chunks(
                 chunk_id, document_id, doc_type, user_id, content, content_tsv
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6)
             """,
             ("c-1", "d-1", "kb", "default", "content", "content"),
         )
@@ -82,10 +82,10 @@ async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
         assert second.chunks_updated == 0
         assert second.already_marked is True
         assert await db.fetchone(
-            "SELECT COUNT(*) AS count FROM rag_index_registry WHERE user_id = ?", ("default",)
+            "SELECT COUNT(*) AS count FROM rag_index_registry WHERE user_id = $1", ("default",)
         ) == {"count": 0}
         assert await db.fetchone(
-            "SELECT COUNT(*) AS count FROM rag_chunks WHERE user_id = ?", ("default",)
+            "SELECT COUNT(*) AS count FROM rag_chunks WHERE user_id = $1", ("default",)
         ) == {"count": 0}
     finally:
         await db.close()
@@ -94,14 +94,14 @@ async def test_backfill_rag_owner_is_idempotent(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_source_timestamp_backfill_is_idempotent(tmp_path) -> None:
     """Sentinel publication dates are replaced by fetched_at exactly once."""
-    db = await init_db(str(tmp_path / "timestamps.sqlite"))
+    db = await init_test_database()
     try:
         await db.execute(
             """
             INSERT INTO source_data(
                 id, title, url, description, published_date, source, category, author,
                 metadata, fetched_at, ingestion_date, adapter_name, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             """,
             (
                 "source-1",
@@ -128,7 +128,7 @@ async def test_source_timestamp_backfill_is_idempotent(tmp_path) -> None:
         assert second.updated == 0
         assert second.already_marked is True
         assert await db.fetchone(
-            "SELECT published_date FROM source_data WHERE id = ?", ("source-1",)
+            "SELECT published_date FROM source_data WHERE id = $1", ("source-1",)
         ) == {"published_date": "2026-09-23T00:00:00+00:00"}
     finally:
         await db.close()
@@ -137,7 +137,7 @@ async def test_source_timestamp_backfill_is_idempotent(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_bootstrap_owner_migration_is_fail_open(tmp_path, monkeypatch) -> None:
     """A backend-specific migration exception cannot prevent service startup."""
-    db = await init_db(str(tmp_path / "bootstrap.sqlite"))
+    db = await init_test_database()
     context = ServiceContext(SystemSettings(_env_file=None))
     context.db = db
 
@@ -155,7 +155,7 @@ async def test_bootstrap_owner_migration_is_fail_open(tmp_path, monkeypatch) -> 
 @pytest.mark.asyncio
 async def test_bootstrap_falls_back_when_rag_schema_init_fails(tmp_path, monkeypatch) -> None:
     """The legacy KB service remains usable when RAG setup cannot start."""
-    db = await init_db(str(tmp_path / "rag-init.sqlite"))
+    db = await init_test_database()
     context = ServiceContext(SystemSettings(_env_file=None))
     context.db = db
 
@@ -174,7 +174,7 @@ async def test_bootstrap_falls_back_when_rag_schema_init_fails(tmp_path, monkeyp
 @pytest.mark.asyncio
 async def test_kb_ingest_persists_owner_user_id(tmp_path) -> None:
     """New KB ingestion writes the owner used by the RAG adapter later."""
-    db = await init_db(str(tmp_path / "kb.sqlite"))
+    db = await init_test_database()
     try:
         service = KBService(db, DocumentProcessor(), None, None)
         category = await service.create_category("engineering")

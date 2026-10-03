@@ -6,6 +6,8 @@ import pytest
 from httpx import AsyncClient
 
 from multiscribe_agent.domain.models import UnifiedData
+from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
+from tests.db import init_test_database
 
 
 async def _auth_headers(client: AsyncClient) -> dict[str, str]:
@@ -92,10 +94,7 @@ async def test_source_data_batch_status_rejects_non_string_ids(client: AsyncClie
 @pytest.mark.asyncio
 async def test_source_data_repository_update_status_returns_row_count() -> None:
     """The repository method returns the number of rows that changed."""
-    from multiscribe_agent.infra.db import init_db
-    from multiscribe_agent.infra.repositories.source_data import SourceDataRepository
-
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repo = SourceDataRepository(db)
         await repo.save_batch(

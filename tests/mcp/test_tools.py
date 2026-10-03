@@ -8,11 +8,11 @@ import pytest
 
 from multiscribe_agent.config import SystemSettings
 from multiscribe_agent.core.publish_history import PublishHistory
-from multiscribe_agent.infra.db import init_db
 from multiscribe_agent.mcp.tools.digest_tools import digest_history
 from multiscribe_agent.mcp.tools.kb_tools import knowledge_search
 from multiscribe_agent.mcp.tools.publisher_tools import list_publishers, list_sources
 from multiscribe_agent.mcp.tools.rss_tools import fetch_rss
+from tests.db import init_test_database
 
 
 class FakeIngestion:
@@ -98,7 +98,7 @@ async def test_rss_and_kb_handlers_return_documented_shapes() -> None:
 @pytest.mark.asyncio
 async def test_digest_history_handler_serializes_records() -> None:
     """Digest history returns JSON-safe datetime and result-data fields."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         history = PublishHistory()
         await history.add(db, "feishu_bot", "success", "Title", "content", {"ok": True})

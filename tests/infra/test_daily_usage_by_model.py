@@ -4,17 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from multiscribe_agent.infra.db import init_db
-from multiscribe_agent.infra.db_protocol import PlaceholderStyle
 from multiscribe_agent.infra.repositories.daily_usage_by_model import (
     DailyUsageByModelRepository,
 )
+from tests.db import init_test_database
 
 
 class _PostgresCapture:
     """Capture translated SQL without requiring a live PostgreSQL server."""
-
-    placeholder_style = PlaceholderStyle.DOLLAR
 
     def __init__(self) -> None:
         self.executed: list[tuple[str, tuple[object, ...]]] = []
@@ -35,13 +32,15 @@ class _PostgresCapture:
 @pytest.mark.asyncio
 async def test_daily_usage_by_model_lazily_creates_and_accumulates() -> None:
     """Model buckets are created on first write and incremented on repeated writes."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = DailyUsageByModelRepository(db)
-        assert (
-            await db.fetchone("SELECT name FROM sqlite_master WHERE name = 'daily_usage_by_model'")
-            is None
-        )
+        # The shared test database persists tables across tests; drop first so the
+        # lazy-create probe observes the same pre-existence state as a fresh database.
+        await db.execute("DROP TABLE IF EXISTS daily_usage_by_model")
+        probe = await db.fetchone("SELECT to_regclass('public.daily_usage_by_model') AS name")
+        assert probe is not None
+        assert probe["name"] is None
         await repository.upsert(
             "2026-08-03",
             {
@@ -84,7 +83,7 @@ async def test_daily_usage_by_model_lazily_creates_and_accumulates() -> None:
 @pytest.mark.asyncio
 async def test_daily_usage_by_model_query_is_inclusive_and_sorted() -> None:
     """Date filtering is inclusive and newest dates sort first."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         repository = DailyUsageByModelRepository(db)
         await repository.upsert("2026-08-01", {"gpt-4o": {"total_tokens": 1}})

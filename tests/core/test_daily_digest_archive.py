@@ -5,9 +5,9 @@ from __future__ import annotations
 import pytest
 
 from multiscribe_agent.core.daily_digest_archive import DailyDigestArchive
-from multiscribe_agent.infra.db import Database, init_db
 from multiscribe_agent.renderers.feishu_card import DigestItem
 from multiscribe_agent.renderers.models import CuratedDigest
+from tests.db import init_test_database
 
 
 def _digest(date: str = "2026-07-29") -> CuratedDigest:
@@ -32,11 +32,15 @@ def _digest(date: str = "2026-07-29") -> CuratedDigest:
 @pytest.mark.asyncio
 async def test_archive_schema_and_approval_state_round_trip() -> None:
     """New archives default to published and support all approval transitions."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
-        columns = await db.fetchall("PRAGMA table_info(daily_digest_archives)")
-        status_column = next(column for column in columns if column["name"] == "approval_status")
-        assert status_column["dflt_value"] == "'published'"
+        status_column = await db.fetchone(
+            "SELECT column_name, column_default FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'daily_digest_archives' "
+            "AND column_name = 'approval_status'"
+        )
+        assert status_column is not None
+        assert str(status_column["column_default"]) == "'published'::text"
 
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest(), approval_status="pending")
@@ -55,15 +59,16 @@ async def test_archive_schema_and_approval_state_round_trip() -> None:
 @pytest.mark.asyncio
 async def test_archive_migration_adds_status_to_legacy_table() -> None:
     """A pre-P41 table is upgraded without changing existing archive rows."""
-    db = await Database.open(":memory:")
+    db = await init_test_database()
     try:
+        await db.execute("DROP TABLE daily_digest_archives")
         await db.execute(
             """
             CREATE TABLE daily_digest_archives (
                 digest_date TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
                 summary TEXT NOT NULL,
-                items TEXT NOT NULL DEFAULT '[]',
+                items JSONB NOT NULL DEFAULT '[]'::jsonb,
                 total_scanned INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL
             )
@@ -73,7 +78,7 @@ async def test_archive_migration_adds_status_to_legacy_table() -> None:
             """
             INSERT INTO daily_digest_archives
                 (digest_date, title, summary, items, total_scanned, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6)
             """,
             ("2026-07-28", "Legacy", "summary", "[]", 0, "2026-07-28T00:00:00+00:00"),
         )
@@ -82,8 +87,11 @@ async def test_archive_migration_adds_status_to_legacy_table() -> None:
 
         archive = DailyDigestArchive()
         assert await archive.get_approval_status(db, "2026-07-28") == "published"
-        columns = await db.fetchall("PRAGMA table_info(daily_digest_archives)")
-        assert any(column["name"] == "approval_status" for column in columns)
+        columns = await db.fetchall(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = 'daily_digest_archives'"
+        )
+        assert any(column["column_name"] == "approval_status" for column in columns)
     finally:
         await db.close()
 
@@ -91,7 +99,7 @@ async def test_archive_migration_adds_status_to_legacy_table() -> None:
 @pytest.mark.asyncio
 async def test_archive_published_only_hides_preview_and_rejected_states() -> None:
     """Public archive queries include only normal and approved publications."""
-    db = await init_db(":memory:")
+    db = await init_test_database()
     try:
         archive = DailyDigestArchive()
         await archive.upsert(db, _digest("2026-07-26"), approval_status="pending")
