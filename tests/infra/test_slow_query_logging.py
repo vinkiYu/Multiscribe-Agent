@@ -51,9 +51,9 @@ async def test_slow_query_logs_warning_and_records_metric(monkeypatch) -> None:
         _SlowPool(_SlowConnection()), slow_query_threshold=0.001, enable_sql_audit=False
     )
     metrics = _Metrics()
-    monkeypatch.setattr(
-        "multiscribe_agent.observability.meter.get_metrics_registry", lambda: metrics
-    )
+    # Patch the registry variable itself (not the accessor function) so the
+    # observability read path sees the fake regardless of import ordering.
+    monkeypatch.setattr("multiscribe_agent.observability.meter._default_registry", metrics)
 
     await database.execute("UPDATE things SET value = $1", ("x",))
 
