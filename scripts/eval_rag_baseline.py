@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from multiscribe_agent.config import get_settings
-from multiscribe_agent.infra.db import SqliteDatabase, init_db
+from multiscribe_agent.infra.db import Database, init_database
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
 from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.rag.models import RetrievalScope
@@ -22,7 +22,6 @@ from multiscribe_agent.rag.service import RagService
 
 ALLOWED_INTENTS = {"exact-term", "semantic", "mixed", "temporal"}
 DEFAULT_DATASET = Path("data/eval/rag_queries.jsonl")
-DEFAULT_DATABASE = Path("data/database.sqlite")
 DEFAULT_REPORT_DIR = Path("data/eval/reports")
 
 
@@ -69,7 +68,11 @@ def _parse_args() -> argparse.Namespace:
     """Parse the baseline harness command line."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
-    parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
+    parser.add_argument(
+        "--pg-dsn",
+        default="",
+        help="PostgreSQL DSN; falls back to DATABASE_URL from the environment or .env.",
+    )
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
     parser.add_argument("--candidate-k", type=int, default=20)
     parser.add_argument(
@@ -162,7 +165,7 @@ def _validate_intent_distribution(records: list[QueryRecord]) -> None:
 
 
 async def _validate_references(
-    db: SqliteDatabase, records: list[QueryRecord]
+    db: Database, records: list[QueryRecord]
 ) -> tuple[int, int, set[str], set[str]]:
     """Check that every label points to a real current KB chunk or SourceData row."""
     source_rows = await db.fetchall("SELECT id FROM source_data")
@@ -374,9 +377,12 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
     records = _load_queries(args.dataset)
     if args.candidate_k < 1:
         raise ValueError("--candidate-k must be positive")
-    # ``init_db`` loads sqlite-vec on the active connection; opening a raw
-    # connection would make the dense route look unavailable in evaluation.
-    db = await init_db(str(args.database), enable_sql_audit=False)
+    # The pool-backed PostgreSQL connection must come from ``init_database`` so
+    # the retrieval path shares the application's schema and pool semantics.
+    dsn = args.pg_dsn.strip() or get_settings().database_url
+    if not dsn.strip():
+        raise ValueError("--pg-dsn is required when DATABASE_URL is not configured")
+    db = await init_database(dsn, enable_sql_audit=False)
     try:
         source_count, chunk_count, _, _ = await _validate_references(db, records)
         vector_requested = args.enable_vector and EmbeddingService.is_available()
@@ -422,7 +428,7 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
         _render_report(
             generated_at=datetime.now(UTC).isoformat(),
             dataset=args.dataset,
-            database=args.database,
+            database=_mask_dsn(dsn),
             source_count=source_count,
             chunk_count=chunk_count,
             vector_enabled=vector_requested,
@@ -457,7 +463,7 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
     machine = {
         "generated_at": datetime.now(UTC).isoformat(),
         "dataset": str(args.dataset),
-        "database": str(args.database),
+        "database": _mask_dsn(dsn),
         "source_data_count": source_count,
         "kb_chunk_count": chunk_count,
         "vector_enabled": vector_requested,
@@ -467,6 +473,14 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
     }
     json_path.write_text(json.dumps(machine, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report_path, json_path, machine
+
+
+def _mask_dsn(dsn: str) -> str:
+    """Return a credential-free DSN rendering for report artifacts."""
+    if "@" in dsn:
+        scheme, rest = dsn.split("://", 1)
+        return f"{scheme}://***@{rest.split('@', 1)[1]}"
+    return dsn
 
 
 def main() -> int:
