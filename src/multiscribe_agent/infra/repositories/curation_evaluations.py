@@ -8,29 +8,9 @@ from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
-
-_CREATE_TABLE = """
-CREATE TABLE IF NOT EXISTS curation_evaluations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    workflow_run_id TEXT NOT NULL UNIQUE,
-    date TEXT NOT NULL,
-    recorded_at INTEGER NOT NULL,
-    rounds INTEGER NOT NULL DEFAULT 0,
-    converged INTEGER NOT NULL DEFAULT 0,
-    exit_reason TEXT NOT NULL DEFAULT 'max_rounds',
-    final_score REAL,
-    score_delta REAL,
-    avg_iter_score REAL,
-    result_count INTEGER NOT NULL DEFAULT 0,
-    usage_json TEXT NOT NULL DEFAULT '{}'
-)
-"""
-_CREATE_DATE_INDEX = """
-CREATE INDEX IF NOT EXISTS idx_curation_evaluations_date
-ON curation_evaluations(date DESC, id DESC)
-"""
-_CREATE_TABLE_POSTGRES = _CREATE_TABLE.replace(
-    "id INTEGER PRIMARY KEY AUTOINCREMENT", "id BIGSERIAL PRIMARY KEY"
+from multiscribe_agent.infra.postgres.schema_business import (
+    CURATION_EVALUATIONS_INDEXES,
+    CURATION_EVALUATIONS_TABLE,
 )
 
 
@@ -59,10 +39,11 @@ class CurationEvaluationRepository(PostgresRepositoryMixin):
         self._schema_ready = False
 
     async def ensure_schema(self) -> None:
-        """Create the bounded evaluation schema for existing SQLite databases."""
+        """Create the bounded evaluation schema for existing databases."""
         if not self._schema_ready:
-            await self._execute(_CREATE_TABLE_POSTGRES)
-            await self._execute(_CREATE_DATE_INDEX)
+            await self._execute(CURATION_EVALUATIONS_TABLE)
+            for statement in CURATION_EVALUATIONS_INDEXES:
+                await self._execute(statement)
             self._schema_ready = True
 
     async def upsert(self, evaluation: CurationEvaluationRecord) -> None:

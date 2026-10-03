@@ -241,6 +241,54 @@ CLICK_EVENTS_INDEXES = (
     "CREATE INDEX IF NOT EXISTS idx_click_events_item_url ON click_events(item_url)",
 )
 
+DAILY_USAGE_TABLE = """
+CREATE TABLE IF NOT EXISTS daily_usage (
+    id BIGSERIAL PRIMARY KEY,
+    date TEXT NOT NULL UNIQUE,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    llm_calls INTEGER NOT NULL DEFAULT 0,
+    task_count INTEGER NOT NULL DEFAULT 0,
+    recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+DAILY_USAGE_BY_MODEL_TABLE = """
+CREATE TABLE IF NOT EXISTS daily_usage_by_model (
+    id BIGSERIAL PRIMARY KEY,
+    date TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    llm_calls INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(date, model_name)
+);
+"""
+
+CURATION_EVALUATIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS curation_evaluations (
+    id BIGSERIAL PRIMARY KEY,
+    workflow_run_id TEXT NOT NULL UNIQUE,
+    date TEXT NOT NULL,
+    recorded_at INTEGER NOT NULL,
+    rounds INTEGER NOT NULL DEFAULT 0,
+    converged INTEGER NOT NULL DEFAULT 0,
+    exit_reason TEXT NOT NULL DEFAULT 'max_rounds',
+    final_score REAL,
+    score_delta REAL,
+    avg_iter_score REAL,
+    result_count INTEGER NOT NULL DEFAULT 0,
+    usage_json TEXT NOT NULL DEFAULT '{}'
+);
+"""
+
+CURATION_EVALUATIONS_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_curation_evaluations_date "
+    "ON curation_evaluations(date DESC, id DESC)",
+)
+
 
 ALL_BUSINESS_TABLES = (
     KV_TABLE,
@@ -261,6 +309,10 @@ ALL_BUSINESS_TABLES = (
     KB_CHUNK_DEDUP_TABLE,
     CLICK_EVENTS_TABLE,
     *CLICK_EVENTS_INDEXES,
+    DAILY_USAGE_TABLE,
+    DAILY_USAGE_BY_MODEL_TABLE,
+    CURATION_EVALUATIONS_TABLE,
+    *CURATION_EVALUATIONS_INDEXES,
     DAILY_DIGEST_ARCHIVES_TABLE,
     ADAPTER_HEALTH_TABLE,
     ALERT_HISTORY_TABLE,

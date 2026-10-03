@@ -7,22 +7,7 @@ from dataclasses import dataclass
 
 from multiscribe_agent.infra.db import Database
 from multiscribe_agent.infra.db_protocol import PostgresRepositoryMixin
-
-_CREATE_TABLE = """
-CREATE TABLE IF NOT EXISTS daily_usage (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL UNIQUE,
-    input_tokens INTEGER NOT NULL DEFAULT 0,
-    output_tokens INTEGER NOT NULL DEFAULT 0,
-    total_tokens INTEGER NOT NULL DEFAULT 0,
-    llm_calls INTEGER NOT NULL DEFAULT 0,
-    task_count INTEGER NOT NULL DEFAULT 0,
-    recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
-"""
-_CREATE_TABLE_POSTGRES = _CREATE_TABLE.replace(
-    "id INTEGER PRIMARY KEY AUTOINCREMENT", "id BIGSERIAL PRIMARY KEY"
-)
+from multiscribe_agent.infra.postgres.schema_business import DAILY_USAGE_TABLE
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +32,7 @@ class DailyUsageRepository(PostgresRepositoryMixin):
     async def ensure_schema(self) -> None:
         """Create the table lazily and safely for old databases."""
         if not self._schema_ready:
-            await self._execute(_CREATE_TABLE_POSTGRES)
+            await self._execute(DAILY_USAGE_TABLE)
             self._schema_ready = True
 
     async def upsert(self, date: str, usage: Mapping[str, object]) -> None:
