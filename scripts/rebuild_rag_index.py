@@ -16,7 +16,6 @@ from multiscribe_agent.infra.db import init_database
 from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
 from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
-from multiscribe_agent.knowledge.vector_store import VectorStore
 from multiscribe_agent.rag.adapter import AdaptedDocument, RagDocumentAdapter
 from multiscribe_agent.rag.index_version import make_index_version
 from multiscribe_agent.rag.indexing import RagIndexingPipeline, RagIndexRegistry
@@ -58,9 +57,7 @@ async def rebuild(args: argparse.Namespace) -> dict[str, int | str]:
     """Run one resumable rebuild and return a serializable summary."""
     settings = get_settings()
     database = await init_database(
-        settings.db_driver,
-        sqlite_path=settings.db_path,
-        postgres_dsn=settings.db_dsn,
+        settings.database_url,
         pool_size=settings.db_pool_size,
         pool_timeout=settings.db_pool_timeout,
         slow_query_threshold=settings.slow_query_threshold_seconds,
@@ -81,16 +78,13 @@ async def rebuild(args: argparse.Namespace) -> dict[str, int | str]:
             raise RuntimeError(
                 "sentence-transformers is unavailable; install the runtime before a real rebuild"
             )
-        if settings.db_driver == "postgres":
-            vector_store = PostgresVectorStore(database, dim=settings.rag_embedding_dim)
-        else:
-            vector_store = VectorStore(database, dim=settings.rag_embedding_dim)
+        vector_store = PostgresVectorStore(database, dim=settings.rag_embedding_dim)
         registry = RagIndexRegistry(database)
         version = make_index_version(model_name=settings.rag_embedding_model)
         existing_versions = await _existing_index_versions(database)
         version_changed = bool(existing_versions) and version not in existing_versions
         if args.full or version_changed:
-            await _reset_derived_index(database, settings.db_driver, settings.rag_embedding_dim)
+            await _reset_derived_index(database, settings.rag_embedding_dim)
             selected = records
             cursor = ""
         indexer = RagIndexingPipeline(vector_store, registry, embeddings)
@@ -133,38 +127,20 @@ async def _existing_index_versions(database: DatabaseProtocol) -> set[str]:
     }
 
 
-async def _reset_derived_index(database: DatabaseProtocol, driver: str, dimension: int) -> None:
+async def _reset_derived_index(database: DatabaseProtocol, dimension: int) -> None:
     """Drop model-dependent derived rows and recreate the configured vector space."""
     if dimension <= 0:
         raise ValueError("embedding dimension must be positive")
-    await _delete_table_if_present(database, "rag_index_registry", driver)
-    await _delete_table_if_present(database, "rag_chunks", driver)
-    if driver == "postgres":
-        await _delete_table_if_present(database, "chunk_vectors", driver)
-        return
-    await database.execute("DROP TABLE IF EXISTS kb_chunks_vec")
-    await database.execute(
-        "CREATE VIRTUAL TABLE kb_chunks_vec USING vec0("
-        f"chunk_id TEXT PRIMARY KEY, embedding float[{dimension}])"
-    )
+    await _delete_table_if_present(database, "rag_index_registry")
+    await _delete_table_if_present(database, "rag_chunks")
+    await _delete_table_if_present(database, "chunk_vectors")
 
 
-async def _delete_table_if_present(
-    database: DatabaseProtocol, table: str, driver: str
-) -> None:
+async def _delete_table_if_present(database: DatabaseProtocol, table: str) -> None:
     """Delete rows only when a derived table exists on the selected backend."""
-    if driver == "postgres":
-        exists = await database.fetchone(
-            "SELECT to_regclass(?) AS table_name", (table,)
-        )
-        if exists is None or exists.get("table_name") is None:
-            return
-    else:
-        exists = await database.fetchone(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)
-        )
-        if exists is None:
-            return
+    exists = await database.fetchone("SELECT to_regclass($1) AS table_name", (table,))
+    if exists is None or exists.get("table_name") is None:
+        return
     await database.execute(f"DELETE FROM {table}")  # noqa: S608
 
 
@@ -187,7 +163,7 @@ async def _load_records(database: DatabaseProtocol, window_days: int) -> list[Ad
         document = KBDocument.model_validate(json.loads(str(raw_document["data"])))
         raw_chunks = await database.fetchall(
             "SELECT id, document_id, content, metadata FROM kb_chunks "
-            "WHERE document_id = ? ORDER BY document_id, id",
+            "WHERE document_id = $1 ORDER BY document_id, id",
             (document.id,),
         )
         chunks = [

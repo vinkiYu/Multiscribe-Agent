@@ -236,6 +236,11 @@ ALERT_HISTORY_INDEXES = (
     "CREATE INDEX IF NOT EXISTS idx_alert_history_rule ON alert_history(rule_name)",
 )
 
+CLICK_EVENTS_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS idx_click_events_clicked_at ON click_events(clicked_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_click_events_item_url ON click_events(item_url)",
+)
+
 
 ALL_BUSINESS_TABLES = (
     KV_TABLE,
@@ -255,6 +260,7 @@ ALL_BUSINESS_TABLES = (
     KB_CHUNKS_TABLE,
     KB_CHUNK_DEDUP_TABLE,
     CLICK_EVENTS_TABLE,
+    *CLICK_EVENTS_INDEXES,
     DAILY_DIGEST_ARCHIVES_TABLE,
     ADAPTER_HEALTH_TABLE,
     ALERT_HISTORY_TABLE,

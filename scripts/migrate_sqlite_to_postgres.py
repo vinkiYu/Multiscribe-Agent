@@ -18,6 +18,7 @@ import asyncio
 import importlib
 import json
 import re
+import sqlite3
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import AbstractAsyncContextManager
 from dataclasses import asdict, dataclass
@@ -25,7 +26,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol, cast
 
-import aiosqlite
 import structlog
 
 log = structlog.get_logger(__name__)
@@ -107,7 +107,7 @@ class DriftReport:
 
 
 async def migrate_table(
-    sqlite_conn: aiosqlite.Connection,
+    sqlite_conn: sqlite3.Connection,
     pg_pool: _PgPool | None,
     table: str,
     columns: list[str] | None = None,
@@ -142,22 +142,22 @@ async def migrate_table(
         f"VALUES ({placeholders}) ON CONFLICT DO NOTHING"
     )
     select_sql = f"SELECT {quoted_columns} FROM {_quote_identifier(table)}"  # noqa: S608
-    cursor = await sqlite_conn.execute(select_sql)
+    cursor = await asyncio.to_thread(sqlite_conn.execute, select_sql)
     migrated_rows = 0
     while True:
-        rows = await cursor.fetchmany(batch_size)
+        rows = await asyncio.to_thread(cursor.fetchmany, batch_size)
         if not rows:
             break
         values = [tuple(row[column] for column in selected_columns) for row in rows]
         async with pg_pool.acquire() as connection:
             await connection.executemany(insert_sql, values)
         migrated_rows += len(values)
-    await cursor.close()
+    await asyncio.to_thread(cursor.close)
     return MigrationResult(table, source_count, migrated_rows, "migrated")
 
 
 async def verify_row_counts(
-    sqlite_conn: aiosqlite.Connection,
+    sqlite_conn: sqlite3.Connection,
     pg_pool: _PgPool,
     tables: Sequence[str] = MIGRATION_ORDER,
 ) -> list[DriftReport]:
@@ -206,8 +206,8 @@ async def run_migration(
     if not dry_run and not pg_dsn.strip():
         raise ValueError("--pg-dsn is required unless --dry-run is used")
 
-    sqlite_conn = await aiosqlite.connect(sqlite_path)
-    sqlite_conn.row_factory = aiosqlite.Row
+    sqlite_conn = await asyncio.to_thread(sqlite3.connect, sqlite_path, check_same_thread=False)
+    sqlite_conn.row_factory = sqlite3.Row
     pg_pool: _PgPool | None = None
     results: list[MigrationResult] = []
     drift: list[DriftReport] = []
@@ -237,7 +237,7 @@ async def run_migration(
         if pg_pool is not None:
             drift = await verify_row_counts(sqlite_conn, pg_pool, tables)
     finally:
-        await sqlite_conn.close()
+        await asyncio.to_thread(sqlite_conn.close)
         if pg_pool is not None:
             await pg_pool.close()
 
@@ -324,31 +324,36 @@ async def _apply_search_schema(pg_pool: _PgPool) -> None:
             await connection.execute(statement)
 
 
-async def _table_exists(connection: aiosqlite.Connection, table: str) -> bool:
+async def _table_exists(connection: sqlite3.Connection, table: str) -> bool:
     """Return whether a SQLite table exists."""
-    cursor = await connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)
+    cursor = await asyncio.to_thread(
+        connection.execute,
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        (table,),
     )
-    row = await cursor.fetchone()
-    await cursor.close()
+    row = await asyncio.to_thread(cursor.fetchone)
+    await asyncio.to_thread(cursor.close)
     return row is not None
 
 
-async def _sqlite_count(connection: aiosqlite.Connection, table: str) -> int:
+async def _sqlite_count(connection: sqlite3.Connection, table: str) -> int:
     """Count rows in one validated SQLite table."""
-    cursor = await connection.execute(
-        f"SELECT COUNT(*) FROM {_quote_identifier(table)}"  # noqa: S608
+    cursor = await asyncio.to_thread(
+        connection.execute,
+        f"SELECT COUNT(*) FROM {_quote_identifier(table)}",  # noqa: S608
     )
-    row = await cursor.fetchone()
-    await cursor.close()
+    row = await asyncio.to_thread(cursor.fetchone)
+    await asyncio.to_thread(cursor.close)
     return int(row[0]) if row is not None else 0
 
 
-async def _table_columns(connection: aiosqlite.Connection, table: str) -> list[str]:
+async def _table_columns(connection: sqlite3.Connection, table: str) -> list[str]:
     """Read SQLite column names in their declared order."""
-    cursor = await connection.execute(f"PRAGMA table_info({_quote_identifier(table)})")
-    rows = await cursor.fetchall()
-    await cursor.close()
+    cursor = await asyncio.to_thread(
+        connection.execute, f"PRAGMA table_info({_quote_identifier(table)})"
+    )
+    rows = await asyncio.to_thread(cursor.fetchall)
+    await asyncio.to_thread(cursor.close)
     return [str(row[1]) for row in rows]
 
 

@@ -83,13 +83,13 @@ class TaskLogRepository(PostgresRepositoryMixin):
                 updated.progress,
                 updated.message,
                 updated.result_count,
-                log_id,
+                int(log_id),
             ),
         )
 
     async def get(self, log_id: str) -> TaskLog | None:
         """Return a task log by identifier."""
-        row = await self._fetchone("SELECT * FROM task_logs WHERE id = ?", (log_id,))
+        row = await self._fetchone("SELECT * FROM task_logs WHERE id = ?", (int(log_id),))
         if row is None:
             return None
         return self._to_task_log(row)

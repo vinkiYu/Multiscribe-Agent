@@ -63,7 +63,7 @@ class SqlAuditLogger:
                         suspicious_patterns,
                         recorded_at
                     )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 """,
                 (
                     entry.statement,

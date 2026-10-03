@@ -75,10 +75,16 @@ class DailyUsageByModelRepository(PostgresRepositoryMixin):
                     conflict_target=("date", "model_name"),
                     update_columns=("input_tokens", "output_tokens", "total_tokens", "llm_calls"),
                     update_expressions={
-                        "input_tokens": "input_tokens + excluded.input_tokens",
-                        "output_tokens": "output_tokens + excluded.output_tokens",
-                        "total_tokens": "total_tokens + excluded.total_tokens",
-                        "llm_calls": "llm_calls + excluded.llm_calls",
+                        "input_tokens": (
+                            "daily_usage_by_model.input_tokens + excluded.input_tokens"
+                        ),
+                        "output_tokens": (
+                            "daily_usage_by_model.output_tokens + excluded.output_tokens"
+                        ),
+                        "total_tokens": (
+                            "daily_usage_by_model.total_tokens + excluded.total_tokens"
+                        ),
+                        "llm_calls": "daily_usage_by_model.llm_calls + excluded.llm_calls",
                     },
                 ),
                 (date, model_name, *values),

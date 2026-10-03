@@ -46,7 +46,7 @@ class InteropService:
         await self._database.execute(
             "INSERT INTO interop_keys "
             "(key_id, key_hash, description, created_at, approved, rate_limit_per_minute) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "VALUES ($1, $2, $3, $4, $5, $6)",
             (
                 record.key_id,
                 record.key_hash,
@@ -65,7 +65,7 @@ class InteropService:
         row = await self._database.fetchone(
             "SELECT key_id, key_hash, description, created_at, approved, "
             "rate_limit_per_minute, last_used_at, request_count "
-            "FROM interop_keys WHERE key_hash = ?",
+            "FROM interop_keys WHERE key_hash = $1",
             (hash_api_key(api_key),),
         )
         if row is None:
@@ -87,15 +87,15 @@ class InteropService:
     async def approve_key(self, key_id: str) -> bool:
         """Mark a pending key as approved."""
         affected = await self._database.execute(
-            "UPDATE interop_keys SET approved = 1 WHERE key_id = ?", (key_id,)
+            "UPDATE interop_keys SET approved = 1 WHERE key_id = $1", (key_id,)
         )
         return affected is not None and affected > 0
 
     async def touch_usage(self, key_id: str) -> None:
         """Increment usage counters after a successful authentication check."""
         await self._database.execute(
-            "UPDATE interop_keys SET request_count = request_count + 1, last_used_at = ? "
-            "WHERE key_id = ?",
+            "UPDATE interop_keys SET request_count = request_count + 1, last_used_at = $1 "
+            "WHERE key_id = $2",
             (int(time.time()), key_id),
         )
 

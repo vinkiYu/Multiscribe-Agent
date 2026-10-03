@@ -8,6 +8,7 @@ business database and vector store remain the system of record; no Haystack
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hashlib
 import importlib
 import inspect
@@ -25,6 +26,10 @@ from multiscribe_agent.infra.db_protocol import DatabaseProtocol, PostgresReposi
 from multiscribe_agent.rag.adapter import AdaptedDocument
 from multiscribe_agent.rag.models import KnowledgeChunk, KnowledgeDocument
 from multiscribe_agent.rag.schema import RagChunksStore
+
+_MAIN_LOOP: contextvars.ContextVar[asyncio.AbstractEventLoop | None] = contextvars.ContextVar(
+    "rag_indexing_main_loop", default=None
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -438,6 +443,7 @@ class RagIndexingPipeline:
         prune_source_document_ids: set[str] | None = None,
     ) -> IndexReport:
         """Index adapted documents with hash-based skipping and stale cleanup."""
+        _MAIN_LOOP.set(asyncio.get_running_loop())
         await self._registry.ensure_schema()
         await self._rag_chunks.ensure_schema()
         candidates: list[AdaptedDocument] = []
@@ -583,7 +589,13 @@ def _run_async(awaitable: object) -> object:
     """Run an awaitable from a synchronous Haystack component thread."""
     if not inspect.isawaitable(awaitable):
         return awaitable
-    return asyncio.run(cast(Coroutine[object, object, object], awaitable))
+    coroutine = cast(Coroutine[object, object, object], awaitable)
+    main_loop = _MAIN_LOOP.get()
+    if main_loop is not None and main_loop.is_running():
+        # Pool-bound futures (asyncpg) belong to the caller's loop; dispatch the
+        # coroutine back there and block this worker thread until it completes.
+        return asyncio.run_coroutine_threadsafe(coroutine, main_loop).result()
+    return asyncio.run(coroutine)
 
 
 def _content_hash(content: str) -> str:

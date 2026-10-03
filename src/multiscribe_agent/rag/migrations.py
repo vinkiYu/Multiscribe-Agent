@@ -113,7 +113,7 @@ async def migrate_source_timestamps(db: DatabaseProtocol) -> SourceTimestampMigr
         """
     )
     marker = await db.fetchone(
-        "SELECT migration_id FROM rag_migrations WHERE migration_id = ?",
+        "SELECT migration_id FROM rag_migrations WHERE migration_id = $1",
         (SOURCE_TIMESTAMP_MIGRATION_ID,),
     )
     if marker is not None:
@@ -123,14 +123,14 @@ async def migrate_source_timestamps(db: DatabaseProtocol) -> SourceTimestampMigr
             """
             UPDATE source_data
             SET published_date = fetched_at
-            WHERE published_date = ? AND fetched_at IS NOT NULL AND fetched_at <> ''
+            WHERE published_date = $1 AND fetched_at IS NOT NULL AND fetched_at <> ''
             """,
             ("1970-01-01T00:00:00+00:00",),
         )
         or 0
     )
     await db.execute(
-        "INSERT INTO rag_migrations(migration_id, applied_at) VALUES (?, ?)",
+        "INSERT INTO rag_migrations(migration_id, applied_at) VALUES ($1, $2)",
         (SOURCE_TIMESTAMP_MIGRATION_ID, datetime.now(UTC).isoformat()),
     )
     return SourceTimestampMigrationReport(updated=updated)
