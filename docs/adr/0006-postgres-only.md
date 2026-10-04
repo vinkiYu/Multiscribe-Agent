@@ -1,8 +1,8 @@
 # ADR-0006 PostgreSQL-only:移除双数据库支持,取代 ADR-0001
 
-- 状态:已采纳(2026-09-23,决策者拍板"定位 B + 移除 SQLite")
+- 状态:已采纳(2026-09-23,决策者拍板"定位 B + 移除 SQLite");**已实施收官**(2026-10-04,P67 tag `p67-complete`:T1 方言塌缩 + T2 测试基建双路验证 + T3 数据迁移与 RAG 重建 + T4 e2e smoke 通过,见 `docs/phases/P67-PG-only改造.md` 与 `codex/reviews/P67-REVIEW.md`、`P67-T2T3-REVIEW.md`)
 - 取代:**ADR-0001(双方言:SQLite 默认 + PostgreSQL 可选)**
-- 关联:`infra/dialect.py`、`infra/connection_pool.py`、Stage6B 系列、`docs/adr/0005`(pgvector 转正)
+- 关联:`infra/dialect.py`(已删)、`infra/connection_pool.py`(已删)、Stage6B 系列、`docs/adr/0005`(pgvector 转正)
 
 ---
 

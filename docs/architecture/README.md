@@ -16,9 +16,9 @@
 | 语言 | Python 3.12+ | src layout,`uv` + `pyproject.toml` |
 | Web | FastAPI + Uvicorn | SSE 用 `sse-starlette` |
 | LLM | LangChain(`langchain-openai/-anthropic/-google-genai`)+ LangGraph | provider 经中转(base_url)或官方端点 |
-| 数据库 | **双方言**:SQLite + WAL(默认)/ PostgreSQL(`DB_DRIVER=postgres`) | 结构化列 + JSON blob;无正式迁移框架,`CREATE TABLE IF NOT EXISTS` 幂等 |
-| 全文检索 | SQLite FTS5(bm25)/ PostgreSQL tsvector | 方言差异收敛在 `knowledge/fts_query.py` + `infra/dialect.py` |
-| 向量 | **`VectorStorePort` 协议**:SQLite→`sqlite-vec`;PostgreSQL→pgvector | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭 |
+| 数据库 | **PostgreSQL-only**(ADR-0006):asyncpg 连接池,`DATABASE_URL` | 结构化列 + JSON blob;无正式迁移框架,`CREATE TABLE IF NOT EXISTS` 幂等 |
+| 全文检索 | PostgreSQL tsvector(`simple` 配置)+ GIN | 单一实现,方言层已删除(ADR-0006) |
+| 向量 | **pgvector 单一实现**(ADR-0006,取代 ADR-0001 双方言) | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭 |
 | 工作流 | 自研 DAG(Kahn 拓扑 + 批次并行 + 子工作流嵌套 + Loop 自评) | |
 | Agent 执行 | 自研 Harness(ReAct 循环 + 滑窗上下文 + 工具压缩 + 反思重试) | MCP 经官方 Python SDK 接入 |
 | 模板 | Jinja2 | prompt + 推送渲染 |
@@ -37,7 +37,7 @@
 | `domain/` | 领域模型(Pydantic)+ 仓储/服务 **Protocol** | `models.py`(30 模型)、`ports.py` | 导入任何其他包;出现 IO |
 | `core/` | 交叉关注点 | `logging.py`(structlog+脱敏)、`security.py`(JWT/脱敏)、`errors.py`(领域异常)、`telemetry.py` | 业务逻辑 |
 | `config.py`(根) | Settings(pydantic-settings,含 AliasChoices 环境别名) | — | 绕过 Settings 直读 os.environ(脚本入口 os.environ 覆写除外) |
-| `infra/` | 持久化实现:双方言 db、连接池、repositories(source_data/kv/task_log/api_key/memory)、postgres 子系统 | `db.py`、`dialect.py`、`repositories/`、`postgres/` | 反向依赖 agents/api;直接被上层 new(须经 ServiceContext/bootstrap 装配) |
+| `infra/` | 持久化实现:PostgreSQL db(`postgres_driver.py`)、repositories(source_data/kv/task_log/api_key/memory)、postgres 子系统 | `db.py`、`postgres_driver.py`、`repositories/`、`postgres/` | 反向依赖 agents/api;直接被上层 new(须经 ServiceContext/bootstrap 装配) |
 | `llm/` | Provider 抽象 + 实现 + usage 归一 | `provider.py`、`providers/openai.py`(trust_env=False) | 持有业务状态 |
 | `agents/` | Harness、DAG workflow 引擎、daily_digest pipeline、ContextProvider、curator_judge | `executor.py`、`context.py`、`workflow/`、`pipelines/` | 直接写库(经仓储);绕过 Provider 直连 SDK |
 | `plugins/` | 四类插件(Adapter/Publisher/Storage/Tool)+ 注册发现 + 审批边界 | `base.py`、`registry.py`、`discovery.py`、`builtin/`、`security.py` | custom 插件未审计入主进程 |
@@ -130,10 +130,11 @@ source_data 表 → sample_curation_dataset.py → fixtures(100 池,带标注)
 ## 6. 数据库 Schema 概览
 
 结构化表:`kv`(TTL)/ `source_data`(+FTS)/ `task_logs` / `agent_memories`(+FTS)/ `kb_documents`(+FTS)/ `kb_chunks`(+FTS)/ `kb_chunk_dedup` / `kb_categories` / `api_keys` / `chat_sessions` / `curation_evaluations` / `publish_history`
-向量表:SQLite `kb_chunks_vec`(sqlite-vec)/ PostgreSQL `chunk_vectors`(pgvector)
+向量表:PostgreSQL `chunk_vectors`(pgvector,512 维)
+RAG 统一索引:`rag_chunks`(tsvector + GIN,bm25)+ `rag_index_registry`(增量登记)+ `chunk_vectors`(pgvector)
 JSON blob 表:`agents` / `skills` / `workflows` / `mcp_configs` / `schedules` / `kb_documents.data`
 
-- 无正式迁移框架:`CREATE TABLE IF NOT EXISTS` 幂等 + 启动修复(running→interrupted、FTS 回填);Postgres 迁移见 `docs/phases/Stage6B-*` 与 `docs/postgres-migration-guide.md`。
+- 无正式迁移框架:`CREATE TABLE IF NOT EXISTS` 幂等 + 启动修复(running→interrupted、FTS 回填);SQLite→PostgreSQL 一次性迁移见 `scripts/migrate_sqlite_to_postgres.py`(Stage6B),RAG 派生索引用 `scripts/rebuild_rag_index.py` 重建。
 - JSON blob 用于字段不固定实体(整体读写);结构化列用于需索引/FTS/向量检索的实体。
 
 ## 7. 认证与安全边界
