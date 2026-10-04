@@ -8,6 +8,24 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      qdrant:
+        image: qdrant/qdrant:v1.19.1
+        ports:
+          - 6333:6333
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -16,13 +34,12 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
-      - name: Run full test suite (excluding external dependencies)
-        run: |
-          uv run pytest -q \
-            --ignore tests/api/test_frontend_static.py \
-            --ignore tests/knowledge/test_api_kb.py \
-            -m "not e2e and not redis"
+        run: uv sync --frozen --extra dev --extra test
+      - name: Run verify test gate (PostgreSQL + Qdrant services)
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:password@localhost:5432/postgres
+          TEST_QDRANT_URL: http://localhost:6333
+        run: uv run pytest -q tests/ --ignore=tests/api
       - name: Lint and type-check
         run: |
           uv run ruff check src tests
