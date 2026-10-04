@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from importlib import import_module
 from typing import Any, Protocol, cast
@@ -96,7 +96,13 @@ class PostgresDatabase:
     by the daily-digest idempotency and workflow-resume paths.
     """
 
-    __slots__ = ("_audit_logger", "_enable_sql_audit", "_pool", "_slow_query_threshold")
+    __slots__ = (
+        "_audit_logger",
+        "_enable_sql_audit",
+        "_metrics_registry_provider",
+        "_pool",
+        "_slow_query_threshold",
+    )
 
     def __init__(
         self,
@@ -104,12 +110,18 @@ class PostgresDatabase:
         *,
         slow_query_threshold: float = 1.0,
         enable_sql_audit: bool = True,
+        metrics_registry_provider: Callable[[], Any] | None = None,
     ) -> None:
-        """Create a backend wrapper around an initialized asyncpg pool."""
+        """Create a backend wrapper around an initialized asyncpg pool.
+
+        ``metrics_registry_provider`` overrides the global metrics registry
+        lookup; tests inject it to stay independent of module import order.
+        """
         self._pool = pool
         self._audit_logger: object | None = None
         self._slow_query_threshold = slow_query_threshold
         self._enable_sql_audit = enable_sql_audit
+        self._metrics_registry_provider = metrics_registry_provider
 
     async def execute(self, statement: str, parameters: SqlParameters = ()) -> int | None:
         """Execute one statement and return its row count or RETURNING value."""
@@ -222,9 +234,12 @@ class PostgresDatabase:
     ) -> None:
         """Emit slow-query warnings and update the optional metric backend."""
         try:
-            from multiscribe_agent.observability.meter import get_metrics_registry
+            if self._metrics_registry_provider is not None:
+                registry = self._metrics_registry_provider()
+            else:
+                from multiscribe_agent.observability.meter import get_metrics_registry
 
-            registry = get_metrics_registry()
+                registry = get_metrics_registry()
             record_query_timing = getattr(registry, "record_query_timing", None)
             if callable(record_query_timing):
                 record_query_timing(duration, self._slow_query_threshold)

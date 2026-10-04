@@ -47,23 +47,15 @@ class _Metrics:
 @pytest.mark.asyncio
 async def test_slow_query_logs_warning_and_records_metric() -> None:
     """Queries exceeding the configured threshold emit one warning and one metric."""
-    from multiscribe_agent.observability.meter import (
-        get_metrics_registry,
-        set_metrics_registry,
+    metrics = _Metrics()
+    database = Database(
+        _SlowPool(_SlowConnection()),
+        slow_query_threshold=0.001,
+        enable_sql_audit=False,
+        metrics_registry_provider=lambda: metrics,
     )
 
-    database = Database(
-        _SlowPool(_SlowConnection()), slow_query_threshold=0.001, enable_sql_audit=False
-    )
-    metrics = _Metrics()
-    # Assemble through the production registry entry point and restore it
-    # explicitly, so no module-reload or import-order trick can shadow it.
-    original = get_metrics_registry()
-    set_metrics_registry(metrics)
-    try:
-        await database.execute("UPDATE things SET value = $1", ("x",))
-    finally:
-        set_metrics_registry(original)
+    await database.execute("UPDATE things SET value = $1", ("x",))
 
     assert metrics.durations
     assert metrics.durations[0] >= 0.001
