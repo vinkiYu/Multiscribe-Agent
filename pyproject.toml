@@ -37,6 +37,7 @@ dependencies = [
     "structlog>=24.1",
     "tiktoken>=0.7",
     "uvicorn[standard]>=0.30",
+    "qdrant-client>=1.19.1",
 ]
 
 [project.optional-dependencies]

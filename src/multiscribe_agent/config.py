@@ -385,6 +385,11 @@ class SystemSettings(BaseSettings):
         gt=0,
         validation_alias=AliasChoices("RAG_EMBEDDING_DIM", "MULTISCRIBE_RAG_EMBEDDING_DIM"),
     )
+    qdrant_url: str = Field(
+        default="http://127.0.0.1:6333",
+        min_length=1,
+        validation_alias=AliasChoices("QDRANT_URL", "MULTISCRIBE_QDRANT_URL"),
+    )
     rag_reranker_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices("RAG_RERANKER_ENABLED", "MULTISCRIBE_RAG_RERANKER_ENABLED"),
