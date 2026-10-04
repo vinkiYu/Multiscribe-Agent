@@ -15,7 +15,7 @@ from multiscribe_agent.domain.models import KBChunk, KBDocument, SourceData
 from multiscribe_agent.infra.db import init_database
 from multiscribe_agent.infra.db_protocol import DatabaseProtocol
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.postgres_vector_store import PostgresVectorStore
+from multiscribe_agent.knowledge.vector_store import QdrantVectorStore
 from multiscribe_agent.rag.adapter import AdaptedDocument, RagDocumentAdapter
 from multiscribe_agent.rag.index_version import make_index_version
 from multiscribe_agent.rag.indexing import RagIndexingPipeline, RagIndexRegistry
@@ -78,7 +78,9 @@ async def rebuild(args: argparse.Namespace) -> dict[str, int | str]:
             raise RuntimeError(
                 "sentence-transformers is unavailable; install the runtime before a real rebuild"
             )
-        vector_store = PostgresVectorStore(database, dim=settings.rag_embedding_dim)
+        vector_store = QdrantVectorStore(
+            settings.qdrant_url, dim=settings.rag_embedding_dim
+        )
         registry = RagIndexRegistry(database)
         version = make_index_version(model_name=settings.rag_embedding_model)
         existing_versions = await _existing_index_versions(database)
@@ -133,7 +135,6 @@ async def _reset_derived_index(database: DatabaseProtocol, dimension: int) -> No
         raise ValueError("embedding dimension must be positive")
     await _delete_table_if_present(database, "rag_index_registry")
     await _delete_table_if_present(database, "rag_chunks")
-    await _delete_table_if_present(database, "chunk_vectors")
 
 
 async def _delete_table_if_present(database: DatabaseProtocol, table: str) -> None:

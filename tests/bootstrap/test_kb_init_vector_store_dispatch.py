@@ -33,10 +33,10 @@ class _FakeDatabase:
 
 
 @pytest.mark.asyncio
-async def test_kb_init_uses_pgvector_store_without_legacy_retriever(
+async def test_kb_init_uses_qdrant_store_without_legacy_retriever(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """P67 always assembles the pgvector-backed store and no legacy retriever."""
+    """P69 always assembles the Qdrant-backed store and no legacy retriever."""
     monkeypatch.setattr("multiscribe_agent.bootstrap.EmbeddingService.is_available", lambda: False)
     context = ServiceContext(SystemSettings(_env_file=None, database_url="postgresql://test"))
     context.db = _FakeDatabase()  # type: ignore[assignment]
@@ -44,5 +44,5 @@ async def test_kb_init_uses_pgvector_store_without_legacy_retriever(
     await context._init_kb()
 
     assert context.kb_service is not None
-    assert type(context.kb_service._vector_store).__name__ == "VectorStore"
+    assert type(context.kb_service._vector_store).__name__ == "QdrantVectorStore"
     assert not hasattr(context.kb_service, "_retriever")

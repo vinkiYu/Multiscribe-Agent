@@ -7,10 +7,10 @@ from collections.abc import Sequence
 import pytest
 
 from multiscribe_agent.domain.ports import VectorStorePort
-from multiscribe_agent.knowledge.vector_store import VectorStore
+from multiscribe_agent.knowledge.vector_store import QdrantVectorStore
 from multiscribe_agent.rag.adapter import RagDocumentAdapter
 from multiscribe_agent.rag.indexing import RagIndexingPipeline, RagIndexRegistry
-from tests.db import init_test_database
+from tests.db import get_test_qdrant_url, init_test_database
 
 
 class FakeEmbedder:
@@ -44,7 +44,7 @@ class FakeVectorStore(VectorStorePort):
 
 
 class WideFakeEmbedder:
-    """Fake 512-dimensional encoder for the pgvector smoke test."""
+    """Fake 512-dimensional encoder for the Qdrant smoke test."""
 
     async def encode(self, texts: list[str]) -> list[list[float]]:
         return [[1.0] * 512 for _ in texts]
@@ -144,26 +144,31 @@ async def test_embedding_failure_isolated_to_one_document(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_pgvector_receives_indexed_embedding(tmp_path) -> None:
-    """The production VectorStorePort receives vectors, not only registry rows."""
+async def test_qdrant_receives_indexed_embedding(tmp_path) -> None:
+    """The production VectorStorePort receives vectors into Qdrant end to end."""
     db = await init_test_database()
+    store = QdrantVectorStore(get_test_qdrant_url(), dim=512)
     try:
-        adapted = _adapted("pgvector")
+        adapted = _adapted("qdrant")
         assert adapted is not None
+        chunk_id = adapted.chunks[0].chunk_id
         pipeline = RagIndexingPipeline(
-            VectorStore(db, dim=512),
+            store,
             RagIndexRegistry(db),
             WideFakeEmbedder(),
         )
         report = await pipeline.index([adapted], index_version="v1")
 
-        assert report.indexed_chunk_ids == (adapted.chunks[0].chunk_id,)
-        row = await db.fetchone(
-            "SELECT chunk_id FROM chunk_vectors WHERE chunk_id = $1",
-            (adapted.chunks[0].chunk_id,),
-        )
-        assert row is not None
+        assert report.indexed_chunk_ids == (chunk_id,)
+        hits = await store.top_k([1.0] * 512, k=5)
+        assert chunk_id in {hit_chunk_id for hit_chunk_id, _distance in hits}
+
+        await store.delete(chunk_id)
+        assert chunk_id not in {
+            hit_chunk_id for hit_chunk_id, _distance in await store.top_k([1.0] * 512, k=5)
+        }
     finally:
+        await store.close()
         await db.close()
 
 

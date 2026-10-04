@@ -20,7 +20,7 @@ from multiscribe_agent.knowledge.embedding_service import (
     EmbeddingService,
     EmbeddingUnavailableError,
 )
-from multiscribe_agent.knowledge.vector_store import VectorStore, VectorStoreUnavailable
+from multiscribe_agent.knowledge.vector_store import QdrantVectorStore, VectorStoreUnavailable
 from multiscribe_agent.rag.adapter import adapt_kb_document
 from multiscribe_agent.rag.index_version import make_index_version
 from multiscribe_agent.rag.indexing import RagIndexRegistry
@@ -73,7 +73,7 @@ class KBService(PostgresRepositoryMixin):
         db: Database,
         processor: DocumentProcessor,
         embeddings: EmbeddingService | None,
-        vector_store: VectorStore | None,
+        vector_store: QdrantVectorStore | None,
         rag_service: RagServiceProtocol | None = None,
         default_user_id: str = "admin",
     ) -> None:

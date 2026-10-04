@@ -303,21 +303,17 @@ async def _open_pg_pool(pg_dsn: str) -> _PgPool:
 
 
 async def _apply_search_schema(pg_pool: _PgPool) -> None:
-    """Apply the Phase 3 PostgreSQL vector and FTS support objects."""
+    """Apply the PostgreSQL tsvector FTS support objects."""
     from multiscribe_agent.infra.postgres.schema_fts import (
         AGENT_MEMORIES_FTS_INDEXES,
         AGENT_MEMORIES_FTS_TABLE,
-        CHUNK_VECTORS_TABLE,
         KB_CHUNKS_FTS_INDEX,
         KB_CHUNKS_FTS_TABLE,
-        PGVECTOR_EXTENSION,
         SOURCE_DATA_FTS_INDEXES,
         SOURCE_DATA_FTS_TABLE,
     )
 
     statements = [
-        PGVECTOR_EXTENSION,
-        CHUNK_VECTORS_TABLE,
         SOURCE_DATA_FTS_TABLE,
         *SOURCE_DATA_FTS_INDEXES,
         KB_CHUNKS_FTS_TABLE,

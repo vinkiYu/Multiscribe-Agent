@@ -92,9 +92,6 @@ async def test_init_database_applies_postgres_schema_in_order(
     }
     statements = pool.connection.statements
     joined = "\n".join(statements)
-    assert statements[0].startswith("CREATE EXTENSION")
-    assert "chunk_vectors" in joined
-    assert "vector(512)" in joined
     assert "source_data_fts" in joined
     assert "kb_chunks_fts" in joined
     assert "agent_memories_fts" in joined

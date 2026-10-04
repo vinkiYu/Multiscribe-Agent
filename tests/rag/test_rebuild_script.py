@@ -50,6 +50,5 @@ async def test_model_change_resets_postgres_derived_index() -> None:
 
         assert await db.fetchall("SELECT * FROM rag_index_registry") == []
         assert await db.fetchall("SELECT * FROM rag_chunks") == []
-        assert await db.fetchall("SELECT * FROM chunk_vectors") == []
     finally:
         await db.close()

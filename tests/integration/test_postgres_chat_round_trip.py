@@ -11,7 +11,7 @@ suite covers:
   so we know the full chat + preference chain wires together without falling
   back to the SQLite default.
 
-The container image is ``pgvector/pgvector:pg16`` so the ``vector`` extension
+The container image is ``postgres:16-alpine``.
 required by the FTS/vector bundle can be installed.
 """
 
@@ -31,7 +31,7 @@ pytestmark = [
     pytest.mark.asyncio,
 ]
 
-POSTGRES_IMAGE = "pgvector/pgvector:pg16"
+POSTGRES_IMAGE = "postgres:16-alpine"
 
 
 @pytest.fixture

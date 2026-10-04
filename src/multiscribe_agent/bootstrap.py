@@ -59,7 +59,7 @@ from multiscribe_agent.knowledge.document_processor import DocumentProcessor
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
 from multiscribe_agent.knowledge.kb_service import KBCapabilities, KBService
 from multiscribe_agent.knowledge.vector_protocol import VectorStorePort
-from multiscribe_agent.knowledge.vector_store import VectorStore
+from multiscribe_agent.knowledge.vector_store import QdrantVectorStore
 from multiscribe_agent.llm.provider import AIProvider, create_provider
 from multiscribe_agent.memory.extractor import PreferenceExtractor
 from multiscribe_agent.memory.memory_service import MemoryService
@@ -558,7 +558,9 @@ class ServiceContext:
         )
         vector_store: VectorStorePort | None = None
         if vector_enabled:
-            vector_store = VectorStore(self.db, dim=self.settings.rag_embedding_dim)
+            vector_store = QdrantVectorStore(
+                self.settings.qdrant_url, dim=self.settings.rag_embedding_dim
+            )
         reranker = (
             CrossEncoderReranker(model_name=self.settings.rag_reranker_model)
             if self.settings.rag_reranker_enabled
@@ -577,7 +579,7 @@ class ServiceContext:
             self.db,
             DocumentProcessor(),
             embeddings,
-            cast(VectorStore | None, vector_store),
+            cast(QdrantVectorStore | None, vector_store),
             self.rag_service,
             default_user_id=self.settings.rag_default_user_id,
         )

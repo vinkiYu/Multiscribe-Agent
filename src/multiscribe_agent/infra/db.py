@@ -17,10 +17,8 @@ from multiscribe_agent.infra.postgres.schema_dedup import ALL_SCHEMAS as DEDUP_S
 from multiscribe_agent.infra.postgres.schema_fts import (
     AGENT_MEMORIES_FTS_INDEXES,
     AGENT_MEMORIES_FTS_TABLE,
-    CHUNK_VECTORS_TABLE,
     KB_CHUNKS_FTS_INDEX,
     KB_CHUNKS_FTS_TABLE,
-    PGVECTOR_EXTENSION,
     SOURCE_DATA_FTS_INDEXES,
     SOURCE_DATA_FTS_TABLE,
 )
@@ -71,12 +69,10 @@ async def init_database(
 
 
 async def _initialize_schema(database: PostgresDatabase, pool: _AsyncpgPool) -> None:
-    """Install extensions, base tables, derived indexes, and idempotency tables."""
+    """Install base tables, derived indexes, and idempotency tables."""
     async with pool.acquire() as connection:
-        await connection.execute(PGVECTOR_EXTENSION)
         for statement in ALL_BUSINESS_TABLES:
             await connection.execute(statement)
-        await connection.execute(CHUNK_VECTORS_TABLE)
         await connection.execute(SOURCE_DATA_FTS_TABLE)
         for statement in SOURCE_DATA_FTS_INDEXES:
             await connection.execute(statement)

@@ -1,15 +1,6 @@
-"""PostgreSQL DDL for pgvector and tsvector-backed search tables."""
+"""PostgreSQL DDL for tsvector-backed search tables."""
 
 from __future__ import annotations
-
-PGVECTOR_EXTENSION = "CREATE EXTENSION IF NOT EXISTS vector"
-
-CHUNK_VECTORS_TABLE = """
-CREATE TABLE IF NOT EXISTS chunk_vectors (
-    chunk_id TEXT PRIMARY KEY,
-    embedding vector(512)
-)
-"""
 
 SOURCE_DATA_FTS_TABLE = """
 CREATE TABLE IF NOT EXISTS source_data_fts (
