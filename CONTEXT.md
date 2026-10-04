@@ -98,9 +98,9 @@ _Avoid_: 语义检索(仅指向量一路)、双路检索
 
 **VectorStorePort**
 
-向量存取的方言无关协议(`knowledge/vector_protocol.py`)。SQLite 走 sqlite-vec,PostgreSQL 走 pgvector。检索/索引代码只依赖 Port,不依赖具体方言。
+向量存取的方言无关协议(`knowledge/vector_protocol.py`)。P69 起唯一实现为 Qdrant(`knowledge/vector_store.py` 的 `QdrantVectorStore`,ADR-0007)。检索/索引代码只依赖 Port,不依赖具体向量库。
 
-_Avoid_: 直接引用 sqlite-vec/pgvector 表名于上层代码
+_Avoid_: 直接引用 Qdrant 集合名或 pgvector 残留概念于上层代码
 
 **Degraded(降级)**
 

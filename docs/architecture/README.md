@@ -18,7 +18,7 @@
 | LLM | LangChain(`langchain-openai/-anthropic/-google-genai`)+ LangGraph | provider 经中转(base_url)或官方端点 |
 | 数据库 | **PostgreSQL-only**(ADR-0006):asyncpg 连接池,`DATABASE_URL` | 结构化列 + JSON blob;无正式迁移框架,`CREATE TABLE IF NOT EXISTS` 幂等 |
 | 全文检索 | PostgreSQL tsvector(`simple` 配置)+ GIN | 单一实现,方言层已删除(ADR-0006) |
-| 向量 | **pgvector 单一实现**(ADR-0006,取代 ADR-0001 双方言) | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭 |
+| 向量 | **Qdrant 单一实现**(ADR-0007,取代 ADR-0005 的 pgvector 决策) | embedding 默认 `BAAI/bge-small-zh-v1.5`(512 维,惰性加载);reranker 默认关闭;10 万点内一律精确检索 |
 | 工作流 | 自研 DAG(Kahn 拓扑 + 批次并行 + 子工作流嵌套 + Loop 自评) | |
 | Agent 执行 | 自研 Harness(ReAct 循环 + 滑窗上下文 + 工具压缩 + 反思重试) | MCP 经官方 Python SDK 接入 |
 | 模板 | Jinja2 | prompt + 推送渲染 |
@@ -130,8 +130,8 @@ source_data 表 → sample_curation_dataset.py → fixtures(100 池,带标注)
 ## 6. 数据库 Schema 概览
 
 结构化表:`kv`(TTL)/ `source_data`(+FTS)/ `task_logs` / `agent_memories`(+FTS)/ `kb_documents`(+FTS)/ `kb_chunks`(+FTS)/ `kb_chunk_dedup` / `kb_categories` / `api_keys` / `chat_sessions` / `curation_evaluations` / `publish_history`
-向量表:PostgreSQL `chunk_vectors`(pgvector,512 维)
-RAG 统一索引:`rag_chunks`(tsvector + GIN,bm25)+ `rag_index_registry`(增量登记)+ `chunk_vectors`(pgvector)
+向量集合:Qdrant `rag_vectors`(512 维,Cosine,精确检索;ADR-0007)
+RAG 统一索引:`rag_chunks`(tsvector + GIN,bm25)+ `rag_index_registry`(增量登记)+ Qdrant `rag_vectors`(向量召回;scope 隔离仍由 PG registry 回联过滤)
 JSON blob 表:`agents` / `skills` / `workflows` / `mcp_configs` / `schedules` / `kb_documents.data`
 
 - 无正式迁移框架:`CREATE TABLE IF NOT EXISTS` 幂等 + 启动修复(running→interrupted、FTS 回填);SQLite→PostgreSQL 一次性迁移见 `scripts/migrate_sqlite_to_postgres.py`(Stage6B),RAG 派生索引用 `scripts/rebuild_rag_index.py` 重建。

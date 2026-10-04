@@ -15,7 +15,7 @@ from pathlib import Path
 from multiscribe_agent.config import get_settings
 from multiscribe_agent.infra.db import Database, init_database
 from multiscribe_agent.knowledge.embedding_service import EmbeddingService
-from multiscribe_agent.knowledge.vector_store import VectorStore
+from multiscribe_agent.knowledge.vector_store import QdrantVectorStore
 from multiscribe_agent.rag.models import RetrievalScope
 from multiscribe_agent.rag.reranker import CrossEncoderReranker
 from multiscribe_agent.rag.service import RagService
@@ -396,7 +396,9 @@ async def _run(args: argparse.Namespace) -> tuple[Path, Path, dict[str, object]]
             else None
         )
         vector_store = (
-            VectorStore(db, dim=settings.rag_embedding_dim) if embeddings is not None else None
+            QdrantVectorStore(settings.qdrant_url, dim=settings.rag_embedding_dim)
+            if embeddings is not None
+            else None
         )
         results_by_impl: dict[str, list[QueryResult]] = {}
         reranker = (
